@@ -23,6 +23,8 @@ type Config struct {
 	HealthCheck HealthCheck `yaml:"healthcheck"`
 
 	Logging LoggingConfig `yaml:"logging"`
+
+	Storage map[string]interface{} `yaml:"storage"`
 }
 
 // HealthCheck configuration for the health check system

@@ -19,6 +19,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/apiv1"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/crypt"
+	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/health"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
@@ -149,6 +150,13 @@ func main() {
 	clog.Logger.Infof("ssl: %t", ssl)
 	clog.Logger.Infof("serviceURL: %s", serviceConfig.ServiceURL)
 	clog.Logger.Infof("%s api routes", servicename)
+
+	if err := initStorageSystem(); err != nil {
+		errstr := fmt.Sprintf("could not initialise dao factory. %s", err.Error())
+		clog.Logger.Alertf(errstr)
+		panic(errstr)
+	}
+
 	router := apiRoutes()
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		clog.Logger.Infof("%s %s", method, route)
@@ -271,4 +279,8 @@ func getApikey() string {
 	value := fmt.Sprintf("%s_%s", servicename, "default")
 	apikey := fmt.Sprintf("%x", md5.Sum([]byte(value)))
 	return strings.ToLower(apikey)
+}
+
+func initStorageSystem() error {
+	return dao.Init(serviceConfig.Storage)
 }
