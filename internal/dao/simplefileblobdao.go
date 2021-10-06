@@ -41,7 +41,7 @@ func (s *SimpleFileBlobStorageDao) GetBlobs(offset int, limit int) ([]string, er
 }
 
 func (s *SimpleFileBlobStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
-	return "", errors.New("not implemented yet")
+	return s.storeBlobV2(b, f)
 }
 
 func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
