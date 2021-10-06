@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -101,5 +102,17 @@ func TestCRD(t *testing.T) {
 	}
 	assert.Equal(t, id, info.BlobID)
 
-	dao.DeleteBlob(id)
+	var buf bytes.Buffer
+
+	err = dao.RetrieveBlob(id, &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "this is a blob content", buf.String())
+
+	err = dao.DeleteBlob(id)
+	if err != nil {
+		t.Fatal(err)
+	}
 }

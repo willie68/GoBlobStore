@@ -61,7 +61,7 @@ func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) err
 		err = s.getBlobV2(id, writer)
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	return nil
 }

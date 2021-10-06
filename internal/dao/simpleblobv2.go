@@ -16,7 +16,7 @@ import (
 func (s *SimpleFileBlobStorageDao) getBlobsV2(offset int, limit int) ([]string, error) {
 	var files []string
 	err := filepath.Walk(s.filepath, func(path string, info os.FileInfo, err error) error {
-		if !strings.Contains(path, "retention") && strings.HasSuffix(path, ".json") {
+		if !strings.Contains(path, RETENTION_PATH) && strings.HasSuffix(path, DESCRIPTION_EXT) {
 			files = append(files, info.Name()[:len(info.Name())-5])
 		}
 		if len(files) >= limit {
@@ -35,7 +35,7 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 	fp := s.filepath
 	fp = filepath.Join(fp, id[:2])
 	fp = filepath.Join(fp, id[2:4])
-	jsonFile := filepath.Join(fp, fmt.Sprintf("%s.json", id))
+	jsonFile := filepath.Join(fp, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
 
 	dat, err := os.ReadFile(jsonFile)
 	if err != nil {
@@ -50,7 +50,7 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 }
 
 func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
-	binFile, err := s.buildFilenameV2(id, ".bin")
+	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 }
 
 func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64, error) {
-	binFile, err := s.buildFilenameV2(id, ".bin")
+	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
 	if err != nil {
 		return 0, err
 	}
@@ -122,9 +122,9 @@ func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64
 
 //TODO implement error handling
 func (s *SimpleFileBlobStorageDao) deleteFilesV2(id string) error {
-	binFile, _ := s.buildFilenameV2(id, ".bin")
+	binFile, _ := s.buildFilenameV2(id, BINARY_EXT)
 	os.Remove(binFile)
-	jsonFile, _ := s.buildFilenameV2(id, ".json")
+	jsonFile, _ := s.buildFilenameV2(id, DESCRIPTION_EXT)
 	os.Remove(jsonFile)
 	jsonFile, _ = s.buildRetentionFilename(id)
 	os.Remove(jsonFile)
@@ -132,7 +132,7 @@ func (s *SimpleFileBlobStorageDao) deleteFilesV2(id string) error {
 }
 
 func (s *SimpleFileBlobStorageDao) writeJsonFileV2(b *model.BlobDescription) error {
-	jsonFile, err := s.buildFilenameV2(b.BlobID, ".json")
+	jsonFile, err := s.buildFilenameV2(b.BlobID, DESCRIPTION_EXT)
 	if err != nil {
 		return err
 	}
