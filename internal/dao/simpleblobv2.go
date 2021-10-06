@@ -49,6 +49,26 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 	return &info, nil
 }
 
+func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
+	binFile, err := s.buildFilenameV2(id, ".bin")
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		return os.ErrNotExist
+	}
+	f, err := os.Open(binFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(w, f)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Reader) (string, error) {
 	uuid := uuid.NewString()
 	b.BlobID = uuid
@@ -57,20 +77,20 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 		return "", err
 	}
 	if (b.ContentLength > 0) && b.ContentLength != size {
-		s.deleteFileV2(uuid)
+		s.deleteFilesV2(uuid)
 		return "", fmt.Errorf("wrong content length %d=%d", b.ContentLength, size)
 	}
 	b.ContentLength = size
 	err = s.writeJsonFileV2(b)
 	if err != nil {
-		s.deleteFileV2(uuid)
+		s.deleteFilesV2(uuid)
 		return "", err
 	}
 
 	if b.Retention > 0 {
 		err = s.writeRetentionFile(b)
 		if err != nil {
-			s.deleteFileV2(uuid)
+			s.deleteFilesV2(uuid)
 			return "", err
 		}
 	}
@@ -79,7 +99,7 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 }
 
 func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64, error) {
-	binFile, err := s.buildFilename(id, ".bin")
+	binFile, err := s.buildFilenameV2(id, ".bin")
 	if err != nil {
 		return 0, err
 	}
@@ -101,16 +121,18 @@ func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64
 }
 
 //TODO implement error handling
-func (s *SimpleFileBlobStorageDao) deleteFileV2(id string) error {
-	binFile, _ := s.buildFilename(id, ".bin")
+func (s *SimpleFileBlobStorageDao) deleteFilesV2(id string) error {
+	binFile, _ := s.buildFilenameV2(id, ".bin")
 	os.Remove(binFile)
-	jsonFile, _ := s.buildFilename(id, ".json")
+	jsonFile, _ := s.buildFilenameV2(id, ".json")
+	os.Remove(jsonFile)
+	jsonFile, _ = s.buildRetentionFilename(id)
 	os.Remove(jsonFile)
 	return nil
 }
 
 func (s *SimpleFileBlobStorageDao) writeJsonFileV2(b *model.BlobDescription) error {
-	jsonFile, err := s.buildFilename(b.BlobID, ".json")
+	jsonFile, err := s.buildFilenameV2(b.BlobID, ".json")
 	if err != nil {
 		return err
 	}
@@ -149,7 +171,7 @@ func (s *SimpleFileBlobStorageDao) writeRetentionFile(b *model.BlobDescription) 
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) buildFilename(id string, ext string) (string, error) {
+func (s *SimpleFileBlobStorageDao) buildFilenameV2(id string, ext string) (string, error) {
 	fp := s.filepath
 	fp = filepath.Join(fp, id[:2])
 	fp = filepath.Join(fp, id[2:4])

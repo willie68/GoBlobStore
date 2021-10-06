@@ -101,10 +101,5 @@ func TestCRD(t *testing.T) {
 	}
 	assert.Equal(t, id, info.BlobID)
 
-	info, err = dao.GetBlobDescription("0000fc02-050a-418a-a701-efd814aa6b36")
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, "0000fc02-050a-418a-a701-efd814aa6b36", info.BlobID)
-
+	dao.DeleteBlob(id)
 }

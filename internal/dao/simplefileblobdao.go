@@ -55,12 +55,21 @@ func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDes
 	return info, nil
 }
 
-func (s *SimpleFileBlobStorageDao) RetrieveBlob(idStr string, writer io.Writer) error {
-	return errors.New("not implemented yet")
+func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) error {
+	err := s.getBlobV1(id, writer)
+	if err == os.ErrNotExist {
+		err = s.getBlobV2(id, writer)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return nil
 }
 
 func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
-	return errors.New("not implemented yet")
+	s.deleteFilesV1(id)
+	s.deleteFilesV2(id)
+	return nil
 }
 
 func (s *SimpleFileBlobStorageDao) Close() error {

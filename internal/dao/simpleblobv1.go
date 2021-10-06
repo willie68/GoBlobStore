@@ -3,6 +3,7 @@ package dao
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -27,6 +28,23 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV1(id string) (*model.BlobD
 	return &info, nil
 }
 
+func (s *SimpleFileBlobStorageDao) getBlobV1(id string, w io.Writer) error {
+	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s.bin", id))
+	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		return os.ErrNotExist
+	}
+	f, err := os.Open(binFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(w, f)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *SimpleFileBlobStorageDao) buildRetentionFilename(id string) (string, error) {
 	fp := s.filepath
 	fp = filepath.Join(fp, "retention")
@@ -35,4 +53,15 @@ func (s *SimpleFileBlobStorageDao) buildRetentionFilename(id string) (string, er
 		return "", err
 	}
 	return filepath.Join(fp, fmt.Sprintf("%s.json", id)), nil
+}
+
+//TODO implement error handling
+func (s *SimpleFileBlobStorageDao) deleteFilesV1(id string) error {
+	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s.bin", id))
+	os.Remove(binFile)
+	jsonFile := filepath.Join(s.filepath, fmt.Sprintf("%s.json", id))
+	os.Remove(jsonFile)
+	jsonFile, _ = s.buildRetentionFilename(id)
+	os.Remove(jsonFile)
+	return nil
 }
