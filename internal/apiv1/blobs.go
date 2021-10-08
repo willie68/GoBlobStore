@@ -6,10 +6,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
+	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
@@ -18,22 +19,7 @@ import (
 
 const Baseurl = "/api/v1"
 
-// RetentionHeader is the header for defining a retention time
-const RetentionHeader = "X-es-retention"
-
-// TenantHeader in this header thr right tenant should be inserted
-const TenantHeader = "X-es-tenant"
-
-// APIKeyHeader in this header thr right api key should be inserted
-const APIKeyHeader = "X-es-apikey"
-
-// SystemHeader in this header thr right system should be inserted
-const SystemHeader = "X-es-system"
-
-// all headers with this prefix will be saved, too
-const headerPrefix = "x-es"
-
-const timeout = 1 * time.Minute
+const BlobsSubpath = "/blobs"
 
 //APIKey the apikey of this service
 var APIKey string
@@ -44,19 +30,19 @@ var SystemID string
 // BlobStore the blobstorage implementation to use
 var BlobStore dao.BlobStorageDao
 
-func Routes() *chi.Mux {
+func BlobRoutes() *chi.Mux {
 	router := chi.NewRouter()
-	router.Post("/blobs", PostBlobEndpoint)
-	router.Get("/blobs", GetBlobsEndpoint)
-	router.Get("/blobs/{id}", GetBlobEndpoint)
-	router.Get("/blobs/{id}/info", GetBlobInfoEndpoint)
-	router.Delete("/blobs/{id}", DeleteBlobEndpoint)
-	router.Get("/blobs/{id}/resetretention", GetBlobResetRetentionEndpoint)
+	router.Post("/", PostBlobEndpoint)
+	router.Get("/", GetBlobsEndpoint)
+	router.Get("/{id}", GetBlobEndpoint)
+	router.Get("/{id}/info", GetBlobInfoEndpoint)
+	router.Delete("/{id}", DeleteBlobEndpoint)
+	router.Get("/{id}/resetretention", GetBlobResetRetentionEndpoint)
 	return router
 }
 
 func getBlobLocation(blobid string) string {
-	return fmt.Sprintf(Baseurl+"/blobs/%s", blobid)
+	return fmt.Sprintf(Baseurl+BlobsSubpath+"/%s", blobid)
 }
 
 /*
@@ -92,8 +78,10 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	response.Header().Add("Location", idStr)
-	response.Header().Add(RetentionHeader, strconv.FormatInt(int64(b.Retention), 10))
-	AddHeader(response, APIKey, SystemID)
+	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	if ok {
+		response.Header().Add(RetentionHeader, strconv.FormatInt(int64(b.Retention), 10))
+	}
 	response.Header().Set("Content-Type", b.ContentType)
 	response.WriteHeader(http.StatusOK)
 
@@ -217,15 +205,22 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		outputError(response, err)
 	}
 
-	var retentionTime int64
-	retention := request.Header.Get(RetentionHeader)
-	retentionTime, _ = strconv.ParseInt(retention, 10, 64)
+	var retentionTime int64 = 0
+	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	if ok {
+		retention := request.Header.Get(RetentionHeader)
+		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
+	}
 	mimeType := fileHeader.Header.Get("Content-type")
 
 	metadata := make(map[string]interface{})
-	for key := range request.Header {
-		if strings.HasPrefix(strings.ToLower(key), headerPrefix) {
-			metadata[key] = request.Header.Get(key)
+	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
+	if ok {
+		headerPrefix = strings.ToLower(headerPrefix)
+		for key := range request.Header {
+			if strings.HasPrefix(strings.ToLower(key), headerPrefix) {
+				metadata[key] = request.Header.Get(key)
+			}
 		}
 	}
 
@@ -254,7 +249,6 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	b.BlobURL = location
 	response.Header().Add("Location", location)
 	response.Header().Add(RetentionHeader, strconv.FormatInt(retentionTime, 10))
-	AddHeader(response, APIKey, SystemID)
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, b)
 }
@@ -304,15 +298,11 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 getTenant getting the tenant from the request
 */
 func getTenant(req *http.Request) string {
-	return req.Header.Get(TenantHeader)
-}
-
-/*
-AddHeader adding gefault header for system and apikey
-*/
-func AddHeader(response http.ResponseWriter, apikey string, system string) {
-	response.Header().Add(APIKeyHeader, apikey)
-	response.Header().Add(SystemHeader, system)
+	tenantHeader, ok := config.Get().HeaderMapping[api.TenantHeaderKey]
+	if ok {
+		return req.Header.Get(tenantHeader)
+	}
+	return ""
 }
 
 func outputError(response http.ResponseWriter, err error) {

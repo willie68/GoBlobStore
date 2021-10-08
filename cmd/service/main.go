@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
+	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/apiv1"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/crypt"
@@ -62,6 +63,20 @@ func apiRoutes() *chi.Mux {
 		middleware.Logger,
 		//middleware.DefaultCompress,
 		middleware.Recoverer,
+		api.SysAPIHandler(api.SysAPIConfig{
+			Apikey:           apikey,
+			HeaderKeyMapping: serviceConfig.HeaderMapping,
+			SkipFunc: func(r *http.Request) bool {
+				path := strings.TrimSuffix(r.URL.Path, "/")
+				if strings.HasSuffix(path, "/health") {
+					return true
+				}
+				if strings.HasSuffix(path, "/readiness") {
+					return true
+				}
+				return false
+			},
+		}),
 		cors.Handler(cors.Options{
 			// AllowedOrigins: []string{"https://foo.com"}, // Use this to allow specific origin hosts
 			AllowedOrigins: []string{"*"},
@@ -75,7 +90,8 @@ func apiRoutes() *chi.Mux {
 	)
 
 	router.Route("/", func(r chi.Router) {
-		r.Mount(apiv1.Baseurl, apiv1.Routes())
+		r.Mount(apiv1.Baseurl+apiv1.BlobsSubpath, apiv1.BlobRoutes())
+		r.Mount(apiv1.Baseurl+apiv1.ConfigSubpath, apiv1.ConfigRoutes())
 		r.Mount("/health", health.Routes())
 	})
 

@@ -10,6 +10,7 @@ import (
 var _ BlobStorageDao = &simplefile.SimpleFileBlobStorageDao{}
 
 var tenantStores map[string]*BlobStorageDao
+var tenantDao TenantDao
 
 var storageClass string
 var config map[string]interface{}
@@ -26,6 +27,39 @@ func Init(cnfg map[string]interface{}) error {
 	}
 	storageClass = stgClass
 	return nil
+}
+
+func GetTenantDao() (TenantDao, error) {
+	if tenantDao == nil {
+		tDao, err := createTenantDao()
+		if err != nil {
+			return nil, err
+		}
+		tenantDao = tDao
+	}
+	return tenantDao, nil
+}
+
+func createTenantDao() (TenantDao, error) {
+	switch storageClass {
+	case "SimpleFile":
+		if _, ok := config["rootpath"]; !ok {
+			return nil, fmt.Errorf("missing config value for %s", "rootpath")
+		}
+		rootpath, ok := config["rootpath"].(string)
+		if !ok {
+			return nil, fmt.Errorf("config value for %s is not a string", "rootpath")
+		}
+		dao := &simplefile.SimpleFileTenantManager{
+			RootPath: rootpath,
+		}
+		err := dao.Init()
+		if err != nil {
+			return nil, err
+		}
+		return dao, nil
+	}
+	return nil, fmt.Errorf("no tenantmanager class implementation for \"%s\" found", storageClass)
 }
 
 func GetStorageDao(tenant string) (BlobStorageDao, error) {

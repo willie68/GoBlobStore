@@ -25,6 +25,8 @@ type Config struct {
 	Logging LoggingConfig `yaml:"logging"`
 
 	Storage map[string]interface{} `yaml:"storage"`
+
+	HeaderMapping map[string]string `yaml:"headermapping"`
 }
 
 // HealthCheck configuration for the health check system
@@ -76,6 +78,8 @@ func ReplaceConfigdir(s string) (string, error) {
 	return s, nil
 }
 
+var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey"}
+
 var config = Config{
 	Port:       0,
 	Sslport:    0,
@@ -83,6 +87,7 @@ var config = Config{
 	HealthCheck: HealthCheck{
 		Period: 30,
 	},
+	HeaderMapping: defaultHeaderMapping,
 }
 
 // File the config file
@@ -106,6 +111,12 @@ func Load() error {
 	err = yaml.Unmarshal(data, &config)
 	if err != nil {
 		return fmt.Errorf("can't unmarshal config file: %s", err.Error())
+	}
+
+	for k, v := range defaultHeaderMapping {
+		if _, ok := config.HeaderMapping[k]; !ok {
+			config.HeaderMapping[k] = v
+		}
 	}
 
 	return readSecret()

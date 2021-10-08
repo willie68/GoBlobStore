@@ -10,3 +10,7 @@ logging:
 storage:
   storageclass: SimpleFile
   rootpath: h:/temp/blobstorage
+headermapping:
+  retention: X-es-retention
+  tenant: X-es-tenant
+  apikey: X-es-apikey

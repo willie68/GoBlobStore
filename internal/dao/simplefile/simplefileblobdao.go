@@ -10,10 +10,52 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+type SimpleFileTenantManager struct {
+	RootPath string // this is the root path for the file system storage
+}
+
 type SimpleFileBlobStorageDao struct {
 	RootPath string // this is the root path for the file system storage
 	Tenant   string // this is the tenant, on which this dao will work
 	filepath string // direct path to the tenant specifig sub path
+}
+
+func (s *SimpleFileTenantManager) Init() error {
+	return nil
+}
+
+func (s *SimpleFileTenantManager) AddTenant(tenant string) error {
+
+	tenantPath := filepath.Join(s.RootPath, tenant)
+
+	err := os.MkdirAll(tenantPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *SimpleFileTenantManager) RemoveTenant(tenant string) error {
+	if !s.HasTenant(tenant) {
+		return errors.New("tenant not exists")
+	}
+	tenantPath := filepath.Join(s.RootPath, tenant)
+	err := os.RemoveAll(tenantPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *SimpleFileTenantManager) HasTenant(tenant string) bool {
+	tenantPath := filepath.Join(s.RootPath, tenant)
+
+	if _, err := os.Stat(tenantPath); os.IsNotExist(err) {
+		return false
+	}
+
+	return true
 }
 
 func (s *SimpleFileBlobStorageDao) Init() error {
