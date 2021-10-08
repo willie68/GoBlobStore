@@ -1,7 +1,6 @@
 package apiv1
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -31,9 +30,9 @@ GetConfigEndpoint getting if a store for a tenant is initialised
 because of the automatic store creation, the value is more likely that data is stored for this tenant
 */
 func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -50,9 +49,9 @@ PostConfigEndpoint create a new store for a tenant
 because of the automatic store creation, this method will always return 201
 */
 func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -77,9 +76,9 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 DeleteConfigEndpoint deleting store for a tenant, this will automatically delete all data in the store
 */
 func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -103,10 +102,11 @@ func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 /*
 GetConfigSizeEndpoint size of the store for a tenant
 */
+//TODO missing implementation
 func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}

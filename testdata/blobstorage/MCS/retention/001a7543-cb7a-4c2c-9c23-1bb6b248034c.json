@@ -1,0 +1,16 @@
+{
+    "storeid": "MCS",
+    "contentLength": 10240,
+    "contentType": "application/pdf",
+    "creationDate": 1633349727253,
+    "filename": "file10k.dat",
+    "tenantID": "MCS",
+    "blobID": "001a7543-cb7a-4c2c-9c23-1bb6b248034c",
+    "lastAccess": 1633349727422,
+    "retention": 180000,
+    "X-retention": ["180000"],
+    "X-apikey": ["9DB6B3E13C150D6C000776A89409661E"],
+    "X-system": ["MCS1"],
+    "X-tenant": ["MCS"],
+    "hash": "sha-256:e96760a87768717bcebcfd25ddc7d46b4dbc95a4b0014def080c08539f7d90d0"
+}

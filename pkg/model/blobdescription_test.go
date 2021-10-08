@@ -16,7 +16,7 @@ func TestParsing(t *testing.T) {
 		ContentType:   "application/pdf",
 		CreationDate:  int(time.Now().UnixNano() / 1000000),
 		Filename:      "file.pdf",
-		TenantID:      "EASY",
+		TenantID:      "MCS",
 		BlobID:        "1234567890",
 		LastAccess:    int(time.Now().UnixNano() / 1000000),
 		Retention:     0,
@@ -24,7 +24,7 @@ func TestParsing(t *testing.T) {
 	}
 	blobDescription.Properties["X-es-user"] = []string{"Hallo", "Hallo2"}
 	blobDescription.Properties["X-es-retention"] = []int{123456}
-	blobDescription.Properties["X-es-tenant"] = "EASY"
+	blobDescription.Properties["X-es-tenant"] = "MCS"
 	jsonStr, err := json.MarshalIndent(blobDescription, "", "\t")
 	if err != nil {
 		t.Fatal(err)
@@ -57,5 +57,5 @@ func TestParsing(t *testing.T) {
 	if !ok {
 		t.Fatal("header not found")
 	}
-	assert.Equal(t, "EASY", tenant.(string))
+	assert.Equal(t, "MCS", tenant.(string))
 }

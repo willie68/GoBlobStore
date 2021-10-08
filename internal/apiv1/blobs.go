@@ -51,9 +51,9 @@ path parameter
 id: the id of the blob file
 */
 func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -99,9 +99,9 @@ path param:
 id: the id of the blob file
 */
 func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -136,10 +136,11 @@ GetBlobResetRetentionEndpoint restting the retention time of a blob to the new v
 path param:
 id: the id of the lob file
 */
+//TODO missing implementation
 func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	_, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -158,9 +159,9 @@ offset: the offset to start from
 limit: max count of blobs
 */
 func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -193,9 +194,9 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 PostBlobsEndpoint creating a new blob in the storage for the tenant.
 */
 func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -259,9 +260,9 @@ path param
 id: the id of the blob to remove
 */
 func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant := getTenant(request)
-	if tenant == "" {
-		msg := fmt.Sprintf("tenant header %s missing", httputils.TenantHeader)
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
@@ -292,17 +293,6 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	render.JSON(response, request, idStr)
-}
-
-/*
-getTenant getting the tenant from the request
-*/
-func getTenant(req *http.Request) string {
-	tenantHeader, ok := config.Get().HeaderMapping[api.TenantHeaderKey]
-	if ok {
-		return req.Header.Get(tenantHeader)
-	}
-	return ""
 }
 
 func outputError(response http.ResponseWriter, err error) {

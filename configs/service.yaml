@@ -11,6 +11,8 @@ storage:
   storageclass: SimpleFile
   rootpath: h:/temp/blobstorage
 headermapping:
+  headerprefix: x-
   retention: X-es-retention
   tenant: X-es-tenant
-  apikey: X-es-apikey
+  apikey: 
+#  apikey: X-es-apikey

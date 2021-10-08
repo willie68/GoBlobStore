@@ -10,4 +10,4 @@ const APIKeyHeaderKey = "apikey"
 const RetentionHeaderKey = "retention"
 
 // all headers with this prefix will be saved, too
-const HeaderPrefixKey = "x-"
+const HeaderPrefixKey = "headerprefix"

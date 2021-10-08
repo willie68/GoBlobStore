@@ -261,8 +261,6 @@ func main() {
 	clog.Logger.Info("finished")
 
 	os.Exit(0)
-
-	// clean up here
 }
 
 func initConfig() {

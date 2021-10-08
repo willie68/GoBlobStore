@@ -15,7 +15,7 @@ import (
 
 const (
 	rootpath = "../../../testdata/blobstorage"
-	tenant   = "EASY"
+	tenant   = "MCS"
 )
 
 func getStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
@@ -100,8 +100,8 @@ func TestCRD(t *testing.T) {
 	dao := getStoreageDao(t)
 
 	b := model.BlobDescription{
-		StoreID:       "EASY",
-		TenantID:      "EASY",
+		StoreID:       "MCS",
+		TenantID:      "MCS",
 		ContentLength: 22,
 		ContentType:   "text/plain",
 		CreationDate:  int(time.Now().UnixNano() / 1000000),
@@ -110,9 +110,9 @@ func TestCRD(t *testing.T) {
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}
-	b.Properties["X-es-user"] = []string{"Hallo", "Hallo2"}
-	b.Properties["X-es-retention"] = []int{123456}
-	b.Properties["X-es-tenant"] = "EASY"
+	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["X-retention"] = []int{123456}
+	b.Properties["X-tenant"] = "MCS"
 
 	r := strings.NewReader("this is a blob content")
 	id, err := dao.StoreBlob(&b, r)

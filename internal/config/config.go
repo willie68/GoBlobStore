@@ -39,9 +39,11 @@ type LoggingConfig struct {
 	Filename string `yaml:"filename"`
 }
 
+var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "headerprefix": "x-"}
+
 var DefaultConfig = Config{
-	Port:       9280,
-	Sslport:    0,
+	Port:       8000,
+	Sslport:    8443,
 	ServiceURL: "https://127.0.0.1:8443",
 	SecretFile: "",
 	HealthCheck: HealthCheck{
@@ -51,6 +53,7 @@ var DefaultConfig = Config{
 		Level:    "INFO",
 		Filename: "${configdir}/logging.log",
 	},
+	HeaderMapping: defaultHeaderMapping,
 }
 
 // GetDefaultConfigFolder returning the default configuration folder of the system
@@ -77,8 +80,6 @@ func ReplaceConfigdir(s string) (string, error) {
 	}
 	return s, nil
 }
-
-var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey"}
 
 var config = Config{
 	Port:       0,
