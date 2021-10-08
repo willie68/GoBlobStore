@@ -1,4 +1,4 @@
-package dao
+package simplefile
 
 import (
 	"bytes"
@@ -13,17 +13,54 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-func TestList(t *testing.T) {
+const (
+	rootpath = "../../../testdata/blobstorage"
+	tenant   = "EASY"
+)
+
+func getStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
 	dao := SimpleFileBlobStorageDao{
-		RootPath: "../../testdata/blobstorage",
-		Tenant:   "EASY",
+		RootPath: rootpath,
+		Tenant:   tenant,
 	}
 	err := dao.Init()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return dao
+}
+func TestTenanthandling(t *testing.T) {
+	// Tenant nil
+	dao := SimpleFileBlobStorageDao{
+		RootPath: rootpath,
+	}
+	err := dao.Init()
+	assert.NotNil(t, err)
 
-	srcPath, _ := filepath.Abs("../../testdata/blobstorage/EASY")
+	// Tenant empty
+	dao = SimpleFileBlobStorageDao{
+		RootPath: rootpath,
+		Tenant:   "",
+	}
+	err = dao.Init()
+	assert.NotNil(t, err)
+}
+
+func TestNotFound(t *testing.T) {
+	dao := getStoreageDao(t)
+
+	_, err := dao.GetBlobDescription("wrongid")
+	assert.NotNil(t, err)
+
+	var b bytes.Buffer
+	err = dao.RetrieveBlob("wrongid", &b)
+	assert.NotNil(t, err)
+}
+
+func TestList(t *testing.T) {
+	dao := getStoreageDao(t)
+
+	srcPath, _ := filepath.Abs(filepath.Join(rootpath, tenant))
 	assert.Equal(t, srcPath, dao.filepath)
 
 	blobs, err := dao.GetBlobs(0, 10)
@@ -38,17 +75,11 @@ func TestList(t *testing.T) {
 	for _, blobid := range blobs {
 		fmt.Println(blobid)
 	}
+	dao.Close()
 }
 
 func TestInfo(t *testing.T) {
-	dao := SimpleFileBlobStorageDao{
-		RootPath: "../../testdata/blobstorage",
-		Tenant:   "EASY",
-	}
-	err := dao.Init()
-	if err != nil {
-		t.Fatal(err)
-	}
+	dao := getStoreageDao(t)
 
 	info, err := dao.GetBlobDescription("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
 	if err != nil {
@@ -62,17 +93,12 @@ func TestInfo(t *testing.T) {
 	}
 	assert.Equal(t, "0000fc02-050a-418a-a701-efd814aa6b36", info.BlobID)
 
+	dao.Close()
 }
 
 func TestCRD(t *testing.T) {
-	dao := SimpleFileBlobStorageDao{
-		RootPath: "../../testdata/blobstorage",
-		Tenant:   "EASY",
-	}
-	err := dao.Init()
-	if err != nil {
-		t.Fatal(err)
-	}
+	dao := getStoreageDao(t)
+
 	b := model.BlobDescription{
 		StoreID:       "EASY",
 		TenantID:      "EASY",
@@ -115,4 +141,6 @@ func TestCRD(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	dao.Close()
 }

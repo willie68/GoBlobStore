@@ -3,7 +3,11 @@ package dao
 import (
 	"errors"
 	"fmt"
+
+	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 )
+
+var _ BlobStorageDao = &simplefile.SimpleFileBlobStorageDao{}
 
 var tenantStores map[string]*BlobStorageDao
 
@@ -47,7 +51,7 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 		if !ok {
 			return nil, fmt.Errorf("config value for %s is not a string", "rootpath")
 		}
-		dao := &SimpleFileBlobStorageDao{
+		dao := &simplefile.SimpleFileBlobStorageDao{
 			RootPath: rootpath,
 			Tenant:   tenant,
 		}

@@ -3,6 +3,7 @@ package apiv1
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -79,6 +80,10 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 
 	b, err := storage.GetBlobDescription(idStr)
 	if err != nil {
+		if os.IsNotExist(err) {
+			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+			return
+		}
 		outputError(response, err)
 		return
 	}
@@ -121,12 +126,16 @@ func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 
 	b, err := storage.GetBlobDescription(idStr)
-	if b == nil {
-		httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+	if err != nil {
+		if os.IsNotExist(err) {
+			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+			return
+		}
+		outputError(response, err)
 		return
 	}
-	if err != nil {
-		outputError(response, err)
+	if b == nil {
+		httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
 		return
 	}
 	b.BlobURL = getBlobLocation(b.BlobID)
@@ -176,10 +185,6 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	// for k, v := range values {
-	// 	fmt.Printf("param: %s = %s\n", k, v)
-	// }
-	//datas := make([]BarrelData, 0)
 	offset := 0
 	if values["offset"] != nil {
 		offset, _ = strconv.Atoi(values["offset"][0])
@@ -275,6 +280,14 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	idStr := chi.URLParam(request, "id")
 
 	b, err := storage.GetBlobDescription(idStr)
+	if err != nil {
+		if os.IsNotExist(err) {
+			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+			return
+		}
+		outputError(response, err)
+		return
+	}
 	if b == nil {
 		httputils.Err(response, request, serror.NotFound("blob", idStr, err))
 		return

@@ -1,4 +1,4 @@
-package dao
+package simplefile
 
 import (
 	"encoding/json"
@@ -36,6 +36,10 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 	fp = filepath.Join(fp, id[:2])
 	fp = filepath.Join(fp, id[2:4])
 	jsonFile := filepath.Join(fp, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
+
+	if _, err := os.Stat(jsonFile); os.IsNotExist(err) {
+		return nil, os.ErrNotExist
+	}
 
 	dat, err := os.ReadFile(jsonFile)
 	if err != nil {

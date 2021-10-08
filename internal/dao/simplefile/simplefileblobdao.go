@@ -1,4 +1,4 @@
-package dao
+package simplefile
 
 import (
 	"errors"
@@ -73,5 +73,5 @@ func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
 }
 
 func (s *SimpleFileBlobStorageDao) Close() error {
-	return errors.New("not implemented yet")
+	return nil
 }

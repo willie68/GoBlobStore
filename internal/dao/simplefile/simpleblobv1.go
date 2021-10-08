@@ -1,4 +1,4 @@
-package dao
+package simplefile
 
 import (
 	"encoding/json"
