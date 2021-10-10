@@ -9,7 +9,9 @@ logging:
   filename: ""
 storage:
   storageclass: SimpleFile
-  rootpath: h:/temp/blobstorage
+  rootpath: ./testdata/blobstorage
+  retentionManager: SingleRetention
+  
 headermapping:
   headerprefix: x-
   retention: X-es-retention

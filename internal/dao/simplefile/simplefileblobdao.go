@@ -114,6 +114,20 @@ func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
 	return nil
 }
 
+//GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
+func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
+	return errors.New("not yet implemented")
+}
+func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
+	return errors.New("not yet implemented")
+}
+func (s *SimpleFileBlobStorageDao) DeleteRetention(r *model.RetentionEntry) error {
+	return errors.New("not yet implemented")
+}
+func (s *SimpleFileBlobStorageDao) ResetRetention(r *model.RetentionEntry) error {
+	return errors.New("not yet implemented")
+}
+
 func (s *SimpleFileBlobStorageDao) Close() error {
 	return nil
 }
