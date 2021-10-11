@@ -1,6 +1,7 @@
 package simplefile
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -98,8 +100,30 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 			return "", err
 		}
 	}
-
+	go s.buildHash(uuid)
 	return uuid, nil
+}
+
+func (s *SimpleFileBlobStorageDao) buildHash(id string) {
+	d, err := s.getBlobDescriptionV2(id)
+	if err != nil {
+		clog.Logger.Errorf("buildHash: error getting descritpion for: %s\r\n%v", id, err)
+		return
+	}
+
+	h := sha256.New()
+	err = s.getBlobV2(id, h)
+	if err != nil {
+		clog.Logger.Errorf("buildHash: error building sha 256 hash for: %s\r\n%v", id, err)
+		return
+	}
+	d.Hash = fmt.Sprintf("sha-256:%x", h.Sum(nil))
+
+	err = s.writeJsonFileV2(d)
+	if err != nil {
+		clog.Logger.Errorf("buildHash: error writing description for: %s\r\n%v", id, err)
+		return
+	}
 }
 
 func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64, error) {

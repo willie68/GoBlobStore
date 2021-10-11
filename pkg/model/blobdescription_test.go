@@ -21,6 +21,7 @@ func TestParsing(t *testing.T) {
 		LastAccess:    int(time.Now().UnixNano() / 1000000),
 		Retention:     0,
 		Properties:    make(map[string]interface{}),
+		Hash:          "sha-256:fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
 	}
 	blobDescription.Properties["X-es-user"] = []string{"Hallo", "Hallo2"}
 	blobDescription.Properties["X-es-retention"] = []int{123456}

@@ -15,6 +15,7 @@ type BlobDescription struct {
 	LastAccess    int    `yaml:"lastAccess" json:"lastAccess"`
 	Retention     int64  `yaml:"retention" json:"retention"`
 	BlobURL       string `yaml:"blobUrl" json:"blobUrl"`
+	Hash          string `yaml:"hash" json:"hash"`
 	Properties    map[string]interface{}
 }
 
@@ -29,6 +30,7 @@ func (b BlobDescription) MarshalJSON() ([]byte, error) {
 	mymap["blobID"] = b.BlobID
 	mymap["lastAccess"] = b.LastAccess
 	mymap["retention"] = b.Retention
+	mymap["hash"] = b.Hash
 	for k, v := range b.Properties {
 		mymap[k] = v
 	}
@@ -46,6 +48,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 		BlobID        string `yaml:"blobID"`
 		LastAccess    int    `yaml:"lastAccess"`
 		Retention     int64  `yaml:"retention"`
+		Hash          string `yaml:"hash"`
 	}{}
 	err := json.Unmarshal(data, &blob)
 	if err != nil {
@@ -66,6 +69,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	delete(mymap, "blobID")
 	delete(mymap, "lastAccess")
 	delete(mymap, "retention")
+	delete(mymap, "hash")
 
 	b.BlobID = blob.BlobID
 	b.ContentLength = blob.ContentLength
@@ -76,6 +80,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	b.Retention = blob.Retention
 	b.StoreID = blob.StoreID
 	b.TenantID = blob.TenantID
+	b.Hash = blob.Hash
 	b.Properties = mymap
 	return nil
 }
