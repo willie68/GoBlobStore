@@ -110,5 +110,15 @@ func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) 
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	render.JSON(response, request, tenant)
+	dao, err := dao.GetTenantDao()
+	if err != nil {
+		outputError(response, err)
+		return
+	}
+	if !dao.HasTenant(tenant) {
+		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
+		return
+	}
+	size := dao.GetSize(tenant)
+	render.JSON(response, request, size)
 }

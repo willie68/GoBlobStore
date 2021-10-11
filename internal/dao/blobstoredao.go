@@ -34,4 +34,5 @@ type TenantDao interface {
 	AddTenant(tenant string) error
 	RemoveTenant(tenant string) error
 	HasTenant(tenant string) bool
+	GetSize(tenant string) int64
 }

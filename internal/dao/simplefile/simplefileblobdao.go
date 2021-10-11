@@ -58,6 +58,28 @@ func (s *SimpleFileTenantManager) HasTenant(tenant string) bool {
 	return true
 }
 
+func (s *SimpleFileTenantManager) GetSize(tenant string) int64 {
+	if !s.HasTenant(tenant) {
+		return -1
+	}
+	tenantPath := filepath.Join(s.RootPath, tenant)
+
+	if _, err := os.Stat(tenantPath); os.IsNotExist(err) {
+		return 0
+	}
+
+	var dirSize int64 = 0
+	readSize := func(path string, file os.FileInfo, err error) error {
+		if !file.IsDir() {
+			dirSize += file.Size()
+		}
+		return nil
+	}
+
+	filepath.Walk(tenantPath, readSize)
+	return dirSize
+}
+
 func (s *SimpleFileBlobStorageDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
