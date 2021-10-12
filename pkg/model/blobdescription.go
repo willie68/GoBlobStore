@@ -39,16 +39,16 @@ func (b BlobDescription) MarshalJSON() ([]byte, error) {
 
 func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	blob := struct {
-		StoreID       string `yaml:"storeid"`
-		ContentLength int64  `yaml:"contentLength"`
-		ContentType   string `yaml:"contentType"`
-		CreationDate  int    `yaml:"creationDate"`
-		Filename      string `yaml:"filename"`
-		TenantID      string `yaml:"tenantID"`
-		BlobID        string `yaml:"blobID"`
-		LastAccess    int    `yaml:"lastAccess"`
-		Retention     int64  `yaml:"retention"`
-		Hash          string `yaml:"hash"`
+		StoreID       string `yaml:"storeid" json:"storeid"`
+		ContentLength int64  `yaml:"contentLength" json:"contentLength"`
+		ContentType   string `yaml:"contentType" json:"contentType"`
+		CreationDate  int    `yaml:"creationDate" json:"creationDate"`
+		Filename      string `yaml:"filename" json:"filename"`
+		TenantID      string `yaml:"tenantID" json:"tenantID"`
+		BlobID        string `yaml:"blobID" json:"blobID"`
+		LastAccess    int    `yaml:"lastAccess" json:"lastAccess"`
+		Retention     int64  `yaml:"retention" json:"retention"`
+		Hash          string `yaml:"hash" json:"hash"`
 	}{}
 	err := json.Unmarshal(data, &blob)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -233,6 +234,7 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		Retention:     retentionTime,
 		Filename:      fileHeader.Filename,
 		Properties:    metadata,
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
 	}
 	storage, err := dao.GetStorageDao(tenant)
 	if err != nil {

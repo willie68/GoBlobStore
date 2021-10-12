@@ -31,6 +31,8 @@ type BlobStorageDao interface {
 type TenantDao interface {
 	Init() error // initialise this dao
 
+	GetTenants() ([]string, error)
+
 	AddTenant(tenant string) error
 	RemoveTenant(tenant string) error
 	HasTenant(tenant string) bool

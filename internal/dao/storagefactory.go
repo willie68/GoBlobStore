@@ -32,7 +32,12 @@ func Init(cnfg map[string]interface{}) error {
 	if !ok || rtgMgrStr == "" {
 		return errors.New("no retention class given")
 	}
-	err := createRetentionManager()
+	tntDao, err := createTenantDao()
+	if err != nil {
+		return err
+	}
+	tenantDao = tntDao
+	err = createRetentionManager()
 	if err != nil {
 		return err
 	}
@@ -122,8 +127,10 @@ func createRetentionManager() error {
 	//This is the single node retention manager
 	case "SingleRetention":
 		retMgn = &SingleRetentionManager{
-			tntDao: tenantDao,
+			tntDao:  tenantDao,
+			maxSize: 10000,
 		}
+		retMgn.Init()
 	default:
 		return fmt.Errorf("no rentention manager found for class: %s", rtgMgrStr)
 	}

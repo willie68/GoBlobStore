@@ -10,3 +10,4 @@ features
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based or basic auth access control 
 
+Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase
