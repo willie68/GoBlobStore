@@ -53,7 +53,7 @@ func (s *SingleRetentionManager) Init() error {
 func (s *SingleRetentionManager) processRetention() error {
 	actualTime := time.Now().Unix() * 1000
 	for x, v := range s.retentionList {
-		if v.GetRetentionTimestamp() < actualTime {
+		if v.GetRetentionTimestampMS() < actualTime {
 			dao, err := GetStorageDao(v.TenantID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
@@ -103,7 +103,7 @@ func (s *SingleRetentionManager) refereshRetention() error {
 func (s *SingleRetentionManager) pushToList(r model.RetentionEntry) {
 	s.retentionList = append(s.retentionList, r)
 	i := sort.Search(len(s.retentionList), func(i int) bool {
-		return s.retentionList[i].GetRetentionTimestamp() > r.GetRetentionTimestamp()
+		return s.retentionList[i].GetRetentionTimestampMS() > r.GetRetentionTimestampMS()
 	})
 	s.retentionList = insertAt(s.retentionList, i, r)
 	if len(s.retentionList) > s.maxSize {

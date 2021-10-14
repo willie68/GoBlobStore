@@ -9,7 +9,7 @@ type RetentionEntry struct {
 	RetentionBase int    `yaml:"retentionBase" json:"retentionBase"`
 }
 
-func (r *RetentionEntry) GetRetentionTimestamp() int64 {
+func (r *RetentionEntry) GetRetentionTimestampMS() int64 {
 	if r.RetentionBase > 0 {
 		return int64(r.RetentionBase) + r.Retention*60*1000
 	}
