@@ -93,13 +93,6 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 		return "", err
 	}
 
-	if b.Retention > 0 {
-		err = s.writeRetentionFile(b)
-		if err != nil {
-			s.deleteFilesV2(uuid)
-			return "", err
-		}
-	}
 	go s.buildHash(uuid)
 	return uuid, nil
 }
@@ -197,6 +190,15 @@ func (s *SimpleFileBlobStorageDao) writeRetentionFile(b *model.BlobDescription) 
 	}
 
 	return nil
+}
+
+func (s *SimpleFileBlobStorageDao) deleteRetentionFile(id string) error {
+	jsonFile, err := s.buildRetentionFilename(id)
+	if err != nil {
+		return err
+	}
+	err = os.Remove(jsonFile)
+	return err
 }
 
 func (s *SimpleFileBlobStorageDao) buildFilenameV2(id string, ext string) (string, error) {

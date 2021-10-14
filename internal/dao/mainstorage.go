@@ -24,10 +24,12 @@ func (m *mainStorageDao) GetBlobs(offset int, limit int) ([]string, error) {
 
 // StoreBlob storing a blob to the storage system
 func (m *mainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
-	if m.retMng != nil {
-		m.retMng.AddRetention(m.tenant, b)
+	id, err := m.storageDao.StoreBlob(b, f)
+	b.BlobID = id
+	if err == nil && m.retMng != nil {
+		err = m.retMng.AddRetention(m.tenant, b)
 	}
-	return m.storageDao.StoreBlob(b, f)
+	return id, err
 }
 
 // GetBlobDescription getting the description of the file

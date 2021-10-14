@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -22,6 +23,8 @@ type SimpleFileBlobStorageDao struct {
 	Tenant   string // this is the tenant, on which this dao will work
 	filepath string // direct path to the tenant specifig sub path
 }
+
+const retentionBaseKey = "retentionBase"
 
 func (s *SimpleFileTenantManager) Init() error {
 	return nil
@@ -192,15 +195,26 @@ func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.Retent
 }
 
 func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
-	return errors.New("not yet implemented")
+	b, err := s.GetBlobDescription(r.BlobID)
+	if err != nil {
+		return err
+	}
+	b.Retention = r.Retention
+	b.Properties[retentionBaseKey] = r.RetentionBase
+	return s.writeRetentionFile(b)
 }
 
 func (s *SimpleFileBlobStorageDao) DeleteRetention(r *model.RetentionEntry) error {
-	return errors.New("not yet implemented")
+	b, err := s.GetBlobDescription(r.BlobID)
+	if err != nil {
+		return err
+	}
+	return s.deleteRetentionFile(b.BlobID)
 }
 
 func (s *SimpleFileBlobStorageDao) ResetRetention(r *model.RetentionEntry) error {
-	return errors.New("not yet implemented")
+	r.RetentionBase = int(time.Now().UnixNano() / 1000000)
+	return s.AddRetention(r)
 }
 
 func (s *SimpleFileBlobStorageDao) Close() error {
