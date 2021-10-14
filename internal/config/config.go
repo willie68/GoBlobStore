@@ -39,7 +39,7 @@ type LoggingConfig struct {
 	Filename string `yaml:"filename"`
 }
 
-var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "headerprefix": "x-"}
+var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", "headerprefix": "x-"}
 
 var DefaultConfig = Config{
 	Port:       8000,

@@ -2,6 +2,7 @@ package dao
 
 import (
 	"sort"
+	"time"
 
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -14,28 +15,86 @@ type SingleRetentionManager struct {
 	tntDao        TenantDao
 	retentionList []model.RetentionEntry
 	maxSize       int
+	background    *time.Ticker
+	quit          chan bool
 }
 
 // Init initialise the retention manager, creating the list of retention entries
 func (s *SingleRetentionManager) Init() error {
 	s.retentionList = make([]model.RetentionEntry, 0)
-	tenants, err := s.tntDao.GetTenants()
+	err := s.refereshRetention()
 	if err != nil {
+		clog.Logger.Errorf("RetMgr: error on refresh: %v", err)
 		return err
 	}
-	for _, t := range tenants {
+	s.background = time.NewTicker(60 * time.Second)
+	s.quit = make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-s.background.C:
+				err := s.processRetention()
+				if err != nil {
+					clog.Logger.Errorf("RetMgr: error on process: %v", err)
+				}
+				err = s.refereshRetention()
+				if err != nil {
+					clog.Logger.Errorf("RetMgr: error on refresh: %v", err)
+				}
+			case <-s.quit:
+				s.background.Stop()
+				return
+			}
+		}
+	}()
+	return nil
+}
+
+func (s *SingleRetentionManager) processRetention() error {
+	actualTime := time.Now().Unix() * 1000
+	for x, v := range s.retentionList {
+		if v.GetRetentionTimestamp() < actualTime {
+			dao, err := GetStorageDao(v.TenantID)
+			if err != nil {
+				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
+				continue
+			}
+			err = dao.DeleteBlob(v.BlobID)
+			if err != nil {
+				clog.Logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
+				continue
+			}
+			s.removeEntry(x)
+		}
+	}
+	return nil
+}
+
+func (s *SingleRetentionManager) removeEntry(i int) {
+	if len(s.retentionList) > i {
+		// Remove the element at index i from a.
+		if i < len(s.retentionList)-1 {
+			copy(s.retentionList[i:], s.retentionList[i+1:]) // Shift a[i+1:] left one index.
+		}
+		s.retentionList = s.retentionList[:len(s.retentionList)-1] // Truncate slice.
+	}
+}
+
+func (s *SingleRetentionManager) refereshRetention() error {
+	err := s.tntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
 		dao, err := GetStorageDao(t)
 		if err != nil {
-			return err
+			return true
 		}
-		err = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+		_ = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
 			s.pushToList(r)
 			return true
 		})
-		if err != nil {
-			return err
-		}
+		return true
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -83,5 +142,10 @@ func (s *SingleRetentionManager) AddRetention(tenant string, b *model.BlobDescri
 		}
 		s.pushToList(re)
 	}
+	return nil
+}
+
+func (s *SingleRetentionManager) Close() error {
+	s.quit <- true
 	return nil
 }

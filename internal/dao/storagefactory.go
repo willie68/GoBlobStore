@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
+	clog "github.com/willie68/GoBlobStore/internal/logging"
 )
 
 var _ BlobStorageDao = &simplefile.SimpleFileBlobStorageDao{}
@@ -12,8 +13,8 @@ var _ BlobStorageDao = &simplefile.SimpleFileBlobStorageDao{}
 var tenantStores map[string]*BlobStorageDao
 var tenantDao TenantDao
 
-var rtgMgrStr string
-var retMgn RetentionManager
+var rtnMgrStr string
+var rtnMgr RetentionManager
 
 var storageClass string
 var config map[string]interface{}
@@ -28,8 +29,8 @@ func Init(cnfg map[string]interface{}) error {
 	}
 	storageClass = stgClass
 
-	rtgMgrStr, ok = cnfg["retentionManager"].(string)
-	if !ok || rtgMgrStr == "" {
+	rtnMgrStr, ok = cnfg["retentionManager"].(string)
+	if !ok || rtnMgrStr == "" {
 		return errors.New("no retention class given")
 	}
 	tntDao, err := createTenantDao()
@@ -113,7 +114,7 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 			return nil, err
 		}
 		return &mainStorageDao{
-			retMng:     retMgn,
+			retMng:     rtnMgr,
 			storageDao: dao,
 			tenant:     tenant,
 		}, nil
@@ -123,16 +124,37 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 
 // createRetentionManager creates a new Retention manager depending o nthe configuration
 func createRetentionManager() error {
-	switch rtgMgrStr {
+	switch rtnMgrStr {
 	//This is the single node retention manager
 	case "SingleRetention":
-		retMgn = &SingleRetentionManager{
+		rtnMgr = &SingleRetentionManager{
 			tntDao:  tenantDao,
 			maxSize: 10000,
 		}
-		retMgn.Init()
+		rtnMgr.Init()
 	default:
-		return fmt.Errorf("no rentention manager found for class: %s", rtgMgrStr)
+		return fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
 	}
 	return nil
+}
+
+func Close() {
+	var tDao BlobStorageDao
+	for k, v := range tenantStores {
+		tDao = *v
+		err := tDao.Close()
+		if err != nil {
+			clog.Logger.Errorf("error closing tenant storage dao: %s\r\n%v,", k, err)
+		}
+	}
+
+	err := rtnMgr.Close()
+	if err != nil {
+		clog.Logger.Errorf("error closing retention manager:\r\n%v,", err)
+	}
+
+	err = tenantDao.Close()
+	if err != nil {
+		clog.Logger.Errorf("error closing tenant dao:\r\n%v,", err)
+	}
 }

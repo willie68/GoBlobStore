@@ -31,10 +31,12 @@ type BlobStorageDao interface {
 type TenantDao interface {
 	Init() error // initialise this dao
 
-	GetTenants() ([]string, error)
+	GetTenants(callback func(tenant string) bool) error
 
 	AddTenant(tenant string) error
 	RemoveTenant(tenant string) error
 	HasTenant(tenant string) bool
 	GetSize(tenant string) int64
+
+	Close() error
 }

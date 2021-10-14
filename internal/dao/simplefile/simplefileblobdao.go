@@ -27,18 +27,20 @@ func (s *SimpleFileTenantManager) Init() error {
 	return nil
 }
 
-func (s *SimpleFileTenantManager) GetTenants() ([]string, error) {
-	tenants := make([]string, 0)
+func (s *SimpleFileTenantManager) GetTenants(callback func(tenant string) bool) error {
 	infos, err := ioutil.ReadDir(s.RootPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, i := range infos {
 		if !strings.HasPrefix(i.Name(), "_") {
-			tenants = append(tenants, i.Name())
+			ok := callback(i.Name())
+			if !ok {
+				return nil
+			}
 		}
 	}
-	return tenants, nil
+	return nil
 }
 
 func (s *SimpleFileTenantManager) AddTenant(tenant string) error {
@@ -97,6 +99,11 @@ func (s *SimpleFileTenantManager) GetSize(tenant string) int64 {
 	return dirSize
 }
 
+func (s *SimpleFileTenantManager) Close() error {
+	return nil
+}
+
+//---- SimpleFileBlobStorageDao
 func (s *SimpleFileBlobStorageDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
@@ -156,23 +163,25 @@ func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
 //GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	retCbk := func(path string, file os.FileInfo, err error) error {
-		if !file.IsDir() {
-			dat, err := os.ReadFile(path)
-			if err != nil {
-				clog.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
+		if file != nil {
+			if !file.IsDir() {
+				dat, err := os.ReadFile(path)
+				if err != nil {
+					clog.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
+					return nil
+				}
+				ety := model.RetentionEntry{}
+				err = json.Unmarshal(dat, &ety)
+				if err != nil {
+					clog.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
+					return nil
+				}
+				ok := callback(ety)
+				if !ok {
+					return filepath.SkipDir
+				}
 				return nil
 			}
-			ety := model.RetentionEntry{}
-			err = json.Unmarshal(dat, &ety)
-			if err != nil {
-				clog.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
-				return nil
-			}
-			ok := callback(ety)
-			if !ok {
-				return filepath.SkipDir
-			}
-			return nil
 		}
 		return nil
 	}

@@ -2,6 +2,7 @@ package apiv1
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -78,6 +79,11 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
 		return
 	}
+
+	for k, v := range b.Properties {
+		response.Header().Set(k, v.(string))
+	}
+
 	response.Header().Add("Location", idStr)
 	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
 	if ok {
@@ -201,10 +207,39 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	request.ParseForm()
-	f, fileHeader, err := request.FormFile("file")
-	if err != nil {
-		outputError(response, err)
+	mimeType := request.Header.Get("Content-Type")
+	var cntLength int64
+	var filename string
+	var f io.Reader
+	if strings.HasPrefix(mimeType, "multipart/form-data") {
+		err := request.ParseMultipartForm(1024 * 1024 * 1024)
+		if err != nil {
+			outputError(response, err)
+			return
+		}
+		mpf, fileHeader, err := request.FormFile("file")
+		if err != nil {
+			outputError(response, err)
+			return
+		}
+
+		mimeType = fileHeader.Header.Get("Content-type")
+		cntLength = fileHeader.Size
+		filename = fileHeader.Filename
+		f = mpf
+	} else {
+		f = request.Body
+		if err != nil {
+			outputError(response, err)
+			return
+		}
+		cntLength = -1
+		filename = "data.bin"
+
+		FilenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
+		if ok {
+			filename = request.Header.Get(FilenameHeader)
+		}
 	}
 
 	var retentionTime int64 = 0
@@ -213,7 +248,6 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		retention := request.Header.Get(RetentionHeader)
 		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
 	}
-	mimeType := fileHeader.Header.Get("Content-type")
 
 	metadata := make(map[string]interface{})
 	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
@@ -229,10 +263,10 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	b := model.BlobDescription{
 		StoreID:       tenant,
 		TenantID:      tenant,
-		ContentLength: fileHeader.Size,
+		ContentLength: cntLength,
 		ContentType:   mimeType,
 		Retention:     retentionTime,
-		Filename:      fileHeader.Filename,
+		Filename:      filename,
 		Properties:    metadata,
 		CreationDate:  int(time.Now().UnixNano() / 1000000),
 	}

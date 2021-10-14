@@ -9,7 +9,7 @@ logging:
   filename: ""
 storage:
   storageclass: SimpleFile
-  rootpath: ./testdata/blbstg
+  rootpath: H:/temp/blbstg
   retentionManager: SingleRetention
   
 headermapping:
