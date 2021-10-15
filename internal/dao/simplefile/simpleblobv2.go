@@ -192,6 +192,25 @@ func (s *SimpleFileBlobStorageDao) writeRetentionFile(b *model.BlobDescription) 
 	return nil
 }
 
+func (s *SimpleFileBlobStorageDao) getRetention(id string) (*model.RetentionEntry, error) {
+	jsonFile, err := s.buildRetentionFilename(id)
+	if err != nil {
+		return nil, err
+	}
+	dat, err := os.ReadFile(jsonFile)
+	if err != nil {
+		clog.Logger.Errorf("GetRetention: error getting file data for: %s\r\n%v", jsonFile, err)
+		return nil, err
+	}
+	r := model.RetentionEntry{}
+	err = json.Unmarshal(dat, &r)
+	if err != nil {
+		clog.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", jsonFile, err)
+		return nil, err
+	}
+	return &r, nil
+}
+
 func (s *SimpleFileBlobStorageDao) deleteRetentionFile(id string) error {
 	jsonFile, err := s.buildRetentionFilename(id)
 	if err != nil {

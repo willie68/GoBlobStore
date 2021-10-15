@@ -1,6 +1,7 @@
 package dao
 
 import (
+	"errors"
 	"sort"
 	"time"
 
@@ -83,14 +84,6 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.tntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
-		dao, err := GetStorageDao(t)
-		if err != nil {
-			return true
-		}
-		_ = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
-			s.pushToList(r)
-			return true
-		})
 		return true
 	})
 	if err != nil {
@@ -121,28 +114,32 @@ func insertAt(data []model.RetentionEntry, i int, v model.RetentionEntry) []mode
 	return data
 }
 
+func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r model.RetentionEntry) bool) error {
+	return errors.New("not implemented yet")
+}
+
 //AddRetention adding a new retention to the retention manager
-func (s *SingleRetentionManager) AddRetention(tenant string, b *model.BlobDescription) error {
-	if b.Retention > 0 {
+func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionEntry) error {
+	if r.Retention > 0 {
 		stgDao, err := GetStorageDao(tenant)
 		if err != nil {
 			return err
 		}
-		re := model.RetentionEntry{
-			BlobID:        b.BlobID,
-			CreationDate:  b.CreationDate,
-			Filename:      b.Filename,
-			Retention:     b.Retention,
-			RetentionBase: 0,
-			TenantID:      tenant,
-		}
-		err = stgDao.AddRetention(&re)
+		err = stgDao.AddRetention(r)
 		if err != nil {
 			return err
 		}
-		s.pushToList(re)
+		s.pushToList(*r)
 	}
 	return nil
+}
+
+func (s *SingleRetentionManager) DeleteRetention(tenant string, id string) error {
+	return errors.New("not implemented yet")
+}
+
+func (s *SingleRetentionManager) ResetRetention(tenant string, id string) error {
+	return errors.New("not implemented yet")
 }
 
 func (s *SingleRetentionManager) Close() error {

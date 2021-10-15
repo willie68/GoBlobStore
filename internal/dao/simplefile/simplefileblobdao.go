@@ -204,15 +204,19 @@ func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
 	return s.writeRetentionFile(b)
 }
 
-func (s *SimpleFileBlobStorageDao) DeleteRetention(r *model.RetentionEntry) error {
-	b, err := s.GetBlobDescription(r.BlobID)
+func (s *SimpleFileBlobStorageDao) DeleteRetention(id string) error {
+	_, err := s.GetBlobDescription(id)
 	if err != nil {
 		return err
 	}
-	return s.deleteRetentionFile(b.BlobID)
+	return s.deleteRetentionFile(id)
 }
 
-func (s *SimpleFileBlobStorageDao) ResetRetention(r *model.RetentionEntry) error {
+func (s *SimpleFileBlobStorageDao) ResetRetention(id string) error {
+	r, err := s.getRetention(id)
+	if err != nil {
+		return err
+	}
 	r.RetentionBase = int(time.Now().UnixNano() / 1000000)
 	return s.AddRetention(r)
 }

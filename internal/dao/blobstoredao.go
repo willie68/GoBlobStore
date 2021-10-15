@@ -21,8 +21,8 @@ type BlobStorageDao interface {
 	//Retentionrelated methods
 	GetAllRetentions(callback func(r model.RetentionEntry) bool) error // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 	AddRetention(r *model.RetentionEntry) error
-	DeleteRetention(r *model.RetentionEntry) error
-	ResetRetention(r *model.RetentionEntry) error
+	DeleteRetention(id string) error
+	ResetRetention(id string) error
 
 	Close() error // closing the storage
 }

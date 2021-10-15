@@ -15,3 +15,14 @@ func (r *RetentionEntry) GetRetentionTimestampMS() int64 {
 	}
 	return int64(r.CreationDate) + r.Retention*60*1000
 }
+
+func RetentionEntryFromBlobDescription(b BlobDescription) RetentionEntry {
+	return RetentionEntry{
+		BlobID:        b.BlobID,
+		CreationDate:  b.CreationDate,
+		Filename:      b.Filename,
+		Retention:     b.Retention,
+		RetentionBase: 0,
+		TenantID:      b.TenantID,
+	}
+}

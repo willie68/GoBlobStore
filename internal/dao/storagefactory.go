@@ -96,6 +96,7 @@ func GetStorageDao(tenant string) (BlobStorageDao, error) {
 
 // createStorage creating a new storage dao for the tenant depending on the configuration
 func createStorage(tenant string) (BlobStorageDao, error) {
+	var dao BlobStorageDao
 	switch storageClass {
 	case "SimpleFile":
 		if _, ok := config["rootpath"]; !ok {
@@ -105,7 +106,7 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 		if !ok {
 			return nil, fmt.Errorf("config value for %s is not a string", "rootpath")
 		}
-		dao := &simplefile.SimpleFileBlobStorageDao{
+		dao = &simplefile.SimpleFileBlobStorageDao{
 			RootPath: rootpath,
 			Tenant:   tenant,
 		}
@@ -113,13 +114,15 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &mainStorageDao{
-			retMng:     rtnMgr,
-			storageDao: dao,
-			tenant:     tenant,
-		}, nil
 	}
-	return nil, fmt.Errorf("no storage class implementation for \"%s\" found", storageClass)
+	if dao == nil {
+		return nil, fmt.Errorf("no storage class implementation for \"%s\" found", storageClass)
+	}
+	return &mainStorageDao{
+		rtnMng: rtnMgr,
+		stgDao: dao,
+		tenant: tenant,
+	}, nil
 }
 
 // createRetentionManager creates a new Retention manager depending o nthe configuration
