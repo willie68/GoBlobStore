@@ -66,17 +66,14 @@ func GetTenantDao() (TenantDao, error) {
 func createTenantDao(stgClass string) (TenantDao, error) {
 	switch stgClass {
 	case STGCLASS_SIMPLE_FILE:
-		if _, ok := config["rootpath"]; !ok {
-			return nil, fmt.Errorf("missing config value for %s", "rootpath")
-		}
-		rootpath, ok := config["rootpath"].(string)
-		if !ok {
-			return nil, fmt.Errorf("config value for %s is not a string", "rootpath")
+		rootpath, err := getConfigValueAsString("rootpath")
+		if err != nil {
+			return nil, err
 		}
 		dao := &simplefile.SimpleFileTenantManager{
 			RootPath: rootpath,
 		}
-		err := dao.Init()
+		err = dao.Init()
 		if err != nil {
 			return nil, err
 		}
@@ -166,12 +163,17 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 		if err != nil {
 			return nil, err
 		}
+		password, err := getConfigValueAsString("password")
+		if err != nil {
+			return nil, err
+		}
 		dao = &s3.S3BlobStorage{
 			Endpoint:  endpoint,
 			Bucket:    bucket,
 			AccessKey: accessKey,
 			SecretKey: secretKey,
 			Tenant:    tenant,
+			Password:  password,
 		}
 		err = dao.Init()
 		if err != nil {
@@ -200,7 +202,10 @@ func createRetentionManager(rtnMgrStr string) (RetentionManager, error) {
 			tntDao:  tenantDao,
 			maxSize: 10000,
 		}
-		rtnMgr.Init()
+		err := rtnMgr.Init()
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
 	}

@@ -1,0 +1,21 @@
+port: 8000
+sslport: 8443
+serviceURL: https://127.0.0.1:8443
+secretfile: ""
+healthcheck:
+  period: 30
+logging:
+  level: debug
+  filename: ""
+storage:
+  storageclass: SimpleFile
+  rootpath: H:/temp/blbstg
+  retentionManager: SingleRetention
+  
+headermapping:
+  headerprefix: x-
+  retention: X-es-retention
+  tenant: X-es-tenant
+  apikey: 
+  filename: X-es-filename
+#  apikey: X-es-apikey
