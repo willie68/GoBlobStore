@@ -135,6 +135,15 @@ func (s *SimpleFileBlobStorageDao) StoreBlob(b *model.BlobDescription, f io.Read
 	return s.storeBlobV2(b, f)
 }
 
+func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
+	found := s.hasBlobV1(id)
+	if found {
+		return true, nil
+	}
+	found = s.hasBlobV2(id)
+	return found, nil
+}
+
 func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	info, err := s.getBlobDescriptionV1(id)
 	if err == os.ErrNotExist {

@@ -8,8 +8,13 @@ logging:
   level: debug
   filename: ""
 storage:
-  storageclass: SimpleFile
-  rootpath: H:/temp/blbstg
+#  storageclass: SimpleFile
+#  rootpath: H:/temp/blbstg
+  storageclass: S3Storage
+  endpoint: "http://127.0.0.1:9001"
+  bucket: "goblobstore"
+  accessKey: admin
+  secretKey: akteon00
   retentionManager: SingleRetention
   
 headermapping:

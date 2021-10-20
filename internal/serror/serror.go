@@ -106,6 +106,19 @@ func NotFound(typ string, id string, err ...error) *Serr {
 	}, first)
 }
 
+// NotFound not found error
+func InternalServerError(err ...error) *Serr {
+	var first error
+	if len(err) > 0 {
+		first = err[0]
+	}
+	return build(&Serr{
+		Msg:  fmt.Sprintf("internal server error: %v", err),
+		Key:  "internal",
+		Code: http.StatusInternalServerError,
+	}, first)
+}
+
 // Checks if the error is an service error of the given code
 func Is(err error, code int) bool {
 	if e, ok := err.(*Serr); ok {

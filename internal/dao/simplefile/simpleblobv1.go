@@ -35,6 +35,18 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV1(id string) (*model.BlobD
 	return &info, nil
 }
 
+func (s *SimpleFileBlobStorageDao) hasBlobV1(id string) bool {
+	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BINARY_EXT))
+	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		return false
+	}
+	descFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
+	if _, err := os.Stat(descFile); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func (s *SimpleFileBlobStorageDao) getBlobV1(id string, w io.Writer) error {
 	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BINARY_EXT))
 	if _, err := os.Stat(binFile); os.IsNotExist(err) {

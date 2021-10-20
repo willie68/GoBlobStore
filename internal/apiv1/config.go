@@ -38,7 +38,7 @@ func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	dao, err := dao.GetTenantDao()
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	render.JSON(response, request, dao.HasTenant(tenant))
@@ -58,13 +58,13 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	log.Printf("create store for tenant %s", tenant)
 	dao, err := dao.GetTenantDao()
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
 	err = dao.AddTenant(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
@@ -84,7 +84,7 @@ func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	dao, err := dao.GetTenantDao()
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	if !dao.HasTenant(tenant) {
@@ -93,7 +93,7 @@ func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	err = dao.RemoveTenant(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	render.JSON(response, request, tenant)
@@ -112,7 +112,7 @@ func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) 
 	}
 	dao, err := dao.GetTenantDao()
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	if !dao.HasTenant(tenant) {

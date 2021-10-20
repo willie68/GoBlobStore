@@ -62,7 +62,7 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	idStr := chi.URLParam(request, "id")
 	storage, err := dao.GetStorageDao(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
@@ -72,7 +72,7 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
 			return
 		}
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	if b == nil {
@@ -95,7 +95,7 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	err = storage.RetrieveBlob(idStr, response)
 
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 }
@@ -116,7 +116,7 @@ func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
 
 	storage, err := dao.GetStorageDao(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
@@ -126,7 +126,7 @@ func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
 			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
 			return
 		}
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	if b == nil {
@@ -145,18 +145,30 @@ id: the id of the lob file
 */
 //TODO missing implementation
 func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.Request) {
-	_, err := httputils.TenantID(request)
+	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
+	storage, err := dao.GetStorageDao(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
 	idStr := chi.URLParam(request, "id")
-	//	if err != nil {
-	//		outputError(response, err)
-	//		return
-	//	}
-	render.JSON(response, request, idStr)
+	found, err := storage.HasBlob(idStr)
+	if err != nil {
+		if os.IsNotExist(err) {
+			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+			return
+		}
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	render.JSON(response, request, found)
 }
 
 /*
@@ -177,7 +189,7 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 
 	storage, err := dao.GetStorageDao(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
@@ -191,7 +203,7 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	blobs, err := storage.GetBlobs(offset, limit)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	render.JSON(response, request, blobs)
@@ -214,12 +226,12 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	if strings.HasPrefix(mimeType, "multipart/form-data") {
 		err := request.ParseMultipartForm(1024 * 1024 * 1024)
 		if err != nil {
-			outputError(response, err)
+			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
 		mpf, fileHeader, err := request.FormFile("file")
 		if err != nil {
-			outputError(response, err)
+			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
 
@@ -230,7 +242,7 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	} else {
 		f = request.Body
 		if err != nil {
-			outputError(response, err)
+			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
 		cntLength = -1
@@ -272,13 +284,13 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	storage, err := dao.GetStorageDao(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
 	_, err = storage.StoreBlob(&b, f)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
@@ -304,7 +316,7 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	storage, err := dao.GetStorageDao(tenant)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
@@ -316,7 +328,7 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
 			return
 		}
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	if b == nil {
@@ -325,14 +337,8 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	err = storage.DeleteBlob(idStr)
 	if err != nil {
-		outputError(response, err)
+		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	render.JSON(response, request, idStr)
-}
-
-func outputError(response http.ResponseWriter, err error) {
-	fmt.Printf("Status: %d, message: %s\n", http.StatusInternalServerError, err.Error())
-	response.WriteHeader(http.StatusInternalServerError)
-	response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 }

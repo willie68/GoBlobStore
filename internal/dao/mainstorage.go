@@ -34,6 +34,11 @@ func (m *mainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 }
 
 // GetBlobDescription getting the description of the file
+func (m *mainStorageDao) HasBlob(id string) (bool, error) {
+	return m.stgDao.HasBlob(id)
+}
+
+// GetBlobDescription getting the description of the file
 func (m *mainStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	return m.stgDao.GetBlobDescription(id)
 }

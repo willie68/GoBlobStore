@@ -32,18 +32,36 @@ func (s *SimpleFileBlobStorageDao) getBlobsV2(offset int, limit int) ([]string, 
 	return files, nil
 }
 
+func (s *SimpleFileBlobStorageDao) hasBlobV2(id string) bool {
+	binFile := s.getBinV2(id)
+	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		return false
+	}
+	descFile := s.getDescV2(id)
+	if _, err := os.Stat(descFile); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func (s *SimpleFileBlobStorageDao) getBinV2(id string) string {
+	file, _ := s.buildFilenameV2(id, BINARY_EXT)
+	return file
+}
+
+func (s *SimpleFileBlobStorageDao) getDescV2(id string) string {
+	file, _ := s.buildFilenameV2(id, DESCRIPTION_EXT)
+	return file
+}
+
 func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobDescription, error) {
 	var info model.BlobDescription
-	fp := s.filepath
-	fp = filepath.Join(fp, id[:2])
-	fp = filepath.Join(fp, id[2:4])
-	jsonFile := filepath.Join(fp, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
-
-	if _, err := os.Stat(jsonFile); os.IsNotExist(err) {
+	descFile := s.getDescV2(id)
+	if _, err := os.Stat(descFile); os.IsNotExist(err) {
 		return nil, os.ErrNotExist
 	}
 
-	dat, err := os.ReadFile(jsonFile)
+	dat, err := os.ReadFile(descFile)
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +161,9 @@ func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64
 
 //TODO implement error handling
 func (s *SimpleFileBlobStorageDao) deleteFilesV2(id string) error {
-	binFile, _ := s.buildFilenameV2(id, BINARY_EXT)
+	binFile := s.getBinV2(id)
 	os.Remove(binFile)
-	jsonFile, _ := s.buildFilenameV2(id, DESCRIPTION_EXT)
+	jsonFile := s.getDescV2(id)
 	os.Remove(jsonFile)
 	jsonFile, _ = s.buildRetentionFilename(id)
 	os.Remove(jsonFile)
