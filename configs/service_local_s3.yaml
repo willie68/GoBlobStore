@@ -8,8 +8,6 @@ logging:
   level: debug
   filename: ""
 storage:
-#  storageclass: SimpleFile
-#  rootpath: H:/temp/blbstg
   storageclass: S3Storage
   endpoint: "https://127.0.0.1:9001"
   bucket: "goblobstore"
@@ -17,6 +15,7 @@ storage:
   secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
   password: 4jsfhdjHsd?
   retentionManager: SingleRetention
+  tenantautoadd: true
   
 headermapping:
   headerprefix: x-

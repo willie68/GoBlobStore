@@ -223,7 +223,7 @@ func (s *SimpleFileBlobStorageDao) getRetention(id string) (*model.RetentionEntr
 	r := model.RetentionEntry{}
 	err = json.Unmarshal(dat, &r)
 	if err != nil {
-		clog.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", jsonFile, err)
+		clog.Logger.Errorf("GetRetention: error deserialising: %s\r\n%v", jsonFile, err)
 		return nil, err
 	}
 	return &r, nil

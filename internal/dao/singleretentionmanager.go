@@ -55,6 +55,7 @@ func (s *SingleRetentionManager) processRetention() error {
 	actualTime := time.Now().Unix() * 1000
 	for x, v := range s.retentionList {
 		if v.GetRetentionTimestampMS() < actualTime {
+			//TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
 			dao, err := GetStorageDao(v.TenantID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
@@ -63,6 +64,11 @@ func (s *SingleRetentionManager) processRetention() error {
 			err = dao.DeleteBlob(v.BlobID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
+				continue
+			}
+			err = dao.DeleteRetention(v.BlobID)
+			if err != nil {
+				clog.Logger.Errorf("RetMgr: error removing retention entry, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
 				continue
 			}
 			s.removeEntry(x)
@@ -84,6 +90,14 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.tntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
+		dao, err := GetStorageDao(t)
+		if err != nil {
+			return true
+		}
+		dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+			s.pushToList(r)
+			return true
+		})
 		return true
 	})
 	if err != nil {
@@ -94,13 +108,20 @@ func (s *SingleRetentionManager) refereshRetention() error {
 
 //pushToList adding a new retention to the retention list, if fits
 func (s *SingleRetentionManager) pushToList(r model.RetentionEntry) {
-	s.retentionList = append(s.retentionList, r)
+	//s.retentionList = append(s.retentionList, r)
+	for _, v := range s.retentionList {
+		if r.BlobID == v.BlobID {
+			return
+		}
+	}
 	i := sort.Search(len(s.retentionList), func(i int) bool {
 		return s.retentionList[i].GetRetentionTimestampMS() > r.GetRetentionTimestampMS()
 	})
-	s.retentionList = insertAt(s.retentionList, i, r)
-	if len(s.retentionList) > s.maxSize {
-		s.retentionList = s.retentionList[:s.maxSize-1]
+	if i < s.maxSize {
+		s.retentionList = insertAt(s.retentionList, i, r)
+		if len(s.retentionList) > s.maxSize {
+			s.retentionList = s.retentionList[:s.maxSize-1]
+		}
 	}
 }
 

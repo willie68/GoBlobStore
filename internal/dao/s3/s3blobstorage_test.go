@@ -2,8 +2,11 @@ package s3
 
 import (
 	"context"
+	"crypto/tls"
 	"log"
+	"net/http"
 	"testing"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -15,8 +18,8 @@ func TestS3Init(t *testing.T) {
 	dao := S3TenantManager{
 		Endpoint:  "http://127.0.0.1:9000",
 		Bucket:    "TESTBUCKET",
-		AccessKey: "admin",
-		SecretKey: "akteon00",
+		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
+		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
 	}
 	err := dao.Init()
 	assert.Nil(t, err)
@@ -25,14 +28,20 @@ func TestS3Init(t *testing.T) {
 func TestMinio(t *testing.T) {
 	ctx := context.Background()
 	endpoint := "127.0.0.1:9001"
-	accessKeyID := "admin"
-	secretAccessKey := "akteon00"
-	useSSL := false
+	accessKeyID := "D9Q2D6JQGW1MVCC98LQL"
+	secretAccessKey := "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr"
+	useSSL := true
 
 	// Initialize minio client object.
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 		Secure: useSSL,
+		Transport: &http.Transport{
+			MaxIdleConns:       10,
+			IdleConnTimeout:    30 * time.Second,
+			DisableCompression: true,
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+		},
 	})
 	if err != nil {
 		log.Fatalln(err)
@@ -58,8 +67,8 @@ func TestMinio(t *testing.T) {
 	}
 
 	// Upload the zip file
-	objectName := "README.md"
-	filePath := "../../../README.md"
+	objectName := "pdf.pdf"
+	filePath := "../../../pdf.pdf"
 	contentType := "text/markdown"
 
 	// Upload the zip file with FPutObject

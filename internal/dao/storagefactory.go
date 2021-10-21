@@ -25,6 +25,7 @@ var rtnMgr RetentionManager
 
 var storageClass string
 var config map[string]interface{}
+var tenantautoadd bool = false
 
 //Init initialise the storage factory
 func Init(cnfg map[string]interface{}) error {
@@ -47,10 +48,15 @@ func Init(cnfg map[string]interface{}) error {
 		return errors.New("no retention class given")
 	}
 
-	rtnMgr, err = createRetentionManager(rtnMgrStr)
+	err = createRetentionManager(rtnMgrStr)
 	if err != nil {
 		return err
 	}
+	autoadd, ok := cnfg["tenantautoadd"].(bool)
+	if ok {
+		tenantautoadd = autoadd
+	}
+
 	return nil
 }
 
@@ -131,6 +137,13 @@ func GetStorageDao(tenant string) (BlobStorageDao, error) {
 
 // createStorage creating a new storage dao for the tenant depending on the configuration
 func createStorage(tenant string) (BlobStorageDao, error) {
+	if !tenantDao.HasTenant(tenant) {
+		if tenantautoadd {
+			tenantDao.AddTenant(tenant)
+		} else {
+			return nil, errors.New("tenant not exists")
+		}
+	}
 	var dao BlobStorageDao
 	switch storageClass {
 	case STGCLASS_SIMPLE_FILE:
@@ -193,8 +206,7 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 }
 
 // createRetentionManager creates a new Retention manager depending o nthe configuration
-func createRetentionManager(rtnMgrStr string) (RetentionManager, error) {
-	var rtnMgr RetentionManager
+func createRetentionManager(rtnMgrStr string) error {
 	switch rtnMgrStr {
 	//This is the single node retention manager
 	case "SingleRetention":
@@ -204,12 +216,12 @@ func createRetentionManager(rtnMgrStr string) (RetentionManager, error) {
 		}
 		err := rtnMgr.Init()
 		if err != nil {
-			return nil, err
+			return err
 		}
 	default:
-		return nil, fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
+		return fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
 	}
-	return rtnMgr, nil
+	return nil
 }
 
 func Close() {

@@ -239,8 +239,10 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		cntLength = fileHeader.Size
 		filename = fileHeader.Filename
 		f = mpf
+		defer mpf.Close()
 	} else {
-		f = request.Body
+		mpf := request.Body
+		defer mpf.Close()
 		if err != nil {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
@@ -252,6 +254,7 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		if ok {
 			filename = request.Header.Get(FilenameHeader)
 		}
+		f = mpf
 	}
 
 	var retentionTime int64 = 0
