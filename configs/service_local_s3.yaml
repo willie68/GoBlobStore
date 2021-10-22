@@ -5,7 +5,7 @@ secretfile: ""
 healthcheck:
   period: 30
 logging:
-  level: debug
+  level: info
   filename: ""
 storage:
   storageclass: S3Storage
