@@ -50,7 +50,12 @@ func (m *mainStorageDao) RetrieveBlob(id string, w io.Writer) error {
 
 // DeleteBlob removing a blob from the storage system
 func (m *mainStorageDao) DeleteBlob(id string) error {
-	return m.stgDao.DeleteBlob(id)
+	err := m.stgDao.DeleteBlob(id)
+	if err != nil {
+		return err
+	}
+	m.rtnMng.DeleteRetention(m.tenant, id)
+	return nil
 }
 
 //GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false

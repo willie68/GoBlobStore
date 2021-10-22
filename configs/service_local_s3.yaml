@@ -9,11 +9,13 @@ logging:
   filename: ""
 storage:
   storageclass: S3Storage
-  endpoint: "https://127.0.0.1:9001"
-  bucket: "goblobstore"
-  accessKey: D9Q2D6JQGW1MVCC98LQL
-  secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
-  password: 4jsfhdjHsd?
+  properties:
+    endpoint: "https://127.0.0.1:9001"
+    bucket: "goblobstore"
+    accessKey: D9Q2D6JQGW1MVCC98LQL
+    secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
+    password: 4jsfhdjHsd?
+    insecure: true
   retentionManager: SingleRetention
   tenantautoadd: true
   

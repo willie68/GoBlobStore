@@ -9,7 +9,8 @@ logging:
   filename: ""
 storage:
   storageclass: SimpleFile
-  rootpath: H:/temp/blbstg
+  properties:
+    rootpath: H:/temp/blbstg
   retentionManager: SingleRetention
   tenantautoadd: true
   

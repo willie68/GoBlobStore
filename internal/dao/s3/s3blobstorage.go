@@ -11,207 +11,33 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
+	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
 const (
-	fn_stlst        = "storelist.json"
 	blobDescription = "Blobdescription"
 )
 
-type S3TenantManager struct {
-	Endpoint   string
-	Bucket     string
-	AccessKey  string
-	SecretKey  string
-	Password   string
-	minioCient minio.Client
-	secure     bool
-	local      bool
-	storelist  []S3StoreEntry
-}
-
 type S3BlobStorage struct {
 	Endpoint   string
+	Insecure   bool
 	Bucket     string
 	AccessKey  string
 	SecretKey  string
 	Tenant     string
 	Password   string
 	minioCient minio.Client
-	secure     bool
-	local      bool
-}
-
-func (s *S3TenantManager) Init() error {
-	u, err := url.Parse(s.Endpoint)
-	if err != nil {
-		return err
-	}
-	endpoint := u.Host + "/" + u.Path
-	s.secure = u.Scheme == "https"
-	host, _, _ := net.SplitHostPort(u.Host)
-	var options *minio.Options
-	if host == "127.0.0.1" {
-		options = &minio.Options{
-			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
-			Secure: s.secure,
-			Transport: &http.Transport{
-				MaxIdleConns:       10,
-				IdleConnTimeout:    30 * time.Second,
-				DisableCompression: true,
-				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
-			},
-		}
-		s.local = true
-	} else {
-		options = &minio.Options{
-			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
-			Secure: s.secure,
-		}
-	}
-	client, err := minio.New(endpoint, options)
-
-	if err != nil {
-		return err
-	}
-	s.minioCient = *client
-	return nil
-}
-
-func (s *S3TenantManager) GetTenants(callback func(tenant string) bool) error {
-	if s.storelist == nil {
-		err := s.readStorelist()
-		if err != nil {
-			return err
-		}
-	}
-	for _, tenant := range s.storelist {
-		callback(tenant.Tenant)
-	}
-	return nil
-}
-
-func (s *S3TenantManager) readStorelist() error {
-	ctx := context.Background()
-	stat, err := s.minioCient.StatObject(ctx, s.Bucket, fn_stlst, minio.StatObjectOptions{})
-	if err != nil {
-		if errResp, ok := err.(minio.ErrorResponse); ok {
-			if errResp.StatusCode == 404 {
-				return nil
-			}
-		}
-		return err
-	}
-	fmt.Printf("%v", stat)
-	reader, err := s.minioCient.GetObject(ctx, s.Bucket, fn_stlst, minio.GetObjectOptions{
-		ServerSideEncryption: nil,
-	})
-	if err != nil {
-		return err
-	}
-	var storeEntries []S3StoreEntry
-	data, err := ioutil.ReadAll(reader)
-	if err == nil && data != nil {
-		err = json.Unmarshal(data, &storeEntries)
-	}
-	if err != nil {
-		return err
-	}
-	s.storelist = storeEntries
-	return nil
-}
-
-func (s *S3TenantManager) writeStorelist() error {
-	ctx := context.Background()
-
-	data, err := json.Marshal(s.storelist)
-	if err != nil {
-		return err
-	}
-	r := bytes.NewReader(data)
-	uploadInfo, err := s.minioCient.PutObject(ctx, s.Bucket, fn_stlst, r, -1, minio.PutObjectOptions{
-		ServerSideEncryption: s.getEncryption(),
-		ContentType:          "application/json",
-	})
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%v\r\n", uploadInfo)
-	return nil
-}
-
-func (s *S3TenantManager) AddTenant(tenant string) error {
-	if s.HasTenant(tenant) {
-		return errors.New("tenant already exists")
-	}
-	s.storelist = append(s.storelist, S3StoreEntry{
-		Tenant: strings.ToLower(tenant),
-	})
-	err := s.writeStorelist()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *S3TenantManager) RemoveTenant(tenant string) error {
-	if !s.HasTenant(tenant) {
-		return nil
-	}
-	tenant = strings.ToLower(tenant)
-	index := -1
-	for x, store := range s.storelist {
-		if strings.EqualFold(store.Tenant, tenant) {
-			index = x
-		}
-	}
-	if index > -1 {
-		s.storelist[index] = s.storelist[len(s.storelist)-1]
-		s.storelist = s.storelist[:len(s.storelist)-1]
-	}
-	err := s.writeStorelist()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (s *S3TenantManager) HasTenant(tenant string) bool {
-	for _, store := range s.storelist {
-		if strings.EqualFold(store.Tenant, tenant) {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *S3TenantManager) GetSize(tenant string) int64 {
-	return 0
-}
-
-func (s *S3TenantManager) getEncryption() encrypt.ServerSide {
-	if !s.secure || s.local {
-		return nil
-	}
-	return encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket))
-}
-
-func (s *S3TenantManager) Close() error {
-	return nil
+	usetls     bool
 }
 
 //S3 Blob Storage
@@ -222,13 +48,12 @@ func (s *S3BlobStorage) Init() error {
 		return err
 	}
 	endpoint := u.Host + "/" + u.Path
-	s.secure = u.Scheme == "https"
-	host, _, _ := net.SplitHostPort(u.Host)
+	s.usetls = u.Scheme == "https"
 	var options *minio.Options
-	if host == "127.0.0.1" {
+	if s.Insecure {
 		options = &minio.Options{
 			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
-			Secure: s.secure,
+			Secure: s.usetls,
 			Transport: &http.Transport{
 				MaxIdleConns:       10,
 				IdleConnTimeout:    30 * time.Second,
@@ -236,11 +61,10 @@ func (s *S3BlobStorage) Init() error {
 				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 			},
 		}
-		s.local = true
 	} else {
 		options = &minio.Options{
 			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
-			Secure: s.secure,
+			Secure: s.usetls,
 		}
 	}
 	client, err := minio.New(endpoint, options)
@@ -271,7 +95,7 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	metadata[blobDescription] = string(metadatastr)
 
 	filename := s.id2f(uuid)
-	uploadInfo, err := s.minioCient.PutObject(ctx, s.Bucket, filename, f, b.ContentLength, minio.PutObjectOptions{
+	_, err = s.minioCient.PutObject(ctx, s.Bucket, filename, f, b.ContentLength, minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/octet-stream",
 		UserMetadata:         metadata,
@@ -279,7 +103,6 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("%v\r\n", uploadInfo)
 	return uuid, nil
 }
 
@@ -373,7 +196,7 @@ func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) b
 	})
 	for object := range objectCh {
 		if object.Err != nil {
-			fmt.Println(object.Err)
+			clog.Logger.Errorf("S3BlobStorage: unknown error on listfiles: %v", object.Err)
 			return object.Err
 		}
 		r, err := s.getRetentionByFile(object.Key)
@@ -392,14 +215,13 @@ func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
 		return err
 	}
 	f := bytes.NewReader(jsonstr)
-	uploadInfo, err := s.minioCient.PutObject(ctx, s.Bucket, filename, f, int64(len(jsonstr)), minio.PutObjectOptions{
+	_, err = s.minioCient.PutObject(ctx, s.Bucket, filename, f, int64(len(jsonstr)), minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/json",
 	})
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%v\r\n", uploadInfo)
 	return nil
 }
 
@@ -458,7 +280,7 @@ func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEnt
 
 //getEncryption here you get the ServerSide encryption for the service itself
 func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
-	if !s.secure || s.local {
+	if !s.usetls || s.Insecure {
 		return nil
 	}
 	return encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket+s.Tenant))
