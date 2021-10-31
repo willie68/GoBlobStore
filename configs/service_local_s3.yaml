@@ -10,7 +10,7 @@ logging:
 storage:
   storageclass: S3Storage
   properties:
-    endpoint: "https://127.0.0.1:9001"
+    endpoint: "http://127.0.0.1:9000"
     bucket: "goblobstore"
     accessKey: D9Q2D6JQGW1MVCC98LQL
     secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
