@@ -24,24 +24,22 @@ type Config struct {
 
 	Logging LoggingConfig `yaml:"logging"`
 
-	Storage Storage `yaml:"storage"`
-
-	Backup Backup `yaml:"backup"`
+	Engine Engine `yaml:"engine"`
 
 	HeaderMapping map[string]string `yaml:"headermapping"`
 }
 
-type Storage struct {
-	Storageclass     string                 `yaml:"storageclass"`
-	Properties       map[string]interface{} `yaml:"properties"`
-	RetentionManager string                 `yaml:"retentionManager"`
-	Tenantautoadd    bool                   `yaml:"tenantautoadd"`
+type Engine struct {
+	RetentionManager string  `yaml:"retentionManager"`
+	Tenantautoadd    bool    `yaml:"tenantautoadd"`
+	BackupSyncmode   bool    `yaml:"backupsyncmode"`
+	Storage          Storage `yaml:"storage"`
+	Backup           Storage `yaml:"backup"`
 }
 
-type Backup struct {
+type Storage struct {
 	Storageclass string                 `yaml:"storageclass"`
 	Properties   map[string]interface{} `yaml:"properties"`
-	Syncmode     bool                   `yaml:"syncmode"`
 }
 
 // HealthCheck configuration for the health check system
@@ -68,13 +66,16 @@ var DefaultConfig = Config{
 		Level:    "INFO",
 		Filename: "${configdir}/logging.log",
 	},
-	Storage: Storage{
-		Storageclass: "SimpleFile",
-		Properties: map[string]interface{}{
-			"rootpath": "./blbstg",
-		},
+	Engine: Engine{
 		RetentionManager: "SingleRetention",
 		Tenantautoadd:    true,
+		BackupSyncmode:   false,
+		Storage: Storage{
+			Storageclass: "SimpleFile",
+			Properties: map[string]interface{}{
+				"rootpath": "./blbstg",
+			},
+		},
 	},
 	HeaderMapping: defaultHeaderMapping,
 }

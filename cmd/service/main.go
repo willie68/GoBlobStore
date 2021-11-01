@@ -296,5 +296,5 @@ func getApikey() string {
 }
 
 func initStorageSystem() error {
-	return dao.Init(serviceConfig.Storage, serviceConfig.Backup)
+	return dao.Init(serviceConfig.Engine)
 }

@@ -7,22 +7,23 @@ healthcheck:
 logging:
   level: info
   filename: ""
-storage:
-  storageclass: SimpleFile
-  properties:
-    rootpath: C:/e-platte/temp/blobstore
+engine:
   retentionManager: SingleRetention
   tenantautoadd: true
-backup:
-  syncmode: true
-  storageclass: S3Storage
-  properties:
-    endpoint: "http://127.0.0.1:9000"
-    bucket: "goblobstore"
-    accessKey: D9Q2D6JQGW1MVCC98LQL
-    secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
-    password: 4jsfhdjHsd?
-    insecure: true
+  backupsyncmode: true
+  storage:
+    storageclass: SimpleFile
+    properties:
+      rootpath: C:/e-platte/temp/blobstore
+  backup:
+    storageclass: S3Storage
+    properties:
+      endpoint: "http://127.0.0.1:9000"
+      bucket: "goblobstore"
+      accessKey: D9Q2D6JQGW1MVCC98LQL
+      secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
+      password: 4jsfhdjHsd?
+      insecure: true
 headermapping:
   headerprefix: x-
   retention: X-es-retention

@@ -20,29 +20,27 @@ var tenantStores map[string]*interfaces.BlobStorageDao
 var tenantDao interfaces.TenantDao
 
 var rtnMgr interfaces.RetentionManager
-var cnfg config.Storage
-var bck config.Backup
+var cnfg config.Engine
 
 //Init initialise the storage factory
-func Init(storage config.Storage, backup config.Backup) error {
+func Init(storage config.Engine) error {
 	tenantStores = make(map[string]*interfaces.BlobStorageDao)
 	cnfg = storage
-	bck = backup
-	if cnfg.Storageclass == "" {
+	if cnfg.Storage.Storageclass == "" {
 		return errors.New("no storage class given")
 	}
 
-	tntDao, err := createTenantDao(cnfg.Storageclass)
+	tntDao, err := createTenantDao(cnfg.Storage)
 	if err != nil {
 		return err
 	}
 	tenantDao = tntDao
 
-	if storage.RetentionManager == "" {
+	if cnfg.RetentionManager == "" {
 		return errors.New("no retention class given")
 	}
 
-	err = createRetentionManager(storage.RetentionManager)
+	err = createRetentionManager(cnfg.RetentionManager)
 	if err != nil {
 		return err
 	}
@@ -72,10 +70,23 @@ func createStorage(tenant string) (interfaces.BlobStorageDao, error) {
 			return nil, errors.New("tenant not exists")
 		}
 	}
+	dao, err := getImplStgDao(cnfg.Storage, tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mainStorageDao{
+		rtnMng: rtnMgr,
+		stgDao: dao,
+		tenant: tenant,
+	}, nil
+}
+
+func getImplStgDao(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
 	var dao interfaces.BlobStorageDao
-	switch cnfg.Storageclass {
+	switch stg.Storageclass {
 	case STGCLASS_SIMPLE_FILE:
-		rootpath, err := getConfigValueAsString("rootpath")
+		rootpath, err := getConfigValueAsString(stg, "rootpath")
 		if err != nil {
 			return nil, err
 		}
@@ -88,7 +99,7 @@ func createStorage(tenant string) (interfaces.BlobStorageDao, error) {
 			return nil, err
 		}
 	case STGCLASS_S3:
-		dao, err := getS3Storage(tenant)
+		dao, err := getS3Storage(stg, tenant)
 		if err != nil {
 			return nil, err
 		}
@@ -99,37 +110,33 @@ func createStorage(tenant string) (interfaces.BlobStorageDao, error) {
 	}
 
 	if dao == nil {
-		return nil, fmt.Errorf("no storage class implementation for \"%s\" found", cnfg.Storageclass)
+		return nil, fmt.Errorf("no storage class implementation for \"%s\" found", stg.Storageclass)
 	}
-	return &mainStorageDao{
-		rtnMng: rtnMgr,
-		stgDao: dao,
-		tenant: tenant,
-	}, nil
+	return dao, nil
 }
 
-func getS3Storage(tenant string) (*s3.S3BlobStorage, error) {
-	endpoint, err := getConfigValueAsString("endpoint")
+func getS3Storage(stg config.Storage, tenant string) (*s3.S3BlobStorage, error) {
+	endpoint, err := getConfigValueAsString(stg, "endpoint")
 	if err != nil {
 		return nil, err
 	}
-	insecure, err := getConfigValueAsBool("insecure")
+	insecure, err := getConfigValueAsBool(stg, "insecure")
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := getConfigValueAsString("bucket")
+	bucket, err := getConfigValueAsString(stg, "bucket")
 	if err != nil {
 		return nil, err
 	}
-	accessKey, err := getConfigValueAsString("accessKey")
+	accessKey, err := getConfigValueAsString(stg, "accessKey")
 	if err != nil {
 		return nil, err
 	}
-	secretKey, err := getConfigValueAsString("secretKey")
+	secretKey, err := getConfigValueAsString(stg, "secretKey")
 	if err != nil {
 		return nil, err
 	}
-	password, err := getConfigValueAsString("password")
+	password, err := getConfigValueAsString(stg, "password")
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 type mainStorageDao struct {
 	rtnMng interfaces.RetentionManager
 	stgDao interfaces.BlobStorageDao
+	bckDao interfaces.BlobStorageDao
 	tenant string
 }
 
