@@ -26,6 +26,8 @@ type Config struct {
 
 	Storage Storage `yaml:"storage"`
 
+	Backup Backup `yaml:"backup"`
+
 	HeaderMapping map[string]string `yaml:"headermapping"`
 }
 
@@ -34,6 +36,12 @@ type Storage struct {
 	Properties       map[string]interface{} `yaml:"properties"`
 	RetentionManager string                 `yaml:"retentionManager"`
 	Tenantautoadd    bool                   `yaml:"tenantautoadd"`
+}
+
+type Backup struct {
+	Storageclass string                 `yaml:"storageclass"`
+	Properties   map[string]interface{} `yaml:"properties"`
+	Syncmode     bool                   `yaml:"syncmode"`
 }
 
 // HealthCheck configuration for the health check system

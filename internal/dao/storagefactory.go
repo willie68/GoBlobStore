@@ -24,11 +24,13 @@ var tenantDao TenantDao
 
 var rtnMgr RetentionManager
 var cnfg config.Storage
+var bck config.Backup
 
 //Init initialise the storage factory
-func Init(storage config.Storage) error {
+func Init(storage config.Storage, backup config.Backup) error {
 	tenantStores = make(map[string]*BlobStorageDao)
 	cnfg = storage
+	bck = backup
 	if cnfg.Storageclass == "" {
 		return errors.New("no storage class given")
 	}
@@ -48,72 +50,6 @@ func Init(storage config.Storage) error {
 		return err
 	}
 	return nil
-}
-
-//GetTenantDao returning the tenant for administration tenants
-func GetTenantDao() (TenantDao, error) {
-	if tenantDao == nil {
-		return nil, errors.New("no tenantdao present")
-	}
-	return tenantDao, nil
-}
-
-// createTenantDao creating a new tenant dao depending on the configuration
-func createTenantDao(stgClass string) (TenantDao, error) {
-	switch stgClass {
-	case STGCLASS_SIMPLE_FILE:
-		rootpath, err := getConfigValueAsString("rootpath")
-		if err != nil {
-			return nil, err
-		}
-		dao := &simplefile.SimpleFileTenantManager{
-			RootPath: rootpath,
-		}
-		err = dao.Init()
-		if err != nil {
-			return nil, err
-		}
-		return dao, nil
-	case STGCLASS_S3:
-		endpoint, err := getConfigValueAsString("endpoint")
-		if err != nil {
-			return nil, err
-		}
-		insecure, err := getConfigValueAsBool("insecure")
-		if err != nil {
-			return nil, err
-		}
-		bucket, err := getConfigValueAsString("bucket")
-		if err != nil {
-			return nil, err
-		}
-		accessKey, err := getConfigValueAsString("accessKey")
-		if err != nil {
-			return nil, err
-		}
-		secretKey, err := getConfigValueAsString("secretKey")
-		if err != nil {
-			return nil, err
-		}
-		password, err := getConfigValueAsString("password")
-		if err != nil {
-			return nil, err
-		}
-		dao := &s3.S3TenantManager{
-			Endpoint:  endpoint,
-			Insecure:  insecure,
-			Bucket:    bucket,
-			AccessKey: accessKey,
-			SecretKey: secretKey,
-			Password:  password,
-		}
-		err = dao.Init()
-		if err != nil {
-			return nil, err
-		}
-		return dao, nil
-	}
-	return nil, fmt.Errorf("no tenantmanager class implementation for \"%s\" found", cnfg.Storageclass)
 }
 
 //GetStorageDao return the storage dao for the desired tenant
@@ -155,44 +91,14 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 			return nil, err
 		}
 	case STGCLASS_S3:
-		endpoint, err := getConfigValueAsString("endpoint")
+		dao, err := getS3Storage(tenant)
 		if err != nil {
 			return nil, err
-		}
-		insecure, err := getConfigValueAsBool("insecure")
-		if err != nil {
-			return nil, err
-		}
-		bucket, err := getConfigValueAsString("bucket")
-		if err != nil {
-			return nil, err
-		}
-		accessKey, err := getConfigValueAsString("accessKey")
-		if err != nil {
-			return nil, err
-		}
-		secretKey, err := getConfigValueAsString("secretKey")
-		if err != nil {
-			return nil, err
-		}
-		password, err := getConfigValueAsString("password")
-		if err != nil {
-			return nil, err
-		}
-		dao = &s3.S3BlobStorage{
-			Endpoint:  endpoint,
-			Insecure:  insecure,
-			Bucket:    bucket,
-			AccessKey: accessKey,
-			SecretKey: secretKey,
-			Tenant:    tenant,
-			Password:  password,
 		}
 		err = dao.Init()
 		if err != nil {
 			return nil, err
 		}
-
 	}
 
 	if dao == nil {
@@ -205,23 +111,40 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 	}, nil
 }
 
-// createRetentionManager creates a new Retention manager depending o nthe configuration
-func createRetentionManager(rtnMgrStr string) error {
-	switch rtnMgrStr {
-	//This is the single node retention manager
-	case "SingleRetention":
-		rtnMgr = &SingleRetentionManager{
-			tntDao:  tenantDao,
-			maxSize: 10000,
-		}
-		err := rtnMgr.Init()
-		if err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
+func getS3Storage(tenant string) (*s3.S3BlobStorage, error) {
+	endpoint, err := getConfigValueAsString("endpoint")
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	insecure, err := getConfigValueAsBool("insecure")
+	if err != nil {
+		return nil, err
+	}
+	bucket, err := getConfigValueAsString("bucket")
+	if err != nil {
+		return nil, err
+	}
+	accessKey, err := getConfigValueAsString("accessKey")
+	if err != nil {
+		return nil, err
+	}
+	secretKey, err := getConfigValueAsString("secretKey")
+	if err != nil {
+		return nil, err
+	}
+	password, err := getConfigValueAsString("password")
+	if err != nil {
+		return nil, err
+	}
+	return &s3.S3BlobStorage{
+		Endpoint:  endpoint,
+		Insecure:  insecure,
+		Bucket:    bucket,
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+		Tenant:    tenant,
+		Password:  password,
+	}, nil
 }
 
 func Close() {
@@ -243,26 +166,4 @@ func Close() {
 	if err != nil {
 		clog.Logger.Errorf("error closing tenant dao:\r\n%v,", err)
 	}
-}
-
-func getConfigValueAsString(key string) (string, error) {
-	if _, ok := cnfg.Properties[key]; !ok {
-		return "", fmt.Errorf("missing config value for %s", key)
-	}
-	value, ok := cnfg.Properties[key].(string)
-	if !ok {
-		return "", fmt.Errorf("config value for %s is not a string", "endpoint")
-	}
-	return value, nil
-}
-
-func getConfigValueAsBool(key string) (bool, error) {
-	if _, ok := cnfg.Properties[key]; !ok {
-		return false, fmt.Errorf("missing config value for %s", key)
-	}
-	value, ok := cnfg.Properties[key].(bool)
-	if !ok {
-		return false, fmt.Errorf("config value for %s is not a string", "endpoint")
-	}
-	return value, nil
 }

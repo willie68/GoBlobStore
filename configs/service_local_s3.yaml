@@ -18,7 +18,6 @@ storage:
     insecure: true
   retentionManager: SingleRetention
   tenantautoadd: true
-  
 headermapping:
   headerprefix: x-
   retention: X-es-retention

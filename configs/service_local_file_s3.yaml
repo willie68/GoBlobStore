@@ -5,7 +5,7 @@ secretfile: ""
 healthcheck:
   period: 30
 logging:
-  level: debug
+  level: info
   filename: ""
 storage:
   storageclass: SimpleFile
@@ -13,6 +13,16 @@ storage:
     rootpath: C:/e-platte/temp/blobstore
   retentionManager: SingleRetention
   tenantautoadd: true
+backup:
+  syncmode: true
+  storageclass: S3Storage
+  properties:
+    endpoint: "http://127.0.0.1:9000"
+    bucket: "goblobstore"
+    accessKey: D9Q2D6JQGW1MVCC98LQL
+    secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
+    password: 4jsfhdjHsd?
+    insecure: true
 headermapping:
   headerprefix: x-
   retention: X-es-retention
