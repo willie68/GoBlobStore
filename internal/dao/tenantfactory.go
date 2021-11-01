@@ -4,12 +4,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 )
 
 //GetTenantDao returning the tenant for administration tenants
-func GetTenantDao() (TenantDao, error) {
+func GetTenantDao() (interfaces.TenantDao, error) {
 	if tenantDao == nil {
 		return nil, errors.New("no tenantdao present")
 	}
@@ -17,7 +18,7 @@ func GetTenantDao() (TenantDao, error) {
 }
 
 // createTenantDao creating a new tenant dao depending on the configuration
-func createTenantDao(stgClass string) (TenantDao, error) {
+func createTenantDao(stgClass string) (interfaces.TenantDao, error) {
 	switch stgClass {
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := getConfigValueAsString("rootpath")

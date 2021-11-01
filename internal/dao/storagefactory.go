@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
@@ -14,21 +15,17 @@ const STGCLASS_SIMPLE_FILE = "SimpleFile"
 const STGCLASS_S3 = "S3Storage"
 
 // test for interface compatibility
-var _ BlobStorageDao = &simplefile.SimpleFileBlobStorageDao{}
-var _ BlobStorageDao = &s3.S3BlobStorage{}
-var _ TenantDao = &simplefile.SimpleFileTenantManager{}
-var _ RetentionManager = &SingleRetentionManager{}
 
-var tenantStores map[string]*BlobStorageDao
-var tenantDao TenantDao
+var tenantStores map[string]*interfaces.BlobStorageDao
+var tenantDao interfaces.TenantDao
 
-var rtnMgr RetentionManager
+var rtnMgr interfaces.RetentionManager
 var cnfg config.Storage
 var bck config.Backup
 
 //Init initialise the storage factory
 func Init(storage config.Storage, backup config.Backup) error {
-	tenantStores = make(map[string]*BlobStorageDao)
+	tenantStores = make(map[string]*interfaces.BlobStorageDao)
 	cnfg = storage
 	bck = backup
 	if cnfg.Storageclass == "" {
@@ -53,7 +50,7 @@ func Init(storage config.Storage, backup config.Backup) error {
 }
 
 //GetStorageDao return the storage dao for the desired tenant
-func GetStorageDao(tenant string) (BlobStorageDao, error) {
+func GetStorageDao(tenant string) (interfaces.BlobStorageDao, error) {
 	storageDao, ok := tenantStores[tenant]
 	if !ok {
 		storageDao, err := createStorage(tenant)
@@ -67,7 +64,7 @@ func GetStorageDao(tenant string) (BlobStorageDao, error) {
 }
 
 // createStorage creating a new storage dao for the tenant depending on the configuration
-func createStorage(tenant string) (BlobStorageDao, error) {
+func createStorage(tenant string) (interfaces.BlobStorageDao, error) {
 	if !tenantDao.HasTenant(tenant) {
 		if cnfg.Tenantautoadd {
 			tenantDao.AddTenant(tenant)
@@ -75,7 +72,7 @@ func createStorage(tenant string) (BlobStorageDao, error) {
 			return nil, errors.New("tenant not exists")
 		}
 	}
-	var dao BlobStorageDao
+	var dao interfaces.BlobStorageDao
 	switch cnfg.Storageclass {
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := getConfigValueAsString("rootpath")
@@ -148,7 +145,7 @@ func getS3Storage(tenant string) (*s3.S3BlobStorage, error) {
 }
 
 func Close() {
-	var tDao BlobStorageDao
+	var tDao interfaces.BlobStorageDao
 	for k, v := range tenantStores {
 		tDao = *v
 		err := tDao.Close()

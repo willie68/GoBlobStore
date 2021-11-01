@@ -20,6 +20,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -39,6 +40,8 @@ type S3BlobStorage struct {
 	minioCient minio.Client
 	usetls     bool
 }
+
+var _ interfaces.BlobStorageDao = &S3BlobStorage{}
 
 //S3 Blob Storage
 // initialise this dao

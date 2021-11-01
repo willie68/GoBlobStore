@@ -14,6 +14,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -30,7 +31,7 @@ var APIKey string
 var SystemID string
 
 // BlobStore the blobstorage implementation to use
-var BlobStore dao.BlobStorageDao
+var BlobStore interfaces.BlobStorageDao
 
 func BlobRoutes() *chi.Mux {
 	router := chi.NewRouter()

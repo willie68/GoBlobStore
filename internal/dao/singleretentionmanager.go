@@ -5,6 +5,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -13,12 +14,14 @@ import (
 // It will periodically browse thru all tenants and there to all retentions files, to get a list of all retention entries for the next hour.
 // Than it will sort this list and process the retention entries
 type SingleRetentionManager struct {
-	tntDao        TenantDao
+	tntDao        interfaces.TenantDao
 	retentionList []model.RetentionEntry
 	maxSize       int
 	background    *time.Ticker
 	quit          chan bool
 }
+
+var _ interfaces.RetentionManager = &SingleRetentionManager{}
 
 // Init initialise the retention manager, creating the list of retention entries
 func (s *SingleRetentionManager) Init() error {
@@ -56,17 +59,17 @@ func (s *SingleRetentionManager) processRetention() error {
 	for x, v := range s.retentionList {
 		if v.GetRetentionTimestampMS() < actualTime {
 			//TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
-			dao, err := GetStorageDao(v.TenantID)
+			stg, err := GetStorageDao(v.TenantID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
 				continue
 			}
-			err = dao.DeleteBlob(v.BlobID)
+			err = stg.DeleteBlob(v.BlobID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
 				continue
 			}
-			err = dao.DeleteRetention(v.BlobID)
+			err = stg.DeleteRetention(v.BlobID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error removing retention entry, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
 				continue
@@ -90,11 +93,11 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.tntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
-		dao, err := GetStorageDao(t)
+		stg, err := GetStorageDao(t)
 		if err != nil {
 			return true
 		}
-		dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+		stg.GetAllRetentions(func(r model.RetentionEntry) bool {
 			s.pushToList(r)
 			return true
 		})
@@ -142,11 +145,11 @@ func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r
 //AddRetention adding a new retention to the retention manager
 func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionEntry) error {
 	if r.Retention > 0 {
-		stgDao, err := GetStorageDao(tenant)
+		stg, err := GetStorageDao(tenant)
 		if err != nil {
 			return err
 		}
-		err = stgDao.AddRetention(r)
+		err = stg.AddRetention(r)
 		if err != nil {
 			return err
 		}

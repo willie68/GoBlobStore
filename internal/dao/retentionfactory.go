@@ -1,6 +1,8 @@
 package dao
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // createRetentionManager creates a new Retention manager depending o nthe configuration
 func createRetentionManager(rtnMgrStr string) error {

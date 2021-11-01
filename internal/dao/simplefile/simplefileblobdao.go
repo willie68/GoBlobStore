@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -18,11 +19,15 @@ type SimpleFileTenantManager struct {
 	RootPath string // this is the root path for the file system storage
 }
 
+var _ interfaces.TenantDao = &SimpleFileTenantManager{}
+
 type SimpleFileBlobStorageDao struct {
 	RootPath string // this is the root path for the file system storage
 	Tenant   string // this is the tenant, on which this dao will work
 	filepath string // direct path to the tenant specifig sub path
 }
+
+var _ interfaces.BlobStorageDao = &SimpleFileBlobStorageDao{}
 
 const retentionBaseKey = "retentionBase"
 

@@ -1,4 +1,4 @@
-package dao
+package interfaces
 
 import "github.com/willie68/GoBlobStore/pkg/model"
 

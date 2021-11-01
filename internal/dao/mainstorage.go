@@ -3,12 +3,13 @@ package dao
 import (
 	"io"
 
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
 type mainStorageDao struct {
-	rtnMng RetentionManager
-	stgDao BlobStorageDao
+	rtnMng interfaces.RetentionManager
+	stgDao interfaces.BlobStorageDao
 	tenant string
 }
 
