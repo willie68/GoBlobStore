@@ -1,4 +1,4 @@
-package dao
+package factory
 
 import (
 	"io"
@@ -8,10 +8,11 @@ import (
 )
 
 type mainStorageDao struct {
-	rtnMng interfaces.RetentionManager
-	stgDao interfaces.BlobStorageDao
-	bckDao interfaces.BlobStorageDao
-	tenant string
+	rtnMng      interfaces.RetentionManager
+	stgDao      interfaces.BlobStorageDao
+	bckDao      interfaces.BlobStorageDao
+	bcksyncmode bool
+	tenant      string
 }
 
 // Init initialise this dao
@@ -31,6 +32,9 @@ func (m *mainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 	if err == nil && m.rtnMng != nil {
 		r := model.RetentionEntryFromBlobDescription(*b)
 		err = m.rtnMng.AddRetention(m.tenant, &r)
+	}
+	if m.bckDao != nil {
+
 	}
 	return id, err
 }

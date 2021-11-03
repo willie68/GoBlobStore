@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/google/uuid"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -94,7 +94,7 @@ func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
 }
 
 func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Reader) (string, error) {
-	uuid := uuid.NewString()
+	uuid := utils.GenerateID()
 	b.BlobID = uuid
 	size, err := s.writeBinFileV2(uuid, f)
 	if err != nil {

@@ -13,10 +13,6 @@ func createRetentionManager(rtnMgrStr string) error {
 			tntDao:  tenantDao,
 			maxSize: 10000,
 		}
-		err := rtnMgr.Init()
-		if err != nil {
-			return err
-		}
 	default:
 		return fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
 	}

@@ -3,8 +3,16 @@ package interfaces
 import (
 	"io"
 
+	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
+
+// this is the interface for the factory which will create tenant specifig storage implementations
+type StorageFactory interface {
+	Init(storage config.Engine) error
+	GetStorageDao(tenant string) (BlobStorageDao, error)
+	Close() error
+}
 
 // BlobStoreDao this is the interface which all implementation of a blob storage engine has to fulfill
 type BlobStorageDao interface {

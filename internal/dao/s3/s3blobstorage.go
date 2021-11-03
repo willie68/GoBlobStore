@@ -16,12 +16,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -88,7 +88,7 @@ func (s *S3BlobStorage) GetBlobs(offset int, limit int) ([]string, error) {
 // storing a blob to the storage system
 func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	ctx := context.Background()
-	uuid := uuid.NewString()
+	uuid := utils.GenerateID()
 	b.BlobID = uuid
 	metadatastr, err := json.Marshal(b)
 	if err != nil {

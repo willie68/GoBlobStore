@@ -219,10 +219,12 @@ func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
 }
 
 func (s *SimpleFileBlobStorageDao) DeleteRetention(id string) error {
-	_, err := s.GetBlobDescription(id)
-	if err != nil {
-		return err
-	}
+	/*
+		_, err := s.GetBlobDescription(id)
+		if err != nil {
+			return err
+		}
+	*/
 	return s.deleteRetentionFile(id)
 }
 

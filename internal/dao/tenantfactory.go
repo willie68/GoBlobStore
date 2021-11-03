@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/dao/factory"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
@@ -21,8 +22,8 @@ func GetTenantDao() (interfaces.TenantDao, error) {
 // createTenantDao creating a new tenant dao depending on the configuration
 func createTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 	switch stgCfng.Storageclass {
-	case STGCLASS_SIMPLE_FILE:
-		rootpath, err := getConfigValueAsString(stgCfng, "rootpath")
+	case factory.STGCLASS_SIMPLE_FILE:
+		rootpath, err := config.GetConfigValueAsString(stgCfng, "rootpath")
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +35,7 @@ func createTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 			return nil, err
 		}
 		return dao, nil
-	case STGCLASS_S3:
+	case factory.STGCLASS_S3:
 		dao, err := getS3TenantManager(stgCfng)
 		if err != nil {
 			return nil, err
@@ -49,27 +50,27 @@ func createTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 }
 
 func getS3TenantManager(stgCfng config.Storage) (*s3.S3TenantManager, error) {
-	endpoint, err := getConfigValueAsString(stgCfng, "endpoint")
+	endpoint, err := config.GetConfigValueAsString(stgCfng, "endpoint")
 	if err != nil {
 		return nil, err
 	}
-	insecure, err := getConfigValueAsBool(stgCfng, "insecure")
+	insecure, err := config.GetConfigValueAsBool(stgCfng, "insecure")
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := getConfigValueAsString(stgCfng, "bucket")
+	bucket, err := config.GetConfigValueAsString(stgCfng, "bucket")
 	if err != nil {
 		return nil, err
 	}
-	accessKey, err := getConfigValueAsString(stgCfng, "accessKey")
+	accessKey, err := config.GetConfigValueAsString(stgCfng, "accessKey")
 	if err != nil {
 		return nil, err
 	}
-	secretKey, err := getConfigValueAsString(stgCfng, "secretKey")
+	secretKey, err := config.GetConfigValueAsString(stgCfng, "secretKey")
 	if err != nil {
 		return nil, err
 	}
-	password, err := getConfigValueAsString(stgCfng, "password")
+	password, err := config.GetConfigValueAsString(stgCfng, "password")
 	if err != nil {
 		return nil, err
 	}

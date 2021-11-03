@@ -59,7 +59,7 @@ func (s *SingleRetentionManager) processRetention() error {
 	for x, v := range s.retentionList {
 		if v.GetRetentionTimestampMS() < actualTime {
 			//TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
-			stg, err := GetStorageDao(v.TenantID)
+			stg, err := StorageFactory.GetStorageDao(v.TenantID)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
 				continue
@@ -93,7 +93,7 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.tntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
-		stg, err := GetStorageDao(t)
+		stg, err := StorageFactory.GetStorageDao(t)
 		if err != nil {
 			return true
 		}
@@ -145,7 +145,7 @@ func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r
 //AddRetention adding a new retention to the retention manager
 func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionEntry) error {
 	if r.Retention > 0 {
-		stg, err := GetStorageDao(tenant)
+		stg, err := StorageFactory.GetStorageDao(tenant)
 		if err != nil {
 			return err
 		}
