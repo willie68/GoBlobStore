@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"errors"
 	"sort"
 	"time"
 
@@ -60,6 +59,7 @@ func (s *SingleRetentionManager) processRetention() error {
 		if v.GetRetentionTimestampMS() < actualTime {
 			//TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
 			stg, err := StorageFactory.GetStorageDao(v.TenantID)
+			defer s.removeEntry(x)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
 				continue
@@ -69,12 +69,6 @@ func (s *SingleRetentionManager) processRetention() error {
 				clog.Logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
 				continue
 			}
-			err = stg.DeleteRetention(v.BlobID)
-			if err != nil {
-				clog.Logger.Errorf("RetMgr: error removing retention entry, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
-				continue
-			}
-			s.removeEntry(x)
 		}
 	}
 	return nil
@@ -139,7 +133,15 @@ func insertAt(data []model.RetentionEntry, i int, v model.RetentionEntry) []mode
 }
 
 func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r model.RetentionEntry) bool) error {
-	return errors.New("not implemented yet")
+	stg, err := StorageFactory.GetStorageDao(tenant)
+	if err != nil {
+		return err
+	}
+	stg.GetAllRetentions(func(r model.RetentionEntry) bool {
+		callback(r)
+		return true
+	})
+	return nil
 }
 
 //AddRetention adding a new retention to the retention manager
@@ -159,11 +161,27 @@ func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionE
 }
 
 func (s *SingleRetentionManager) DeleteRetention(tenant string, id string) error {
-	return errors.New("not implemented yet")
+	stg, err := StorageFactory.GetStorageDao(tenant)
+	if err != nil {
+		return err
+	}
+	err = stg.DeleteRetention(id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *SingleRetentionManager) ResetRetention(tenant string, id string) error {
-	return errors.New("not implemented yet")
+	stg, err := StorageFactory.GetStorageDao(tenant)
+	if err != nil {
+		return err
+	}
+	err = stg.ResetRetention(id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *SingleRetentionManager) Close() error {

@@ -10,7 +10,7 @@ logging:
 engine:
   retentionManager: SingleRetention
   tenantautoadd: true
-  backupsyncmode: true
+  backupsyncmode: false
   storage:
     storageclass: SimpleFile
     properties:

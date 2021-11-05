@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -34,12 +35,35 @@ func (m *mainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 		err = m.rtnMng.AddRetention(m.tenant, &r)
 	}
 	if m.bckDao != nil {
-
+		if m.bcksyncmode {
+			m.backupFile(b, id)
+		} else {
+			go m.backupFile(b, id)
+		}
 	}
 	return id, err
 }
 
-// GetBlobDescription getting the description of the file
+func (m *mainStorageDao) backupFile(b *model.BlobDescription, id string) {
+	rd, wr := io.Pipe()
+
+	go func() {
+		// close the writer, so the reader knows there's no more data
+		defer wr.Close()
+
+		err := m.stgDao.RetrieveBlob(id, wr)
+		if err != nil {
+			clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+		}
+	}()
+	_, err := m.bckDao.StoreBlob(b, rd)
+	if err != nil {
+		clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+	}
+	defer rd.Close()
+}
+
+// HasBlob getting the description of the file
 func (m *mainStorageDao) HasBlob(id string) (bool, error) {
 	return m.stgDao.HasBlob(id)
 }
@@ -60,6 +84,12 @@ func (m *mainStorageDao) DeleteBlob(id string) error {
 	if err != nil {
 		return err
 	}
+	if m.bckDao != nil {
+		err = m.bckDao.DeleteBlob(id)
+		if err != nil {
+			clog.Logger.Errorf("error deleting blob on backup: %v", err)
+		}
+	}
 	m.rtnMng.DeleteRetention(m.tenant, id)
 	return nil
 }
@@ -69,16 +99,44 @@ func (m *mainStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) 
 	return m.stgDao.GetAllRetentions(callback)
 }
 func (m *mainStorageDao) AddRetention(r *model.RetentionEntry) error {
-	return m.stgDao.AddRetention(r)
+	err := m.stgDao.AddRetention(r)
+	if m.bckDao != nil {
+		err1 := m.bckDao.AddRetention(r)
+		if err1 != nil {
+			clog.Logger.Errorf("error adding retention on backup: %v", err1)
+		}
+	}
+	return err
 }
 func (m *mainStorageDao) DeleteRetention(id string) error {
-	return m.stgDao.DeleteRetention(id)
+	err := m.stgDao.DeleteRetention(id)
+	if m.bckDao != nil {
+		err1 := m.bckDao.DeleteRetention(id)
+		if err1 != nil {
+			clog.Logger.Errorf("error deleting retention on backup:%s, %v", id, err1)
+		}
+	}
+	return err
 }
 func (m *mainStorageDao) ResetRetention(id string) error {
-	return m.stgDao.ResetRetention(id)
+	err := m.stgDao.ResetRetention(id)
+	if m.bckDao != nil {
+		err1 := m.bckDao.ResetRetention(id)
+		if err1 != nil {
+			clog.Logger.Errorf("error reseting retention on backup:%s, %v", id, err1)
+		}
+	}
+	return err
 }
 
 // Close closing the blob storage
 func (m *mainStorageDao) Close() error {
-	return m.stgDao.Close()
+	err := m.stgDao.Close()
+	if m.bckDao != nil {
+		err1 := m.bckDao.Close()
+		if err1 != nil {
+			clog.Logger.Errorf("error closing backup storage: %v", err1)
+		}
+	}
+	return err
 }

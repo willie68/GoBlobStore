@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/willie68/GoBlobStore/internal/utils"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -94,25 +94,27 @@ func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
 }
 
 func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Reader) (string, error) {
-	uuid := utils.GenerateID()
-	b.BlobID = uuid
-	size, err := s.writeBinFileV2(uuid, f)
+	if b.BlobID == "" {
+		uuid := utils.GenerateID()
+		b.BlobID = uuid
+	}
+	size, err := s.writeBinFileV2(b.BlobID, f)
 	if err != nil {
 		return "", err
 	}
 	if (b.ContentLength > 0) && b.ContentLength != size {
-		s.deleteFilesV2(uuid)
+		s.deleteFilesV2(b.BlobID)
 		return "", fmt.Errorf("wrong content length %d=%d", b.ContentLength, size)
 	}
 	b.ContentLength = size
 	err = s.writeJsonFileV2(b)
 	if err != nil {
-		s.deleteFilesV2(uuid)
+		s.deleteFilesV2(b.BlobID)
 		return "", err
 	}
 
-	go s.buildHash(uuid)
-	return uuid, nil
+	go s.buildHash(b.BlobID)
+	return b.BlobID, nil
 }
 
 func (s *SimpleFileBlobStorageDao) buildHash(id string) {

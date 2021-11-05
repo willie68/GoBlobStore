@@ -88,8 +88,10 @@ func (s *S3BlobStorage) GetBlobs(offset int, limit int) ([]string, error) {
 // storing a blob to the storage system
 func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	ctx := context.Background()
-	uuid := utils.GenerateID()
-	b.BlobID = uuid
+	if b.BlobID == "" {
+		uuid := utils.GenerateID()
+		b.BlobID = uuid
+	}
 	metadatastr, err := json.Marshal(b)
 	if err != nil {
 		return "", err
@@ -97,7 +99,7 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	metadata := make(map[string]string)
 	metadata[blobDescription] = string(metadatastr)
 
-	filename := s.id2f(uuid)
+	filename := s.id2f(b.BlobID)
 	_, err = s.minioCient.PutObject(ctx, s.Bucket, filename, f, b.ContentLength, minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/octet-stream",
@@ -106,7 +108,7 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	if err != nil {
 		return "", err
 	}
-	return uuid, nil
+	return b.BlobID, nil
 }
 
 // checking, if a blob is present
