@@ -13,9 +13,9 @@ import (
 // It will periodically browse thru all tenants and there to all retentions files, to get a list of all retention entries for the next hour.
 // Than it will sort this list and process the retention entries
 type SingleRetentionManager struct {
-	tntDao        interfaces.TenantDao
+	TntDao        interfaces.TenantDao
 	retentionList []model.RetentionEntry
-	maxSize       int
+	MaxSize       int
 	background    *time.Ticker
 	quit          chan bool
 }
@@ -85,7 +85,7 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 }
 
 func (s *SingleRetentionManager) refereshRetention() error {
-	err := s.tntDao.GetTenants(func(t string) bool {
+	err := s.TntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
 		stg, err := StorageFactory.GetStorageDao(t)
 		if err != nil {
@@ -114,10 +114,10 @@ func (s *SingleRetentionManager) pushToList(r model.RetentionEntry) {
 	i := sort.Search(len(s.retentionList), func(i int) bool {
 		return s.retentionList[i].GetRetentionTimestampMS() > r.GetRetentionTimestampMS()
 	})
-	if i < s.maxSize {
+	if i < s.MaxSize {
 		s.retentionList = insertAt(s.retentionList, i, r)
-		if len(s.retentionList) > s.maxSize {
-			s.retentionList = s.retentionList[:s.maxSize-1]
+		if len(s.retentionList) > s.MaxSize {
+			s.retentionList = s.retentionList[:s.MaxSize-1]
 		}
 	}
 }

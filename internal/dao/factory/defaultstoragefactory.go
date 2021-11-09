@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
@@ -60,12 +61,12 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		return nil, err
 	}
 
-	return &mainStorageDao{
-		bcksyncmode: d.cnfg.BackupSyncmode,
-		rtnMng:      d.RtnMgr,
-		stgDao:      dao,
-		bckDao:      bckdao,
-		tenant:      tenant,
+	return &business.MainStorageDao{
+		Bcksyncmode: d.cnfg.BackupSyncmode,
+		RtnMng:      d.RtnMgr,
+		StgDao:      dao,
+		BckDao:      bckdao,
+		Tenant:      tenant,
 	}, nil
 }
 

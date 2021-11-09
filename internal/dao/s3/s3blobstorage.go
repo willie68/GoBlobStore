@@ -190,10 +190,11 @@ func (s *S3BlobStorage) DeleteBlob(id string) error {
 	return nil
 }
 
-//Retentionrelated methods
-// for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
+// Retentionrelated methods
+//GetAllRetentions for every retention entry for this tenant we call the callback function,
+// you can stop the walk by returning a false in the callback
 func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
-	filename := s.id2rp()
+	filename := s.tntrp()
 	ctx := context.Background()
 	objectCh := s.minioCient.ListObjects(ctx, s.Bucket, minio.ListObjectsOptions{
 		Prefix:    filename,
@@ -206,12 +207,16 @@ func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) b
 		}
 		r, err := s.getRetentionByFile(object.Key)
 		if err == nil {
-			callback(*r)
+			proceed := callback(*r)
+			if !proceed {
+				break
+			}
 		}
 	}
 	return nil
 }
 
+// AddRetention adding a retention entry to the storage
 func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
 	filename := s.id2rf(r.BlobID)
 	ctx := context.Background()
@@ -230,6 +235,7 @@ func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
 	return nil
 }
 
+//DeleteRetention deletes the retention entry from the storaage
 func (s *S3BlobStorage) DeleteRetention(id string) error {
 	filename := s.id2rf(id)
 	ctx := context.Background()
@@ -245,6 +251,7 @@ func (s *S3BlobStorage) DeleteRetention(id string) error {
 	return nil
 }
 
+// ResetRetention resets the retention for a blob
 func (s *S3BlobStorage) ResetRetention(id string) error {
 	r, err := s.getRetention(id)
 	if err != nil {
@@ -258,11 +265,14 @@ func (s *S3BlobStorage) ResetRetention(id string) error {
 func (s *S3BlobStorage) Close() error {
 	return nil
 }
+
+// getting the retention entry for a id
 func (s *S3BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
 	filename := s.id2rf(id)
 	return s.getRetentionByFile(filename)
 }
 
+//getRetentionByFile get a retention entry for filename
 func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry, error) {
 	ctx := context.Background()
 	r, err := s.minioCient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{
@@ -283,7 +293,7 @@ func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEnt
 	return &re, nil
 }
 
-//getEncryption here you get the ServerSide encryption for the service itself
+//getEncryption here you get the ServerSide encryption for the tenant
 func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
 	if !s.usetls || s.Insecure {
 		return nil
@@ -291,14 +301,17 @@ func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
 	return encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket+s.Tenant))
 }
 
+// id2f getting the blob file path and name to the payload
 func (s *S3BlobStorage) id2f(id string) string {
 	return fmt.Sprintf("%s/%s.bin", s.Tenant, id)
 }
 
+// id2rf getting the retention file path and name for an id
 func (s *S3BlobStorage) id2rf(id string) string {
 	return fmt.Sprintf("%s/retention/%s.json", s.Tenant, id)
 }
 
-func (s *S3BlobStorage) id2rp() string {
+//tntrp getting the path to the retention files
+func (s *S3BlobStorage) tntrp() string {
 	return fmt.Sprintf("%s/retention/", s.Tenant)
 }

@@ -10,8 +10,8 @@ func createRetentionManager(rtnMgrStr string) error {
 	//This is the single node retention manager
 	case "SingleRetention":
 		rtnMgr = &SingleRetentionManager{
-			tntDao:  tenantDao,
-			maxSize: 10000,
+			TntDao:  tenantDao,
+			MaxSize: 10000,
 		}
 	default:
 		return fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
