@@ -1,81 +1,151 @@
 package s3
 
 import (
-	"context"
-	"crypto/tls"
-	"log"
-	"net/http"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/stretchr/testify/assert"
+	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-func TestS3Init(t *testing.T) {
+var (
+	tntDao S3TenantManager
+)
 
-	dao := S3TenantManager{
-		Endpoint:  "http://127.0.0.1:9000",
-		Bucket:    "TESTBUCKET",
+const (
+	tenant  = "easy"
+	pdffile = "../../../testdata/pdf.pdf"
+)
+
+func setup(t *testing.T) {
+	tntDao = S3TenantManager{
+		Endpoint:  "http://127.0.0.1:9002",
+		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
 		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
+		Insecure:  true, // only for self signed certificates
 	}
-	err := dao.Init()
+	err := tntDao.Init()
 	assert.Nil(t, err)
+
+	ok := tntDao.HasTenant(tenant)
+	if !ok {
+		tntDao.AddTenant(tenant)
+	}
 }
 
-func TestMinio(t *testing.T) {
-	ctx := context.Background()
-	endpoint := "127.0.0.1:9001"
-	accessKeyID := "D9Q2D6JQGW1MVCC98LQL"
-	secretAccessKey := "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr"
-	useSSL := true
+func close(t *testing.T) {
+	tntDao.RemoveTenant(tenant)
+}
 
-	// Initialize minio client object.
-	minioClient, err := minio.New(endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
-		Secure: useSSL,
-		Transport: &http.Transport{
-			MaxIdleConns:       10,
-			IdleConnTimeout:    30 * time.Second,
-			DisableCompression: true,
-			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
-		},
-	})
-	if err != nil {
-		log.Fatalln(err)
+func createDao() (S3BlobStorage, error) {
+	dao := S3BlobStorage{
+		Endpoint:  "http://127.0.0.1:9002",
+		Bucket:    "testbucket",
+		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
+		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
+		Insecure:  true, // only for self signed certificates
+		Tenant:    tenant,
+	}
+	err := dao.Init()
+	return dao, err
+}
+
+func TestS3Init(t *testing.T) {
+	setup(t)
+	ast := assert.New(t)
+	dao, err := createDao()
+
+	ast.Nil(err)
+	ast.NotNil(dao)
+
+	close(t)
+}
+
+func TestCheckUnknownBlob(t *testing.T) {
+	setup(t)
+	ast := assert.New(t)
+	dao, err := createDao()
+
+	ast.Nil(err)
+	ast.NotNil(dao)
+
+	ok, err := dao.HasBlob("murks")
+	ast.Nil(err)
+	ast.False(ok)
+
+	close(t)
+}
+func TestCheckEmptyTenant(t *testing.T) {
+	setup(t)
+	ast := assert.New(t)
+	dao := S3BlobStorage{
+		Endpoint:  "http://127.0.0.1:9002",
+		Bucket:    "testbucket",
+		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
+		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
+		Insecure:  true, // only for self signed certificates
+	}
+	err := dao.Init()
+
+	ast.NotNil(err)
+
+	close(t)
+}
+
+func TestCRUDBlob(t *testing.T) {
+	setup(t)
+	ast := assert.New(t)
+	dao, err := createDao()
+
+	ast.Nil(err)
+	ast.NotNil(dao)
+	fileInfo, err := os.Lstat(pdffile)
+	ast.Nil(err)
+	ast.NotNil(fileInfo)
+
+	b := model.BlobDescription{
+		ContentType:   "application/pdf",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		ContentLength: fileInfo.Size(),
+		Filename:      fileInfo.Name(),
+		TenantID:      tenant,
+		Retention:     0,
 	}
 
-	log.Printf("%#v\n", minioClient) // minioClient is now set up
+	r, err := os.Open(pdffile)
+	ast.Nil(err)
+	ast.NotNil(r)
 
-	// Make a new bucket called mymusic.
-	bucketName := "mymusic"
-	location := "us-east-1"
+	id, err := dao.StoreBlob(&b, r)
+	ast.Nil(err)
+	ast.NotNil(id)
+	r.Close()
 
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
-	if err != nil {
-		// Check to see if we already own this bucket (which happens if you run this twice)
-		exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)
-		if errBucketExists == nil && exists {
-			log.Printf("We already own %s\n", bucketName)
-		} else {
-			log.Fatalln(err)
-		}
-	} else {
-		log.Printf("Successfully created %s\n", bucketName)
-	}
+	fmt.Printf("blob id: %s", id)
+	ok, err := dao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
 
-	// Upload the zip file
-	objectName := "pdf.pdf"
-	filePath := "../../../pdf.pdf"
-	contentType := "text/markdown"
+	d, err := dao.GetBlobDescription(id)
+	ast.Nil(err)
+	ast.NotNil(d)
 
-	// Upload the zip file with FPutObject
-	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
-	if err != nil {
-		log.Fatalln(err)
-	}
+	ast.Equal(b.ContentType, d.ContentType)
+	ast.Equal(id, d.BlobID)
+	ast.Equal(b.ContentLength, d.ContentLength)
+	ast.Equal(b.Filename, d.Filename)
 
-	log.Printf("Successfully uploaded %s of size %d\n", objectName, info.Size)
+	dao.RetrieveBlob(id, w)
+
+	err = dao.DeleteBlob(id)
+	ast.Nil(err)
+
+	ok, err = dao.HasBlob(id)
+	ast.Nil(err)
+	ast.False(ok)
+
+	close(t)
 }

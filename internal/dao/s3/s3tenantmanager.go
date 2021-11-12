@@ -23,7 +23,7 @@ const (
 
 type S3TenantManager struct {
 	Endpoint   string
-	Insecure   bool
+	Insecure   bool // true for self signed certificates
 	Bucket     string
 	AccessKey  string
 	SecretKey  string
@@ -64,6 +64,18 @@ func (s *S3TenantManager) Init() error {
 		return err
 	}
 	s.minioCient = *client
+	// check the bucket and try to create it
+	ctx := context.Background()
+	ok, err := s.minioCient.BucketExists(ctx, s.Bucket)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		err := s.minioCient.MakeBucket(ctx, s.Bucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

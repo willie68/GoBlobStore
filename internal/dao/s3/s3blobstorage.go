@@ -46,6 +46,9 @@ var _ interfaces.BlobStorageDao = &S3BlobStorage{}
 //S3 Blob Storage
 // initialise this dao
 func (s *S3BlobStorage) Init() error {
+	if s.Tenant == "" {
+		return errors.New("tenant should not be null or empty")
+	}
 	u, err := url.Parse(s.Endpoint)
 	if err != nil {
 		return err
@@ -76,6 +79,19 @@ func (s *S3BlobStorage) Init() error {
 		return err
 	}
 	s.minioCient = *client
+	// check the bucket and try to create it
+	ctx := context.Background()
+	ok, err := s.minioCient.BucketExists(ctx, s.Bucket)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		err := s.minioCient.MakeBucket(ctx, s.Bucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
