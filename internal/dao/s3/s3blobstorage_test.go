@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/willie68/GoBlobStore/internal/utils/readercomp"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -15,8 +16,9 @@ var (
 )
 
 const (
-	tenant  = "easy"
-	pdffile = "../../../testdata/pdf.pdf"
+	tenant   = "easy"
+	pdffile  = "../../../testdata/pdf.pdf"
+	testfile = "../../../testdata/pdf_dst.pdf"
 )
 
 func setup(t *testing.T) {
@@ -138,7 +140,14 @@ func TestCRUDBlob(t *testing.T) {
 	ast.Equal(b.ContentLength, d.ContentLength)
 	ast.Equal(b.Filename, d.Filename)
 
+	w, err := os.Create(testfile)
+	ast.Nil(err)
 	dao.RetrieveBlob(id, w)
+	w.Close()
+
+	ok, err = readercomp.FilesEqual(pdffile, testfile)
+	ast.Nil(err)
+	ast.True(ok)
 
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)
