@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	tenant   = "easy"
+	tenant   = "mcs"
 	pdffile  = "../../../testdata/pdf.pdf"
 	testfile = "../../../testdata/pdf_dst.pdf"
 )

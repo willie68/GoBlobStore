@@ -144,3 +144,66 @@ func TestCRD(t *testing.T) {
 
 	dao.Close()
 }
+
+func TestRetentionStorage(t *testing.T) {
+	ast := assert.New(t)
+
+	dao := getStoreageDao(t)
+	ast.NotNil(dao)
+
+	b := model.BlobDescription{
+		StoreID:       tenant,
+		TenantID:      tenant,
+		ContentLength: 22,
+		ContentType:   "text/plain",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		Filename:      "test.txt",
+		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		Retention:     1,
+		Properties:    make(map[string]interface{}),
+	}
+	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["X-retention"] = []int{123456}
+	b.Properties["X-tenant"] = "MCS"
+
+	r := strings.NewReader("this is a blob content")
+	id, err := dao.StoreBlob(&b, r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.NotNil(t, id)
+
+	ret := model.RetentionEntry{
+		Filename:      "test.txt",
+		TenantID:      tenant,
+		BlobID:        id,
+		CreationDate:  b.CreationDate,
+		Retention:     1,
+		RetentionBase: 0,
+	}
+
+	err = dao.AddRetention(&ret)
+	ast.Nil(err)
+
+	rets := make([]model.RetentionEntry, 0)
+	dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+		rets = append(rets, r)
+		return true
+	})
+
+	ast.Equal(8, len(rets))
+	retDst, err := dao.GetRetention(id)
+	ast.Nil(err)
+
+	ast.Equal(ret.BlobID, retDst.BlobID)
+	ast.Equal(ret.CreationDate, retDst.CreationDate)
+	ast.Equal(ret.Filename, retDst.Filename)
+	ast.Equal(ret.Retention, retDst.Retention)
+	ast.Equal(ret.RetentionBase, retDst.RetentionBase)
+
+	err = dao.DeleteRetention(id)
+	ast.Nil(err)
+
+	err = dao.DeleteBlob(id)
+	ast.Nil(err)
+}
