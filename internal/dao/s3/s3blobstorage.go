@@ -251,6 +251,12 @@ func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
 	return nil
 }
 
+// GetRetention getting a single retention entry
+func (s *S3BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
+	r, err := s.getRetention(id)
+	return *r, err
+}
+
 //DeleteRetention deletes the retention entry from the storaage
 func (s *S3BlobStorage) DeleteRetention(id string) error {
 	filename := s.id2rf(id)

@@ -158,3 +158,55 @@ func TestCRUDBlob(t *testing.T) {
 
 	close(t)
 }
+
+func TestRetentionStorage(t *testing.T) {
+	setup(t)
+
+	ast := assert.New(t)
+	dao, err := createDao()
+	ast.Nil(err)
+	ast.NotNil(dao)
+
+	blobID := "12345678"
+
+	ret := model.RetentionEntry{
+		Filename:      pdffile,
+		TenantID:      tenant,
+		BlobID:        blobID,
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		Retention:     1,
+		RetentionBase: 0,
+	}
+
+	err = dao.AddRetention(&ret)
+	ast.Nil(err)
+
+	rets := make([]model.RetentionEntry, 0)
+	dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+		rets = append(rets, r)
+		return true
+	})
+
+	ast.Equal(1, len(rets))
+	retDst := rets[0]
+
+	ast.Equal(ret.BlobID, retDst.BlobID)
+	ast.Equal(ret.CreationDate, retDst.CreationDate)
+	ast.Equal(ret.Filename, retDst.Filename)
+	ast.Equal(ret.Retention, retDst.Retention)
+	ast.Equal(ret.RetentionBase, retDst.RetentionBase)
+
+	retDst, err = dao.GetRetention(blobID)
+	ast.Nil(err)
+
+	ast.Equal(ret.BlobID, retDst.BlobID)
+	ast.Equal(ret.CreationDate, retDst.CreationDate)
+	ast.Equal(ret.Filename, retDst.Filename)
+	ast.Equal(ret.Retention, retDst.Retention)
+	ast.Equal(ret.RetentionBase, retDst.RetentionBase)
+
+	err = dao.DeleteRetention(blobID)
+	ast.Nil(err)
+
+	close(t)
+}

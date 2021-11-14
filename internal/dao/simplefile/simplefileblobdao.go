@@ -208,6 +208,11 @@ func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.Retent
 	return nil
 }
 
+func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
+	r, err := s.getRetention(id)
+	return *r, err
+}
+
 func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
 	b, err := s.GetBlobDescription(r.BlobID)
 	if err != nil {

@@ -108,6 +108,11 @@ func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	}
 	return err
 }
+
+func (m *MainStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
+	return m.StgDao.GetRetention(id)
+}
+
 func (m *MainStorageDao) DeleteRetention(id string) error {
 	err := m.StgDao.DeleteRetention(id)
 	if m.BckDao != nil {
