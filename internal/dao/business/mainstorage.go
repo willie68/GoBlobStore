@@ -18,7 +18,9 @@ type MainStorageDao struct {
 
 // Init initialise this dao
 func (m *MainStorageDao) Init() error {
-	return m.StgDao.Init()
+	// all storages should be initialised before adding to this business class
+	// there for only specifig initialisation for this class is requeired
+	return nil
 }
 
 // GetBlobs getting a list of blob from the filesystem using offset and limit

@@ -1,4 +1,4 @@
-package s3
+package simplefile
 
 import (
 	"testing"
@@ -6,54 +6,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestS3TenantManager(t *testing.T) {
-	ast := assert.New(t)
-	dao := S3TenantManager{
-		Endpoint:  "http://127.0.0.1:9002",
-		Bucket:    "testbucket",
-		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
-		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
-		Insecure:  true, // only for self signed certificates
+func TestSimplefileTenantManager(t *testing.T) {
+
+	dao := SimpleFileTenantManager{
+		RootPath: rootpath,
 	}
 	err := dao.Init()
-	ast.Nil(err)
+	assert.Nil(t, err)
+
+	_ = dao.RemoveTenant(tenant)
+
 	tenants := make([]string, 0)
 	err = dao.GetTenants(func(t string) bool {
 		tenants = append(tenants, t)
 		return true
 	})
 
-	ast.Nil(err)
-	ast.Equal(0, len(tenants))
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(tenants))
 
 	ok := dao.HasTenant(tenant)
-	ast.False(ok)
+	assert.False(t, ok)
 
 	err = dao.AddTenant(tenant)
-	ast.Nil(err)
-
-	err = dao.GetTenants(func(t string) bool {
-		tenants = append(tenants, t)
-		return true
-	})
-
-	ast.Nil(err)
-	ast.Equal(1, len(tenants))
-
-	ok = dao.HasTenant(tenant)
-	ast.True(ok)
-
-	err = dao.AddTenant(tenant)
-	ast.NotNil(t, err)
-
-	size := dao.GetSize(tenant)
-	ast.Equal(int64(0), size)
-
-	err = dao.RemoveTenant(tenant)
-	ast.Nil(err)
-
-	ok = dao.HasTenant(tenant)
-	ast.False(ok)
+	assert.Nil(t, err)
 
 	tenants = make([]string, 0)
 	err = dao.GetTenants(func(t string) bool {
@@ -61,6 +37,27 @@ func TestS3TenantManager(t *testing.T) {
 		return true
 	})
 
-	ast.Nil(err)
-	ast.Equal(0, len(tenants))
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(tenants))
+
+	ok = dao.HasTenant(tenant)
+	assert.True(t, ok)
+
+	size := dao.GetSize(tenant)
+	assert.Equal(t, int64(0), size)
+
+	err = dao.RemoveTenant(tenant)
+	assert.Nil(t, err)
+
+	ok = dao.HasTenant(tenant)
+	assert.False(t, ok)
+
+	tenants = make([]string, 0)
+	err = dao.GetTenants(func(t string) bool {
+		tenants = append(tenants, t)
+		return true
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(tenants))
 }

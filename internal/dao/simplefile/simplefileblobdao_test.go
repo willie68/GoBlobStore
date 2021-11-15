@@ -1,8 +1,11 @@
 package simplefile
 
 import (
+	"archive/zip"
 	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -14,9 +17,55 @@ import (
 )
 
 const (
+	zipfile  = "../../../testdata/mcs.zip"
 	rootpath = "../../../testdata/blobstorage"
 	tenant   = "MCS"
 )
+
+func initTest(t *testing.T) {
+	// getting the zip file and extracting it into the file system
+	archive, err := zip.OpenReader(zipfile)
+	if err != nil {
+		panic(err)
+	}
+	defer archive.Close()
+
+	for _, f := range archive.File {
+		filePath := filepath.Join(rootpath, f.Name)
+		fmt.Println("unzipping file ", filePath)
+
+		if !strings.HasPrefix(filePath, filepath.Clean(rootpath)+string(os.PathSeparator)) {
+			fmt.Println("invalid file path")
+			return
+		}
+		if f.FileInfo().IsDir() {
+			fmt.Println("creating directory...")
+			os.MkdirAll(filePath, os.ModePerm)
+			continue
+		}
+
+		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+			panic(err)
+		}
+
+		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			panic(err)
+		}
+
+		fileInArchive, err := f.Open()
+		if err != nil {
+			panic(err)
+		}
+
+		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
+			panic(err)
+		}
+
+		dstFile.Close()
+		fileInArchive.Close()
+	}
+}
 
 func getStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
 	dao := SimpleFileBlobStorageDao{
@@ -48,16 +97,22 @@ func TestTenanthandling(t *testing.T) {
 
 func TestNotFound(t *testing.T) {
 	dao := getStoreageDao(t)
+	ast := assert.New(t)
 
-	_, err := dao.GetBlobDescription("wrongid")
-	assert.NotNil(t, err)
+	ok, err := dao.HasBlob("wrongid")
+	ast.Nil(err)
+	ast.False(ok)
+
+	_, err = dao.GetBlobDescription("wrongid")
+	ast.NotNil(err)
 
 	var b bytes.Buffer
 	err = dao.RetrieveBlob("wrongid", &b)
-	assert.NotNil(t, err)
+	ast.NotNil(err)
 }
 
 func TestList(t *testing.T) {
+	initTest(t)
 	dao := getStoreageDao(t)
 
 	srcPath, _ := filepath.Abs(filepath.Join(rootpath, tenant))
@@ -79,19 +134,29 @@ func TestList(t *testing.T) {
 }
 
 func TestInfo(t *testing.T) {
+	initTest(t)
 	dao := getStoreageDao(t)
+	ast := assert.New(t)
+
+	ok, err := dao.HasBlob("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
+	ast.Nil(err)
+	ast.True(ok)
+
+	ok, err = dao.HasBlob("0000fc02-050a-418a-a701-efd814aa6b36")
+	ast.Nil(err)
+	ast.True(ok)
 
 	info, err := dao.GetBlobDescription("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "004b4987-42fb-43e4-8e13-d6994ce0e6f1", info.BlobID)
+	ast.Equal("004b4987-42fb-43e4-8e13-d6994ce0e6f1", info.BlobID)
 
 	info, err = dao.GetBlobDescription("0000fc02-050a-418a-a701-efd814aa6b36")
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "0000fc02-050a-418a-a701-efd814aa6b36", info.BlobID)
+	ast.Equal("0000fc02-050a-418a-a701-efd814aa6b36", info.BlobID)
 
 	dao.Close()
 }
