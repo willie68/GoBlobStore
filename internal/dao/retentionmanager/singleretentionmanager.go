@@ -1,4 +1,4 @@
-package dao
+package retentionmanager
 
 import (
 	"sort"
@@ -9,11 +9,14 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+const SingleRetentionManagerName = "SingleRetention"
+
 // SingleRetentionManager is a single node retention manager
 // It will periodically browse thru all tenants and there to all retentions files, to get a list of all retention entries for the next hour.
 // Than it will sort this list and process the retention entries
 type SingleRetentionManager struct {
 	TntDao        interfaces.TenantDao
+	stgf          interfaces.StorageFactory
 	retentionList []model.RetentionEntry
 	MaxSize       int
 	background    *time.Ticker
@@ -23,7 +26,8 @@ type SingleRetentionManager struct {
 var _ interfaces.RetentionManager = &SingleRetentionManager{}
 
 // Init initialise the retention manager, creating the list of retention entries
-func (s *SingleRetentionManager) Init() error {
+func (s *SingleRetentionManager) Init(stgf interfaces.StorageFactory) error {
+	s.stgf = stgf
 	s.retentionList = make([]model.RetentionEntry, 0)
 	err := s.refereshRetention()
 	if err != nil {
@@ -58,7 +62,7 @@ func (s *SingleRetentionManager) processRetention() error {
 	for x, v := range s.retentionList {
 		if v.GetRetentionTimestampMS() < actualTime {
 			//TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
-			stg, err := StorageFactory.GetStorageDao(v.TenantID)
+			stg, err := s.stgf.GetStorageDao(v.TenantID)
 			defer s.removeEntry(x)
 			if err != nil {
 				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
@@ -87,7 +91,7 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.TntDao.GetTenants(func(t string) bool {
 		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
-		stg, err := StorageFactory.GetStorageDao(t)
+		stg, err := s.stgf.GetStorageDao(t)
 		if err != nil {
 			return true
 		}
@@ -133,7 +137,7 @@ func insertAt(data []model.RetentionEntry, i int, v model.RetentionEntry) []mode
 }
 
 func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r model.RetentionEntry) bool) error {
-	stg, err := StorageFactory.GetStorageDao(tenant)
+	stg, err := s.stgf.GetStorageDao(tenant)
 	if err != nil {
 		return err
 	}
@@ -147,7 +151,7 @@ func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r
 //AddRetention adding a new retention to the retention manager
 func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionEntry) error {
 	if r.Retention > 0 {
-		stg, err := StorageFactory.GetStorageDao(tenant)
+		stg, err := s.stgf.GetStorageDao(tenant)
 		if err != nil {
 			return err
 		}
@@ -161,7 +165,7 @@ func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionE
 }
 
 func (s *SingleRetentionManager) DeleteRetention(tenant string, id string) error {
-	stg, err := StorageFactory.GetStorageDao(tenant)
+	stg, err := s.stgf.GetStorageDao(tenant)
 	if err != nil {
 		return err
 	}
@@ -173,7 +177,7 @@ func (s *SingleRetentionManager) DeleteRetention(tenant string, id string) error
 }
 
 func (s *SingleRetentionManager) ResetRetention(tenant string, id string) error {
-	stg, err := StorageFactory.GetStorageDao(tenant)
+	stg, err := s.stgf.GetStorageDao(tenant)
 	if err != nil {
 		return err
 	}

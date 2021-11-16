@@ -3,7 +3,7 @@ package interfaces
 import "github.com/willie68/GoBlobStore/pkg/model"
 
 type RetentionManager interface {
-	Init() error
+	Init(stgf StorageFactory) error
 
 	GetAllRetentions(tenant string, callback func(r model.RetentionEntry) bool) error
 	AddRetention(tenant string, r *model.RetentionEntry) error

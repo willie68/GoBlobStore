@@ -1,28 +1,18 @@
-package dao
+package factory
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/willie68/GoBlobStore/internal/config"
-	"github.com/willie68/GoBlobStore/internal/dao/factory"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 )
 
-//GetTenantDao returning the tenant for administration tenants
-func GetTenantDao() (interfaces.TenantDao, error) {
-	if tenantDao == nil {
-		return nil, errors.New("no tenantdao present")
-	}
-	return tenantDao, nil
-}
-
 // createTenantDao creating a new tenant dao depending on the configuration
-func createTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
+func CreateTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 	switch stgCfng.Storageclass {
-	case factory.STGCLASS_SIMPLE_FILE:
+	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := config.GetConfigValueAsString(stgCfng, "rootpath")
 		if err != nil {
 			return nil, err
@@ -35,7 +25,7 @@ func createTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 			return nil, err
 		}
 		return dao, nil
-	case factory.STGCLASS_S3:
+	case STGCLASS_S3:
 		dao, err := getS3TenantManager(stgCfng)
 		if err != nil {
 			return nil, err

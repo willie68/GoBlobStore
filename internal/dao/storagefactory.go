@@ -14,7 +14,7 @@ import (
 var tenantDao interfaces.TenantDao
 var rtnMgr interfaces.RetentionManager
 var cnfg config.Engine
-var StorageFactory interfaces.StorageFactory
+var stgf interfaces.StorageFactory
 
 //Init initialise the storage factory
 func Init(storage config.Engine) error {
@@ -23,7 +23,7 @@ func Init(storage config.Engine) error {
 		return errors.New("no storage class given")
 	}
 
-	tntDao, err := createTenantDao(cnfg.Storage)
+	tntDao, err := factory.CreateTenantDao(cnfg.Storage)
 	if err != nil {
 		return err
 	}
@@ -33,22 +33,22 @@ func Init(storage config.Engine) error {
 		return errors.New("no retention class given")
 	}
 
-	err = createRetentionManager(cnfg.RetentionManager)
-	if err != nil {
-		return err
-	}
-
-	StorageFactory = &factory.DefaultStorageFactory{
+	// this order of creation of factories is crucial, because the RetentionManager needs the StorageFactory and other way round
+	stgf = &factory.DefaultStorageFactory{
 		TenantDao: tenantDao,
-		RtnMgr:    rtnMgr,
 	}
 
-	err = StorageFactory.Init(storage)
+	rtnMgr, err = createRetentionManager(cnfg.RetentionManager)
 	if err != nil {
 		return err
 	}
 
-	err = rtnMgr.Init()
+	err = stgf.Init(storage, rtnMgr)
+	if err != nil {
+		return err
+	}
+
+	err = rtnMgr.Init(stgf)
 	if err != nil {
 		return err
 	}
@@ -56,8 +56,24 @@ func Init(storage config.Engine) error {
 	return nil
 }
 
+//GetTenantDao returning the tenant for administration tenants
+func GetTenantDao() (interfaces.TenantDao, error) {
+	if tenantDao == nil {
+		return nil, errors.New("no tenantdao present")
+	}
+	return tenantDao, nil
+}
+
+//GetTenantDao returning the tenant for administration tenants
+func GetStorageFactory() (interfaces.StorageFactory, error) {
+	if stgf == nil {
+		return nil, errors.New("no storage factory present")
+	}
+	return stgf, nil
+}
+
 func Close() {
-	err := StorageFactory.Close()
+	err := stgf.Close()
 	if err != nil {
 		clog.Logger.Errorf("error closing storage factory:\r\n%v,", err)
 	}

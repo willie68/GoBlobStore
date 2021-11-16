@@ -22,9 +22,10 @@ type DefaultStorageFactory struct {
 	cnfg         config.Engine
 }
 
-func (d *DefaultStorageFactory) Init(storage config.Engine) error {
+func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.RetentionManager) error {
 	d.tenantStores = make(map[string]*interfaces.BlobStorageDao)
 	d.cnfg = storage
+	d.RtnMgr = rtnm
 	return nil
 }
 

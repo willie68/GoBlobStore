@@ -9,7 +9,7 @@ import (
 
 // this is the interface for the factory which will create tenant specifig storage implementations
 type StorageFactory interface {
-	Init(storage config.Engine) error
+	Init(storage config.Engine, rtnm RetentionManager) error
 	GetStorageDao(tenant string) (BlobStorageDao, error)
 	Close() error
 }

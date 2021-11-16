@@ -61,7 +61,14 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	idStr := chi.URLParam(request, "id")
-	storage, err := dao.StorageFactory.GetStorageDao(tenant)
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -115,7 +122,13 @@ func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
 	}
 	idStr := chi.URLParam(request, "id")
 
-	storage, err := dao.StorageFactory.GetStorageDao(tenant)
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -152,7 +165,13 @@ func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.R
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	storage, err := dao.StorageFactory.GetStorageDao(tenant)
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -188,7 +207,13 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 	url := request.URL
 	values := url.Query()
 
-	storage, err := dao.StorageFactory.GetStorageDao(tenant)
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -286,7 +311,14 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		Properties:    metadata,
 		CreationDate:  int(time.Now().UnixNano() / 1000000),
 	}
-	storage, err := dao.StorageFactory.GetStorageDao(tenant)
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -318,7 +350,14 @@ func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	storage, err := dao.StorageFactory.GetStorageDao(tenant)
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
