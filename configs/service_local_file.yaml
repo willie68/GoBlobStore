@@ -10,10 +10,11 @@ logging:
 engine:
   retentionManager: SingleRetention
   tenantautoadd: true
+  backupsyncmode: false
   storage:
     storageclass: SimpleFile
     properties:
-      rootpath: C:/e-platte/temp/blobstore
+      rootpath: H:/temp/blbstg
 headermapping:
   headerprefix: x-
   retention: X-es-retention

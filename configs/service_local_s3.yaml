@@ -7,21 +7,14 @@ healthcheck:
 logging:
   level: info
   filename: ""
-storage:
-  storageclass: S3Storage
-  properties:
-    endpoint: "http://127.0.0.1:9002"
-    bucket: "goblobstore"
-    accessKey: D9Q2D6JQGW1MVCC98LQL
-    secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
-    password: 4jsfhdjHsd?
-    insecure: true
+engine:
   retentionManager: SingleRetention
   tenantautoadd: true
+  backupsyncmode: false
   storage:
     storageclass: S3Storage
     properties:
-      endpoint: "http://127.0.0.1:9000"
+      endpoint: "https://127.0.0.1:9002"
       bucket: "goblobstore"
       accessKey: D9Q2D6JQGW1MVCC98LQL
       secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr

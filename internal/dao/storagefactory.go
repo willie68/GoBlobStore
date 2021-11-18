@@ -38,7 +38,7 @@ func Init(storage config.Engine) error {
 		TenantDao: tenantDao,
 	}
 
-	rtnMgr, err = createRetentionManager(cnfg.RetentionManager)
+	rtnMgr, err = factory.CreateRetentionManager(cnfg.RetentionManager, tenantDao)
 	if err != nil {
 		return err
 	}
