@@ -5,7 +5,7 @@ secretfile: ""
 healthcheck:
   period: 30
 logging:
-  level: info
+  level: debug
   filename: ""
 engine:
   retentionManager: SingleRetention

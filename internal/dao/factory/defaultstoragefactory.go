@@ -15,6 +15,8 @@ import (
 const STGCLASS_SIMPLE_FILE = "SimpleFile"
 const STGCLASS_S3 = "S3Storage"
 
+var NO_STG_ERROR = errors.New("no storage class given")
+
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
 	RtnMgr       interfaces.RetentionManager
@@ -58,7 +60,7 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 	}
 
 	bckdao, err := d.getImplStgDao(d.cnfg.Backup, tenant)
-	if err != nil {
+	if err != nil && !errors.Is(err, NO_STG_ERROR) {
 		return nil, err
 	}
 
@@ -100,7 +102,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	}
 
 	if dao == nil {
-		return nil, fmt.Errorf("no storage class implementation for \"%s\" found", stg.Storageclass)
+		return nil, fmt.Errorf("no storage class implementation for \"%s\" found. %w", stg.Storageclass, NO_STG_ERROR)
 	}
 	return dao, nil
 }

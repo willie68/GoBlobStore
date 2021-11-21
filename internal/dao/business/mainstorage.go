@@ -19,7 +19,7 @@ type MainStorageDao struct {
 // Init initialise this dao
 func (m *MainStorageDao) Init() error {
 	// all storages should be initialised before adding to this business class
-	// there for only specifig initialisation for this class is requeired
+	// there for only specifig initialisation for this class is required
 	return nil
 }
 
