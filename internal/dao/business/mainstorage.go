@@ -24,8 +24,8 @@ func (m *MainStorageDao) Init() error {
 }
 
 // GetBlobs getting a list of blob from the filesystem using offset and limit
-func (m *MainStorageDao) GetBlobs(offset int, limit int) ([]string, error) {
-	return m.StgDao.GetBlobs(offset, limit)
+func (m *MainStorageDao) GetBlobs(callback func(id string) bool) error {
+	return m.StgDao.GetBlobs(callback)
 }
 
 // StoreBlob storing a blob to the storage system

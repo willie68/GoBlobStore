@@ -227,7 +227,18 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 	if values["limit"] != nil {
 		limit, _ = strconv.Atoi(values["limit"][0])
 	}
-	blobs, err := storage.GetBlobs(offset, limit)
+	blobs := make([]string, 0)
+	index := 0
+	err = storage.GetBlobs(func(id string) bool {
+		if (index >= offset) && (index-offset < limit) {
+			blobs = append(blobs, id)
+		}
+		if index-offset > limit {
+			return false
+		}
+		index++
+		return true
+	})
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return

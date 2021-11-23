@@ -31,3 +31,7 @@ func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactor
 	}
 	return nil
 }
+
+func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao) error {
+	return nil
+}

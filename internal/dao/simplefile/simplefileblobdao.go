@@ -128,12 +128,8 @@ func (s *SimpleFileBlobStorageDao) Init() error {
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) GetBlobs(offset int, limit int) ([]string, error) {
-	blobs, err := s.getBlobsV2(0, limit)
-	if err != nil {
-		return nil, err
-	}
-	return blobs, nil
+func (s *SimpleFileBlobStorageDao) GetBlobs(callback func(id string) bool) error {
+	return s.getBlobsV2(callback)
 }
 
 func (s *SimpleFileBlobStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {

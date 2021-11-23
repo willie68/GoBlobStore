@@ -18,7 +18,7 @@ type StorageFactory interface {
 type BlobStorageDao interface {
 	Init() error // initialise this dao
 
-	GetBlobs(offset int, limit int) ([]string, error) // getting a list of blob from the filesystem using offset and limit
+	GetBlobs(callback func(id string) bool) error // getting a list of blob from the storage
 
 	// CRUD operation on the blob files
 	StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) // storing a blob to the storage system
