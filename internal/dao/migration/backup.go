@@ -84,6 +84,14 @@ func backup(id string, stg interfaces.BlobStorageDao, bck interfaces.BlobStorage
 			clog.Logger.Errorf("error getting blob: %s,%v", id, err)
 		}
 		defer rd.Close()
+		if b.Retention > 0 {
+			rt, err := stg.GetRetention(id)
+			if err != nil {
+				clog.Logger.Errorf("error getting retention: %s,%v", id, err)
+			} else {
+				bck.AddRetention(&rt)
+			}
+		}
 		return nil
 	}
 	return fmt.Errorf("blob not found: %s", id)

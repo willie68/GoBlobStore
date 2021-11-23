@@ -3,6 +3,7 @@ package simplefile
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -211,6 +212,12 @@ func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.Retent
 
 func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
 	r, err := s.getRetention(id)
+	if err != nil {
+		return model.RetentionEntry{}, err
+	}
+	if r == nil {
+		return model.RetentionEntry{}, fmt.Errorf("no retention file found for id %s", id)
+	}
 	return *r, err
 }
 
