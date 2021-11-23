@@ -16,7 +16,8 @@ type StorageFactory interface {
 
 // BlobStoreDao this is the interface which all implementation of a blob storage engine has to fulfill
 type BlobStorageDao interface {
-	Init() error // initialise this dao
+	Init() error       // initialise this dao
+	GetTenant() string // get the tenant id
 
 	GetBlobs(callback func(id string) bool) error // getting a list of blob from the storage
 

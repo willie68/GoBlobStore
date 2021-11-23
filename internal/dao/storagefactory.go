@@ -55,7 +55,10 @@ func Init(storage config.Engine) error {
 		return err
 	}
 	// migrate backup
-	backup.MigrateBackup(tenantDao, stgf)
+	err = backup.MigrateBackup(tenantDao, stgf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

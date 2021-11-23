@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "configurations": [
 
+
     
         {
             "name": "Launch GoBLobStore",
@@ -16,7 +17,7 @@
             "env": {},
             "args": [
                 "-c",
-                "${workspaceFolder}/configs/service_local_file.yaml",
+                "${workspaceFolder}/configs/service_local_file_s3.yaml",
             ]
         }
     ]

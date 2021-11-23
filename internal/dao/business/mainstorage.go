@@ -23,6 +23,11 @@ func (m *MainStorageDao) Init() error {
 	return nil
 }
 
+// GetTenant return the id of the tenant
+func (m *MainStorageDao) GetTenant() string {
+	return m.Tenant
+}
+
 // GetBlobs getting a list of blob from the filesystem using offset and limit
 func (m *MainStorageDao) GetBlobs(callback func(id string) bool) error {
 	return m.StgDao.GetBlobs(callback)

@@ -128,6 +128,11 @@ func (s *SimpleFileBlobStorageDao) Init() error {
 	return nil
 }
 
+// GetTenant return the id of the tenant
+func (s *SimpleFileBlobStorageDao) GetTenant() string {
+	return s.Tenant
+}
+
 func (s *SimpleFileBlobStorageDao) GetBlobs(callback func(id string) bool) error {
 	return s.getBlobsV2(callback)
 }
