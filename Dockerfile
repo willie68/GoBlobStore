@@ -58,7 +58,6 @@ RUN set -eu +x; \
 
 
 ##### TARGET #####
-
 FROM alpine:3.12
 
 ARG RELEASE
@@ -72,7 +71,7 @@ RUN set -eux; \
     xargs -a /usr/share/rundeps apk add --no-progress --quiet --no-cache --upgrade --virtual .run-deps
 
 ENTRYPOINT ["/usr/local/bin/go-blob-store"]
-CMD ["--config","/data/config/service_prod.yaml"]
+CMD ["--config","/data/config/service.yaml"]
 
 EXPOSE 8080 8443
 
