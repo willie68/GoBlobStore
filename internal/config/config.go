@@ -52,7 +52,7 @@ type LoggingConfig struct {
 	Filename string `yaml:"filename"`
 }
 
-var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", "headerprefix": "x-"}
+var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", "headerprefix": "X-"}
 
 var DefaultConfig = Config{
 	Port:       8000,
@@ -112,7 +112,6 @@ var config = Config{
 	HealthCheck: HealthCheck{
 		Period: 30,
 	},
-	HeaderMapping: defaultHeaderMapping,
 }
 
 // File the config file
@@ -139,7 +138,11 @@ func Load() error {
 	}
 
 	for k, v := range defaultHeaderMapping {
-		if _, ok := config.HeaderMapping[k]; !ok {
+		mp, ok := config.HeaderMapping[k]
+		if !ok {
+			config.HeaderMapping[k] = v
+		}
+		if ok && mp == "" {
 			config.HeaderMapping[k] = v
 		}
 	}

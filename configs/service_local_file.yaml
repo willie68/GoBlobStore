@@ -17,8 +17,8 @@ engine:
       rootpath: H:/temp/blbstg
 headermapping:
   headerprefix: x-
-  retention: X-es-retention
-  tenant: X-es-tenant
+  retention:
+  tenant: 
   apikey: 
-  filename: X-es-filename
+  filename:
 #  apikey: X-es-apikey

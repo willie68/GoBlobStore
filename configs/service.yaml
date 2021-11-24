@@ -14,7 +14,7 @@ engine:
   storage:
     storageclass: SimpleFile
     properties:
-      rootpath: H:/temp/blbstg
+      rootpath: /data/storage
 headermapping:
   headerprefix: x-
   retention:
