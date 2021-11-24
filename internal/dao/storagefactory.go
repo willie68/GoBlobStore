@@ -3,6 +3,8 @@ package dao
 import (
 	"errors"
 
+	backup "github.com/willie68/GoBlobStore/internal/dao/migration"
+
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/factory"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
@@ -52,7 +54,11 @@ func Init(storage config.Engine) error {
 	if err != nil {
 		return err
 	}
-
+	// migrate backup
+	err = backup.MigrateBackup(tenantDao, stgf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

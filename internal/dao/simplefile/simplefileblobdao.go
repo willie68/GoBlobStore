@@ -3,6 +3,7 @@ package simplefile
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -128,12 +129,13 @@ func (s *SimpleFileBlobStorageDao) Init() error {
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) GetBlobs(offset int, limit int) ([]string, error) {
-	blobs, err := s.getBlobsV2(0, limit)
-	if err != nil {
-		return nil, err
-	}
-	return blobs, nil
+// GetTenant return the id of the tenant
+func (s *SimpleFileBlobStorageDao) GetTenant() string {
+	return s.Tenant
+}
+
+func (s *SimpleFileBlobStorageDao) GetBlobs(callback func(id string) bool) error {
+	return s.getBlobsV2(callback)
 }
 
 func (s *SimpleFileBlobStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
@@ -210,6 +212,12 @@ func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.Retent
 
 func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
 	r, err := s.getRetention(id)
+	if err != nil {
+		return model.RetentionEntry{}, err
+	}
+	if r == nil {
+		return model.RetentionEntry{}, fmt.Errorf("no retention file found for id %s", id)
+	}
 	return *r, err
 }
 

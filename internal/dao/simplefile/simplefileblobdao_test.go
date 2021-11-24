@@ -118,7 +118,11 @@ func TestList(t *testing.T) {
 	srcPath, _ := filepath.Abs(filepath.Join(rootpath, tenant))
 	assert.Equal(t, srcPath, dao.filepath)
 
-	blobs, err := dao.GetBlobs(0, 10)
+	blobs := make([]string, 0)
+	err := dao.GetBlobs(func(id string) bool {
+		blobs = append(blobs, id)
+		return true
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

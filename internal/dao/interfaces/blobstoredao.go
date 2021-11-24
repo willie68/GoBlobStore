@@ -16,9 +16,10 @@ type StorageFactory interface {
 
 // BlobStoreDao this is the interface which all implementation of a blob storage engine has to fulfill
 type BlobStorageDao interface {
-	Init() error // initialise this dao
+	Init() error       // initialise this dao
+	GetTenant() string // get the tenant id
 
-	GetBlobs(offset int, limit int) ([]string, error) // getting a list of blob from the filesystem using offset and limit
+	GetBlobs(callback func(id string) bool) error // getting a list of blob from the storage
 
 	// CRUD operation on the blob files
 	StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) // storing a blob to the storage system
@@ -35,18 +36,4 @@ type BlobStorageDao interface {
 	ResetRetention(id string) error
 
 	Close() error // closing the storage
-}
-
-// TenantDao is the part of the daos which will adminitrate the tenant part of a storage system
-type TenantDao interface {
-	Init() error // initialise this dao
-
-	GetTenants(callback func(tenant string) bool) error
-
-	AddTenant(tenant string) error
-	RemoveTenant(tenant string) error
-	HasTenant(tenant string) bool
-	GetSize(tenant string) int64
-
-	Close() error
 }

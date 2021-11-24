@@ -15,21 +15,18 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-func (s *SimpleFileBlobStorageDao) getBlobsV2(offset int, limit int) ([]string, error) {
-	var files []string
+func (s *SimpleFileBlobStorageDao) getBlobsV2(callback func(id string) bool) error {
 	err := filepath.Walk(s.filepath, func(path string, info os.FileInfo, err error) error {
 		if !strings.Contains(path, RETENTION_PATH) && strings.HasSuffix(path, DESCRIPTION_EXT) {
-			files = append(files, info.Name()[:len(info.Name())-5])
-		}
-		if len(files) >= limit {
-			return io.EOF
+			id := info.Name()[:len(info.Name())-5]
+			ok := callback(id)
+			if !ok {
+				return io.EOF
+			}
 		}
 		return nil
 	})
-	if err != nil && err != io.EOF {
-		return nil, err
-	}
-	return files, nil
+	return err
 }
 
 func (s *SimpleFileBlobStorageDao) hasBlobV2(id string) bool {

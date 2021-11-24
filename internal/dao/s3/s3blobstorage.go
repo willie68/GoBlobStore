@@ -95,9 +95,14 @@ func (s *S3BlobStorage) Init() error {
 	return nil
 }
 
+// GetTenant return the id of the tenant
+func (s *S3BlobStorage) GetTenant() string {
+	return s.Tenant
+}
+
 // getting a list of blob from the filesystem using offset and limit
-func (s *S3BlobStorage) GetBlobs(offset int, limit int) ([]string, error) {
-	return nil, errors.New("not yet implemented")
+func (s *S3BlobStorage) GetBlobs(callback func(id string) bool) error {
+	return errors.New("not yet implemented")
 }
 
 // CRUD operation on the blob files

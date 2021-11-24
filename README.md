@@ -10,4 +10,18 @@ features
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based or basic auth access control 
 
-Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase
+Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase.
+
+
+
+# Installation
+
+## Docker
+
+simply run 
+
+`docker run -v <host data path>:/data/storage -p go-blob-store`
+
+to run this serivce with a simplefile storage class. Exposes port 8443 for the data interface and 8080 for the metrics.
+
+For other options see the configuration file.

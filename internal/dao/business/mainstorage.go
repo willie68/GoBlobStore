@@ -19,13 +19,18 @@ type MainStorageDao struct {
 // Init initialise this dao
 func (m *MainStorageDao) Init() error {
 	// all storages should be initialised before adding to this business class
-	// there for only specifig initialisation for this class is requeired
+	// there for only specifig initialisation for this class is required
 	return nil
 }
 
+// GetTenant return the id of the tenant
+func (m *MainStorageDao) GetTenant() string {
+	return m.Tenant
+}
+
 // GetBlobs getting a list of blob from the filesystem using offset and limit
-func (m *MainStorageDao) GetBlobs(offset int, limit int) ([]string, error) {
-	return m.StgDao.GetBlobs(offset, limit)
+func (m *MainStorageDao) GetBlobs(callback func(id string) bool) error {
+	return m.StgDao.GetBlobs(callback)
 }
 
 // StoreBlob storing a blob to the storage system
