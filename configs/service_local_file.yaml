@@ -15,6 +15,12 @@ engine:
     storageclass: SimpleFile
     properties:
       rootpath: H:/temp/blbstg
+  cache:
+    storageclass: FastCache
+    properties:
+      rootpath: H:/temp/blbcache
+      maxcount: 100000
+      maxramusage: 1G
 headermapping:
   headerprefix: x-
   retention:
