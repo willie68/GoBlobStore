@@ -12,6 +12,7 @@ type MainStorageDao struct {
 	RtnMng      interfaces.RetentionManager
 	StgDao      interfaces.BlobStorageDao
 	BckDao      interfaces.BlobStorageDao
+	CchDao      interfaces.BlobStorageDao
 	Bcksyncmode bool
 	Tenant      string
 }

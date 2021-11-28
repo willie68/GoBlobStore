@@ -42,7 +42,7 @@ func (f *FastCache) Init() error {
 		return err
 	}
 
-	f.descriptions = make([]model.BlobDescription, 0)
+	f.entries = make([]LRUEntry, 0)
 	return nil
 }
 
@@ -72,8 +72,8 @@ func (f *FastCache) GetTenant() string {
 
 // getting a list of blob from the storage
 func (f *FastCache) GetBlobs(callback func(id string) bool) error {
-	for _, d := range f.descriptions {
-		next := callback(d.BlobID)
+	for _, d := range f.entries {
+		next := callback(d.description.BlobID)
 		if !next {
 			break
 		}

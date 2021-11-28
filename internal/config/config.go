@@ -35,6 +35,7 @@ type Engine struct {
 	BackupSyncmode   bool    `yaml:"backupsyncmode"`
 	Storage          Storage `yaml:"storage"`
 	Backup           Storage `yaml:"backup"`
+	Cache            Storage `yaml:"cache"`
 }
 
 type Storage struct {
