@@ -31,6 +31,7 @@ type LRUEntry struct {
 }
 
 var _ interfaces.BlobStorageDao = &FastCache{}
+var fastcache FastCache
 
 // initialise this dao
 func (f *FastCache) Init() error {

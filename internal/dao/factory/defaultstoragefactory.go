@@ -23,6 +23,7 @@ var NO_STG_ERROR = errors.New("no storage class given")
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
 	RtnMgr       interfaces.RetentionManager
+	CchDao       interfaces.BlobStorageDao
 	tenantStores map[string]*interfaces.BlobStorageDao
 	cnfg         config.Engine
 }
@@ -114,10 +115,6 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-		err = dao.Init()
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	if dao == nil {
@@ -162,24 +159,33 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 	}, nil
 }
 
-func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) (*fastcache.FastCache, error) {
-	rootpath, err := config.GetConfigValueAsString(stg, "rootpath")
-	if err != nil {
-		return nil, err
+func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
+	// as cache there will be always the same instance delivered
+	if d.CchDao == nil {
+
+		rootpath, err := config.GetConfigValueAsString(stg, "rootpath")
+		if err != nil {
+			return nil, err
+		}
+		maxcount, err := config.GetConfigValueAsInt(stg, "maxcount")
+		if err != nil {
+			return nil, err
+		}
+		ramusage, err := config.GetConfigValueAsInt(stg, "maxramusage")
+		if err != nil {
+			return nil, err
+		}
+		d.CchDao = &fastcache.FastCache{
+			RootPath:   rootpath,
+			MaxCount:   maxcount,
+			MaxRamSize: ramusage,
+		}
+		err = d.CchDao.Init()
+		if err != nil {
+			return nil, err
+		}
 	}
-	maxcount, err := config.GetConfigValueAsInt(stg, "maxcount")
-	if err != nil {
-		return nil, err
-	}
-	ramusage, err := config.GetConfigValueAsInt(stg, "maxramusage")
-	if err != nil {
-		return nil, err
-	}
-	return &fastcache.FastCache{
-		RootPath:   rootpath,
-		MaxCount:   maxcount,
-		MaxRamSize: ramusage,
-	}, nil
+	return d.CchDao, nil
 }
 
 func (d *DefaultStorageFactory) Close() error {
