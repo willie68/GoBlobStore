@@ -14,6 +14,8 @@ import (
 
 const (
 	BINARY_EXT = ".bin"
+	// this is the max size of a blob that will be stored into memory, if possible
+	mffrs = 100 * 1024
 )
 
 type FastCache struct {
@@ -28,6 +30,7 @@ type FastCache struct {
 type LRUEntry struct {
 	lastAccess  time.Time
 	description model.BlobDescription
+	data        []byte
 }
 
 var _ interfaces.BlobStorageDao = &FastCache{}
@@ -85,7 +88,7 @@ func (f *FastCache) GetBlobs(callback func(id string) bool) error {
 // CRUD operation on the blob files
 // storing a blob to the storage system
 func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) {
-	size, err := f.writeBinFile(b.BlobID, r)
+	size, dat, err := f.writeBinFile(b.BlobID, r)
 	if err != nil {
 		return "", err
 	}
@@ -93,6 +96,7 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 	f.entries = append(f.entries, LRUEntry{
 		lastAccess:  time.Now(),
 		description: *b,
+		data:        dat,
 	})
 	f.handleContrains()
 	return b.BlobID, nil
@@ -105,26 +109,32 @@ func (f *FastCache) handleContrains() error {
 	return nil
 }
 
-func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, error) {
+func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) {
 	binFile, err := f.buildFilename(id, BINARY_EXT)
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 
 	w, err := os.Create(binFile)
 
 	if err != nil {
-		return 0, err
+		return 0, nil, err
 	}
 	size, err := w.ReadFrom(r)
 	if err != nil {
-		f.Close()
+		w.Close()
 		os.Remove(binFile)
-		return 0, err
+		return 0, nil, err
 	}
-	f.Close()
-
-	return size, nil
+	w.Close()
+	if size < mffrs {
+		dat, err := os.ReadFile(binFile)
+		if err != nil {
+			dat = nil
+		}
+		return size, dat, nil
+	}
+	return size, nil, nil
 }
 
 func (f *FastCache) buildFilename(id string, ext string) (string, error) {
