@@ -102,7 +102,7 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 		description: *b,
 		data:        dat,
 	})
-	go f.handleContrains()
+	f.handleContrains()
 	return b.BlobID, nil
 }
 
@@ -238,11 +238,13 @@ func (f *FastCache) RetrieveBlob(id string, w io.Writer) error {
 				if err != nil {
 					return err
 				}
+				return nil
 			} else {
 				err := f.getBlob(id, w)
 				if err != nil {
 					return err
 				}
+				return nil
 			}
 		}
 	}
