@@ -1,10 +1,12 @@
 package fastcache
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -18,6 +20,8 @@ const (
 	mffrs = 100 * 1024
 )
 
+var errEmptyIndex error = errors.New("empty id not allowed")
+
 type FastCache struct {
 	RootPath   string // this is the root path for the file system storage
 	MaxCount   int64
@@ -25,6 +29,7 @@ type FastCache struct {
 	size       int64
 	count      int64
 	entries    []LRUEntry
+	dmu        sync.Mutex
 }
 
 type LRUEntry struct {
@@ -34,7 +39,6 @@ type LRUEntry struct {
 }
 
 var _ interfaces.BlobStorageDao = &FastCache{}
-var fastcache FastCache
 
 // initialise this dao
 func (f *FastCache) Init() error {
@@ -98,15 +102,60 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 		description: *b,
 		data:        dat,
 	})
-	f.handleContrains()
+	go f.handleContrains()
 	return b.BlobID, nil
 }
 
+func (f *FastCache) updateAccess(id string) {
+	for _, e := range f.entries {
+		if e.description.BlobID == id {
+			e.lastAccess = time.Now()
+			break
+		}
+	}
+}
+
 func (f *FastCache) handleContrains() error {
+	f.dmu.Lock()
+	defer f.dmu.Unlock()
 	if len(f.entries) > int(f.MaxCount) {
-		// remove oldest entry
+		oldest := 0
+		for x, e := range f.entries {
+			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
+				oldest = x
+			}
+		}
+		// remove oldest entry from cache
+		f.deleteBlobWithIndex(oldest)
+	}
+	var ramsize int64 = 0
+	oldest := 0
+	for x, e := range f.entries {
+		if e.data != nil {
+			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
+				oldest = x
+			}
+			ramsize += int64(len(e.data))
+		}
+	}
+	for ramsize > f.MaxRamSize {
+		ramsize -= int64(len(f.entries[oldest].data))
+		f.entries[oldest].data = nil
+		oldest = f.getOldestWithData()
 	}
 	return nil
+}
+
+func (f *FastCache) getOldestWithData() int {
+	oldest := 0
+	for x, e := range f.entries {
+		if e.data != nil {
+			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
+				oldest = x
+			}
+		}
+	}
+	return oldest
 }
 
 func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) {
@@ -150,21 +199,119 @@ func (f *FastCache) buildFilename(id string, ext string) (string, error) {
 
 // checking, if a blob is present
 func (f *FastCache) HasBlob(id string) (bool, error) {
+	if id == "" {
+		return false, errEmptyIndex
+	}
+	for _, e := range f.entries {
+		if e.description.BlobID == id {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
 // getting the description of the file
 func (f *FastCache) GetBlobDescription(id string) (*model.BlobDescription, error) {
-	return nil, nil
+	if id == "" {
+		return nil, errEmptyIndex
+	}
+	for _, e := range f.entries {
+		if e.description.BlobID == id {
+			go f.updateAccess(id)
+			return &e.description, nil
+		}
+	}
+	return nil, os.ErrNotExist
 }
 
 // retrieving the binary data from the storage system
 func (f *FastCache) RetrieveBlob(id string, w io.Writer) error {
+	if id == "" {
+		return errEmptyIndex
+	}
+	for _, e := range f.entries {
+		if e.description.BlobID == id {
+			go f.updateAccess(id)
+			// checking memory cache
+			if e.data != nil {
+				_, err := w.Write(e.data)
+				if err != nil {
+					return err
+				}
+			} else {
+				err := f.getBlob(id, w)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return os.ErrNotExist
+}
+
+func (f *FastCache) getBlob(id string, w io.Writer) error {
+	binFile, err := f.buildFilename(id, BINARY_EXT)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		return os.ErrNotExist
+	}
+	r, err := os.Open(binFile)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	_, err = io.Copy(w, r)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // removing a blob from the storage system
 func (f *FastCache) DeleteBlob(id string) error {
+	if id == "" {
+		return errEmptyIndex
+	}
+	f.dmu.Lock()
+	defer f.dmu.Unlock()
+	index := -1
+	for x, e := range f.entries {
+		if e.description.BlobID == id {
+			index = x
+			break
+		}
+	}
+	if index >= 0 {
+		f.deleteBlobWithIndex(index)
+		return nil
+	}
+	return os.ErrNotExist
+}
+
+func (f *FastCache) deleteBlobWithIndex(x int) {
+	if x >= 0 {
+		bd := f.entries[x]
+		f.deleteBlobFile(bd.description.BlobID)
+		ret := make([]LRUEntry, 0)
+		ret = append(ret, f.entries[:x]...)
+		f.entries = append(ret, f.entries[x+1:]...)
+	}
+}
+
+func (f *FastCache) deleteBlobFile(id string) error {
+	binFile, err := f.buildFilename(id, BINARY_EXT)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		return os.ErrNotExist
+	}
+	err = os.Remove(binFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
