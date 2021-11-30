@@ -98,34 +98,6 @@ func TestList(t *testing.T) {
 	dao.Close()
 }
 
-func TestInfo(t *testing.T) {
-	initTest(t)
-	dao := getStoreageDao(t)
-	ast := assert.New(t)
-
-	ok, err := dao.HasBlob("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
-	ast.Nil(err)
-	ast.True(ok)
-
-	ok, err = dao.HasBlob("0000fc02-050a-418a-a701-efd814aa6b36")
-	ast.Nil(err)
-	ast.True(ok)
-
-	info, err := dao.GetBlobDescription("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ast.Equal("004b4987-42fb-43e4-8e13-d6994ce0e6f1", info.BlobID)
-
-	info, err = dao.GetBlobDescription("0000fc02-050a-418a-a701-efd814aa6b36")
-	if err != nil {
-		t.Fatal(err)
-	}
-	ast.Equal("0000fc02-050a-418a-a701-efd814aa6b36", info.BlobID)
-
-	dao.Close()
-}
-
 func TestCRD(t *testing.T) {
 	dao := getStoreageDao(t)
 	uuid := utils.GenerateID()
@@ -271,4 +243,56 @@ func getFiles(t *testing.T, dao *FastCache) []string {
 		t.Fatal(err)
 	}
 	return blobs
+}
+
+func TestSameUUID(t *testing.T) {
+	initTest(t)
+	clear(t)
+	ast := assert.New(t)
+
+	dao := getStoreageDao(t)
+	uuid := utils.GenerateID()
+
+	b := model.BlobDescription{
+		BlobID:        uuid,
+		StoreID:       "MCS",
+		TenantID:      "MCS",
+		ContentLength: 22,
+		ContentType:   "text/plain",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		Filename:      "test.txt",
+		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		Retention:     180000,
+		Properties:    make(map[string]interface{}),
+	}
+	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["X-retention"] = []int{123456}
+	b.Properties["X-tenant"] = "MCS"
+
+	r := strings.NewReader("this is a blob content")
+	id, err := dao.StoreBlob(&b, r)
+	ast.Nil(err)
+	ast.NotNil(id)
+	ast.Equal(id, b.BlobID)
+
+	info, err := dao.GetBlobDescription(id)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
+
+	var buf bytes.Buffer
+
+	err = dao.RetrieveBlob(id, &buf)
+	ast.Nil(err)
+
+	ast.Equal("this is a blob content", buf.String())
+
+	r = strings.NewReader("this is a blob content")
+	id, err = dao.StoreBlob(&b, r)
+	ast.NotNil(err)
+	ast.Equal(os.ErrExist, err)
+	ast.Equal(id, b.BlobID)
+
+	err = dao.DeleteBlob(id)
+	ast.Nil(err)
+	dao.Close()
 }

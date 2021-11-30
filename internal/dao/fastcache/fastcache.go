@@ -20,7 +20,10 @@ const (
 	mffrs = 100 * 1024
 )
 
-var errEmptyIndex error = errors.New("empty id not allowed")
+var (
+	errEmptyIndex     error = errors.New("empty id not allowed")
+	errNotImplemented error = errors.New("method not implemented in fastcache")
+)
 
 type FastCache struct {
 	RootPath   string // this is the root path for the file system storage
@@ -92,6 +95,13 @@ func (f *FastCache) GetBlobs(callback func(id string) bool) error {
 // CRUD operation on the blob files
 // storing a blob to the storage system
 func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) {
+	ok, err := f.HasBlob(b.BlobID)
+	if err != nil {
+		return "", err
+	}
+	if ok {
+		return b.BlobID, os.ErrExist
+	}
 	size, dat, err := f.writeBinFile(b.BlobID, r)
 	if err != nil {
 		return "", err
@@ -320,19 +330,19 @@ func (f *FastCache) deleteBlobFile(id string) error {
 //Retentionrelated methods
 // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (f *FastCache) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
-	return nil
+	return errNotImplemented
 }
 func (f *FastCache) AddRetention(r *model.RetentionEntry) error {
-	return nil
+	return errNotImplemented
 }
 func (f *FastCache) GetRetention(id string) (model.RetentionEntry, error) {
-	return model.RetentionEntry{}, nil
+	return model.RetentionEntry{}, errNotImplemented
 }
 func (f *FastCache) DeleteRetention(id string) error {
-	return nil
+	return errNotImplemented
 }
 func (f *FastCache) ResetRetention(id string) error {
-	return nil
+	return errNotImplemented
 }
 
 // closing the storage

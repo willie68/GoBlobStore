@@ -49,48 +49,69 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 			go m.backupFile(b, id)
 		}
 	}
-	go m.cacheFile(b, id)
+	go m.cacheFile(b)
 	return id, err
 }
 
-func (m *MainStorageDao) cacheFile(b *model.BlobDescription, id string) {
+func (m *MainStorageDao) cacheFileByID(id string) {
 	if m.CchDao != nil {
-		rd, wr := io.Pipe()
-
-		go func() {
-			// close the writer, so the reader knows there's no more data
-			defer wr.Close()
-
-			err := m.StgDao.RetrieveBlob(id, wr)
-			if err != nil {
-				clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+		ok, _ := m.CchDao.HasBlob(id)
+		if !ok {
+			b, err := m.GetBlobDescription(id)
+			if err == nil {
+				m.cacheFile(b)
 			}
-		}()
-		_, err := m.CchDao.StoreBlob(b, rd)
-		if err != nil {
-			clog.Logger.Errorf("error getting blob: %s,%v", id, err)
 		}
-		defer rd.Close()
+	}
+}
+
+func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
+	if m.CchDao != nil {
+		ok, _ := m.CchDao.HasBlob(b.BlobID)
+		if !ok {
+			rd, wr := io.Pipe()
+
+			go func() {
+				// close the writer, so the reader knows there's no more data
+				defer wr.Close()
+
+				err := m.StgDao.RetrieveBlob(b.BlobID, wr)
+				if err != nil {
+					clog.Logger.Errorf("error getting blob: %s,%v", b.BlobID, err)
+				}
+			}()
+			_, err := m.CchDao.StoreBlob(b, rd)
+			if err != nil {
+				clog.Logger.Errorf("error getting blob: %s,%v", b.BlobID, err)
+			}
+			defer rd.Close()
+
+		}
 	}
 }
 
 func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
-	rd, wr := io.Pipe()
+	if m.BckDao != nil {
+		ok, _ := m.BckDao.HasBlob(b.BlobID)
+		if !ok {
+			rd, wr := io.Pipe()
 
-	go func() {
-		// close the writer, so the reader knows there's no more data
-		defer wr.Close()
+			go func() {
+				// close the writer, so the reader knows there's no more data
+				defer wr.Close()
 
-		err := m.StgDao.RetrieveBlob(id, wr)
-		if err != nil {
-			clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+				err := m.StgDao.RetrieveBlob(id, wr)
+				if err != nil {
+					clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+				}
+			}()
+			_, err := m.BckDao.StoreBlob(b, rd)
+			if err != nil {
+				clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+			}
+			defer rd.Close()
 		}
-	}()
-	_, err := m.BckDao.StoreBlob(b, rd)
-	if err != nil {
-		clog.Logger.Errorf("error getting blob: %s,%v", id, err)
 	}
-	defer rd.Close()
 }
 
 // HasBlob getting the description of the file
@@ -126,7 +147,12 @@ func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
 			}
 		}
 	}
-	return m.StgDao.RetrieveBlob(id, w)
+	err := m.StgDao.RetrieveBlob(id, w)
+	if err != nil {
+		return err
+	}
+	go m.cacheFileByID(id)
+	return nil
 }
 
 // DeleteBlob removing a blob from the storage system
