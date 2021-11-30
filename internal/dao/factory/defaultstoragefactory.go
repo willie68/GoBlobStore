@@ -175,10 +175,15 @@ func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) 
 		if err != nil {
 			return nil, err
 		}
+		mffrs, err := config.GetConfigValueAsInt(stg, "maxfilesizeforram")
+		if err != nil {
+			mffrs = fastcache.Defaultmffrs
+		}
 		d.CchDao = &fastcache.FastCache{
-			RootPath:   rootpath,
-			MaxCount:   maxcount,
-			MaxRamSize: ramusage,
+			RootPath:          rootpath,
+			MaxCount:          maxcount,
+			MaxRamSize:        ramusage,
+			MaxFileSizeForRAM: mffrs,
 		}
 		err = d.CchDao.Init()
 		if err != nil {

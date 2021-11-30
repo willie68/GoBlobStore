@@ -17,7 +17,7 @@ import (
 const (
 	BINARY_EXT = ".bin"
 	// this is the max size of a blob that will be stored into memory, if possible
-	mffrs = 100 * 1024
+	Defaultmffrs = 100 * 1024
 )
 
 var (
@@ -26,13 +26,14 @@ var (
 )
 
 type FastCache struct {
-	RootPath   string // this is the root path for the file system storage
-	MaxCount   int64
-	MaxRamSize int64
-	size       int64
-	count      int64
-	entries    []LRUEntry
-	dmu        sync.Mutex
+	RootPath          string // this is the root path for the file system storage
+	MaxCount          int64
+	MaxRamSize        int64
+	MaxFileSizeForRAM int64
+	size              int64
+	count             int64
+	entries           []LRUEntry
+	dmu               sync.Mutex
 }
 
 type LRUEntry struct {
@@ -54,6 +55,10 @@ func (f *FastCache) Init() error {
 	}
 
 	f.entries = make([]LRUEntry, 0)
+
+	if f.MaxFileSizeForRAM == 0 {
+		f.MaxFileSizeForRAM = Defaultmffrs
+	}
 	return nil
 }
 
@@ -186,7 +191,7 @@ func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) 
 		return 0, nil, err
 	}
 	w.Close()
-	if size < mffrs {
+	if size < f.MaxFileSizeForRAM {
 		dat, err := os.ReadFile(binFile)
 		if err != nil {
 			dat = nil
