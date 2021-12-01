@@ -20,8 +20,8 @@ Retention is given in minutes from CreationDate or, if a reset retention is call
 
 simply run 
 
-`docker run -v <host data path>:/data/storage -p go-blob-store`
+`docker run -v <host data path>:/data -p go-blob-store`
 
-to run this serivce with a simplefile storage class. Exposes port 8443 for the data interface and 8080 for the metrics.
+to run this serivce with a simplefile storage class for storage and a preconfigured fastcache for the cache. Exposes port 8443 for the data interface and 8080 for the metrics.
 
 For other options see the configuration file.

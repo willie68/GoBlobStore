@@ -18,7 +18,7 @@ engine:
   cache:
     storageclass: FastCache
     properties:
-      rootpath: /cache/storage
+      rootpath: /data/cache
       maxcount: 100000
       maxramusage: 1G
 headermapping:

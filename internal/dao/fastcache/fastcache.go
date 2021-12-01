@@ -46,10 +46,15 @@ var _ interfaces.BlobStorageDao = &FastCache{}
 
 // initialise this dao
 func (f *FastCache) Init() error {
+	err := os.MkdirAll(f.RootPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
 	f.count = 0
 	f.size = 0
 
-	err := f.removeContents(f.RootPath)
+	err = f.removeContents(f.RootPath)
 	if err != nil {
 		return err
 	}
