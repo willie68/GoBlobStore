@@ -8,7 +8,7 @@ features
 - proxy for file system and s3
 - simple http interface
 - http path, http header or jwt based tenant discovery 
-- configurable jwt role based or basic auth access control 
+- configurable jwt role based access control 
 
 Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase.
 

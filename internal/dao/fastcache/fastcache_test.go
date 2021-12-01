@@ -61,6 +61,19 @@ func getStoreageDao(t *testing.T) *FastCache {
 	return &dao
 }
 
+func TestAutoCreatPath(t *testing.T) {
+	ast := assert.New(t)
+
+	if _, err := os.Stat(rootpath); err == nil {
+		err := os.RemoveAll(rootpath)
+		ast.Nil(err)
+	}
+	getStoreageDao(t)
+	_, err := os.Stat(rootpath)
+
+	ast.Nil(err)
+}
+
 func TestNotFound(t *testing.T) {
 	initTest(t)
 	clear(t)
@@ -118,33 +131,27 @@ func TestCRD(t *testing.T) {
 	b.Properties["X-retention"] = []int{123456}
 	b.Properties["X-tenant"] = "MCS"
 
+	ast := assert.New(t)
+
 	r := strings.NewReader("this is a blob content")
 	id, err := dao.StoreBlob(&b, r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotNil(t, id)
-	assert.Equal(t, id, b.BlobID)
+	ast.Nil(err)
+	ast.NotNil(id)
+	ast.Equal(id, b.BlobID)
 
 	info, err := dao.GetBlobDescription(id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, id, info.BlobID)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
 
 	var buf bytes.Buffer
 
 	err = dao.RetrieveBlob(id, &buf)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ast.Nil(err)
 
-	assert.Equal(t, "this is a blob content", buf.String())
+	ast.Equal("this is a blob content", buf.String())
 
 	err = dao.DeleteBlob(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ast.Nil(err)
 
 	dao.Close()
 }
