@@ -23,6 +23,15 @@ const (
 )
 
 func initTest(t *testing.T) {
+	ast := assert.New(t)
+
+	if _, err := os.Stat(rootpath); err == nil {
+		err := os.RemoveAll(rootpath)
+		ast.Nil(err)
+	}
+	// getting the zip file and extracting it into the file system
+	os.MkdirAll(rootpath, os.ModePerm)
+
 	// getting the zip file and extracting it into the file system
 	archive, err := zip.OpenReader(zipfile)
 	if err != nil {
