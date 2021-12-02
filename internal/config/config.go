@@ -20,6 +20,8 @@ type Config struct {
 
 	SecretFile string `yaml:"secretfile"`
 
+	Apikey bool `yaml:"apikey"`
+
 	HealthCheck HealthCheck `yaml:"healthcheck"`
 
 	Logging LoggingConfig `yaml:"logging"`
@@ -60,6 +62,7 @@ var DefaultConfig = Config{
 	Sslport:    8443,
 	ServiceURL: "https://127.0.0.1:8443",
 	SecretFile: "",
+	Apikey:     true,
 	HealthCheck: HealthCheck{
 		Period: 30,
 	},
@@ -110,6 +113,7 @@ var config = Config{
 	Port:       0,
 	Sslport:    0,
 	ServiceURL: "http://127.0.0.1",
+	Apikey:     true,
 	HealthCheck: HealthCheck{
 		Period: 30,
 	},

@@ -20,7 +20,7 @@ engine:
     properties:
       rootpath: /data/cache
       maxcount: 100000
-      maxramusage: 1G
+      maxramusage: 1024000000
 headermapping:
   headerprefix: x-
   retention:

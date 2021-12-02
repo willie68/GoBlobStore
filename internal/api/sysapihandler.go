@@ -26,7 +26,7 @@ func SysAPIHandler(cfg SysAPIConfig) func(next http.Handler) http.Handler {
 			}
 			APIKeyHeader, ok := cfg.HeaderKeyMapping[APIKeyHeaderKey]
 			if ok && APIKeyHeader != "" && cfg.Apikey != strings.ToLower(r.Header.Get(APIKeyHeader)) {
-				msg := "either system id or apikey not correct"
+				msg := "apikey not correct"
 				apierr := serror.BadRequest(nil, "missing-header", msg)
 				render.Status(r, apierr.Code)
 				render.JSON(w, r, apierr)
