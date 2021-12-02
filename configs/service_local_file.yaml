@@ -2,6 +2,7 @@ port: 8000
 sslport: 8443
 serviceURL: https://127.0.0.1:8443
 secretfile: ""
+apikey: true
 healthcheck:
   period: 30
 logging:
@@ -15,6 +16,12 @@ engine:
     storageclass: SimpleFile
     properties:
       rootpath: H:/temp/blbstg
+  cache:
+    storageclass: FastCache
+    properties:
+      rootpath: H:/temp/blbcache
+      maxcount: 100000
+      maxramusage: 1024000000
 headermapping:
   headerprefix: x-
   retention:

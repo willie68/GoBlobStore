@@ -15,6 +15,12 @@ engine:
     storageclass: SimpleFile
     properties:
       rootpath: /data/storage
+  cache:
+    storageclass: FastCache
+    properties:
+      rootpath: /data/cache
+      maxcount: 100000
+      maxramusage: 1024000000
 headermapping:
   headerprefix: x-
   retention:

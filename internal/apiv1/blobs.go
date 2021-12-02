@@ -24,12 +24,6 @@ const Baseurl = "/api/v1"
 
 const BlobsSubpath = "/blobs"
 
-//APIKey the apikey of this service
-var APIKey string
-
-//SystemID the systemid of this service
-var SystemID string
-
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
 

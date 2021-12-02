@@ -12,6 +12,7 @@ type MainStorageDao struct {
 	RtnMng      interfaces.RetentionManager
 	StgDao      interfaces.BlobStorageDao
 	BckDao      interfaces.BlobStorageDao
+	CchDao      interfaces.BlobStorageDao
 	Bcksyncmode bool
 	Tenant      string
 }
@@ -48,41 +49,110 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 			go m.backupFile(b, id)
 		}
 	}
+	go m.cacheFile(b)
 	return id, err
 }
 
-func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
-	rd, wr := io.Pipe()
-
-	go func() {
-		// close the writer, so the reader knows there's no more data
-		defer wr.Close()
-
-		err := m.StgDao.RetrieveBlob(id, wr)
-		if err != nil {
-			clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+func (m *MainStorageDao) cacheFileByID(id string) {
+	if m.CchDao != nil {
+		ok, _ := m.CchDao.HasBlob(id)
+		if !ok {
+			b, err := m.GetBlobDescription(id)
+			if err == nil {
+				m.cacheFile(b)
+			}
 		}
-	}()
-	_, err := m.BckDao.StoreBlob(b, rd)
-	if err != nil {
-		clog.Logger.Errorf("error getting blob: %s,%v", id, err)
 	}
-	defer rd.Close()
+}
+
+func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
+	if m.CchDao != nil {
+		ok, _ := m.CchDao.HasBlob(b.BlobID)
+		if !ok {
+			rd, wr := io.Pipe()
+
+			go func() {
+				// close the writer, so the reader knows there's no more data
+				defer wr.Close()
+
+				err := m.StgDao.RetrieveBlob(b.BlobID, wr)
+				if err != nil {
+					clog.Logger.Errorf("error getting blob: %s,%v", b.BlobID, err)
+				}
+			}()
+			_, err := m.CchDao.StoreBlob(b, rd)
+			if err != nil {
+				clog.Logger.Errorf("error getting blob: %s,%v", b.BlobID, err)
+			}
+			defer rd.Close()
+
+		}
+	}
+}
+
+func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
+	if m.BckDao != nil {
+		ok, _ := m.BckDao.HasBlob(b.BlobID)
+		if !ok {
+			rd, wr := io.Pipe()
+
+			go func() {
+				// close the writer, so the reader knows there's no more data
+				defer wr.Close()
+
+				err := m.StgDao.RetrieveBlob(id, wr)
+				if err != nil {
+					clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+				}
+			}()
+			_, err := m.BckDao.StoreBlob(b, rd)
+			if err != nil {
+				clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+			}
+			defer rd.Close()
+		}
+	}
 }
 
 // HasBlob getting the description of the file
 func (m *MainStorageDao) HasBlob(id string) (bool, error) {
+	if m.CchDao != nil {
+		ok, err := m.CchDao.HasBlob(id)
+		if err == nil && ok {
+			return true, nil
+		}
+	}
 	return m.StgDao.HasBlob(id)
 }
 
 // GetBlobDescription getting the description of the file
 func (m *MainStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
+	if m.CchDao != nil {
+		b, err := m.CchDao.GetBlobDescription(id)
+		if err == nil {
+			return b, nil
+		}
+	}
 	return m.StgDao.GetBlobDescription(id)
 }
 
 // RetrieveBlob retrieving the binary data from the storage system
 func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
-	return m.StgDao.RetrieveBlob(id, w)
+	if m.CchDao != nil {
+		ok, _ := m.CchDao.HasBlob(id)
+		if ok {
+			err := m.CchDao.RetrieveBlob(id, w)
+			if err == nil {
+				return nil
+			}
+		}
+	}
+	err := m.StgDao.RetrieveBlob(id, w)
+	if err != nil {
+		return err
+	}
+	go m.cacheFileByID(id)
+	return nil
 }
 
 // DeleteBlob removing a blob from the storage system
@@ -98,6 +168,9 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 		}
 	}
 	m.RtnMng.DeleteRetention(m.Tenant, id)
+	if m.CchDao != nil {
+		m.CchDao.DeleteBlob(id)
+	}
 	return nil
 }
 
@@ -105,6 +178,7 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 func (m *MainStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return m.StgDao.GetAllRetentions(callback)
 }
+
 func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	err := m.StgDao.AddRetention(r)
 	if m.BckDao != nil {

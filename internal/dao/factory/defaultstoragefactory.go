@@ -6,6 +6,7 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/business"
+	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
@@ -15,11 +16,14 @@ import (
 const STGCLASS_SIMPLE_FILE = "SimpleFile"
 const STGCLASS_S3 = "S3Storage"
 
+const STGCLASS_FASTCACHE = "FastCache"
+
 var NO_STG_ERROR = errors.New("no storage class given")
 
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
 	RtnMgr       interfaces.RetentionManager
+	CchDao       interfaces.BlobStorageDao
 	tenantStores map[string]*interfaces.BlobStorageDao
 	cnfg         config.Engine
 }
@@ -37,6 +41,7 @@ func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobSto
 	if !ok {
 		storageDao, err := d.createStorage(tenant)
 		if err != nil {
+			clog.Logger.Errorf("can't create storage for tenant: %s\n %v", tenant, err)
 			return nil, err
 		}
 		d.tenantStores[tenant] = &storageDao
@@ -64,11 +69,17 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		return nil, err
 	}
 
+	cchdao, err := d.getImplStgDao(d.cnfg.Cache, "blbstg")
+	if err != nil && !errors.Is(err, NO_STG_ERROR) {
+		return nil, err
+	}
+
 	return &business.MainStorageDao{
 		Bcksyncmode: d.cnfg.BackupSyncmode,
 		RtnMng:      d.RtnMgr,
 		StgDao:      dao,
 		BckDao:      bckdao,
+		CchDao:      cchdao,
 		Tenant:      tenant,
 	}, nil
 }
@@ -96,6 +107,11 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 			return nil, err
 		}
 		err = dao.Init()
+		if err != nil {
+			return nil, err
+		}
+	case STGCLASS_FASTCACHE:
+		dao, err = d.getFastcache(stg, tenant)
 		if err != nil {
 			return nil, err
 		}
@@ -141,6 +157,40 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 		Tenant:    tenant,
 		Password:  password,
 	}, nil
+}
+
+func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
+	// as cache there will be always the same instance delivered
+	if d.CchDao == nil {
+
+		rootpath, err := config.GetConfigValueAsString(stg, "rootpath")
+		if err != nil {
+			return nil, err
+		}
+		maxcount, err := config.GetConfigValueAsInt(stg, "maxcount")
+		if err != nil {
+			return nil, err
+		}
+		ramusage, err := config.GetConfigValueAsInt(stg, "maxramusage")
+		if err != nil {
+			return nil, err
+		}
+		mffrs, err := config.GetConfigValueAsInt(stg, "maxfilesizeforram")
+		if err != nil {
+			mffrs = fastcache.Defaultmffrs
+		}
+		d.CchDao = &fastcache.FastCache{
+			RootPath:          rootpath,
+			MaxCount:          maxcount,
+			MaxRamSize:        ramusage,
+			MaxFileSizeForRAM: mffrs,
+		}
+		err = d.CchDao.Init()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return d.CchDao, nil
 }
 
 func (d *DefaultStorageFactory) Close() error {

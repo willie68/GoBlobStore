@@ -63,20 +63,6 @@ func apiRoutes() *chi.Mux {
 		middleware.Logger,
 		//middleware.DefaultCompress,
 		middleware.Recoverer,
-		api.SysAPIHandler(api.SysAPIConfig{
-			Apikey:           apikey,
-			HeaderKeyMapping: serviceConfig.HeaderMapping,
-			SkipFunc: func(r *http.Request) bool {
-				path := strings.TrimSuffix(r.URL.Path, "/")
-				if strings.HasSuffix(path, "/health") {
-					return true
-				}
-				if strings.HasSuffix(path, "/readiness") {
-					return true
-				}
-				return false
-			},
-		}),
 		cors.Handler(cors.Options{
 			// AllowedOrigins: []string{"https://foo.com"}, // Use this to allow specific origin hosts
 			AllowedOrigins: []string{"*"},
@@ -89,6 +75,24 @@ func apiRoutes() *chi.Mux {
 		}),
 	)
 
+	if config.Get().Apikey {
+		router.Use(
+			api.SysAPIHandler(api.SysAPIConfig{
+				Apikey:           apikey,
+				HeaderKeyMapping: serviceConfig.HeaderMapping,
+				SkipFunc: func(r *http.Request) bool {
+					path := strings.TrimSuffix(r.URL.Path, "/")
+					if strings.HasSuffix(path, "/health") {
+						return true
+					}
+					if strings.HasSuffix(path, "/readiness") {
+						return true
+					}
+					return false
+				},
+			}),
+		)
+	}
 	router.Route("/", func(r chi.Router) {
 		r.Mount(apiv1.Baseurl+apiv1.BlobsSubpath, apiv1.BlobRoutes())
 		r.Mount(apiv1.Baseurl+apiv1.ConfigSubpath, apiv1.ConfigRoutes())
@@ -162,7 +166,9 @@ func main() {
 	}
 
 	apikey = getApikey()
-	clog.Logger.Infof("apikey: %s", apikey)
+	if config.Get().Apikey {
+		clog.Logger.Infof("apikey: %s", apikey)
+	}
 	clog.Logger.Infof("ssl: %t", ssl)
 	clog.Logger.Infof("serviceURL: %s", serviceConfig.ServiceURL)
 	clog.Logger.Infof("%s api routes", servicename)

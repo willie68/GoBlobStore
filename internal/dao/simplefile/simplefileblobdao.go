@@ -33,6 +33,10 @@ var _ interfaces.BlobStorageDao = &SimpleFileBlobStorageDao{}
 const retentionBaseKey = "retentionBase"
 
 func (s *SimpleFileTenantManager) Init() error {
+	err := os.MkdirAll(s.RootPath, os.ModePerm)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
