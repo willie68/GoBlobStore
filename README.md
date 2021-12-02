@@ -4,7 +4,7 @@ A multi-tenant proxy service for storing binary data in various storage systems 
 features
 - multi tenant binary store with strong separation of data
 - simple docker container
-- on multi container enviroment automatic discovery and syncronisation of tasks
+- on multi container environment automatic discovery and synchronization of tasks
 - proxy for file system and s3
 - simple http interface
 - http path, http header or jwt based tenant discovery 
@@ -26,7 +26,7 @@ For other options see the configuration file.
 
 # Configuration
 
-beside the simple default configuration there are some options you might want to change in your enviroment.
+beside the simple default configuration there are some options you might want to change in your environment.
 
 ## Configuration file
 
@@ -110,13 +110,13 @@ engine:
 
 There are defined header for operation
 
-tenant: is the name of the tenant in a multi-tenant environment
+`tenant`: is the name of the tenant in a multi-tenant environment
 
-apikey: the apikey can be used to identify the right usage of this service. (in the configuration you can switch this off)
+`apikey`: the apikey can be used to identify the right usage of this service. (in the configuration you can switch this off)
 
-retention: if set, this blob will die only available until this time (in minutes) is over, counted from the creation time, or, if a reset retention occur, from the reset time.
+`retention`: if set, this blob will die only available until this time (in minutes) is over, counted from the creation time, or, if a reset retention occur, from the reset time.
 
-filename: is the filename of the file itself, and only needed if you use direct binary upload.
+`filename`: is the filename of the file itself, and only needed if you use direct binary upload.
 
 The service automatically save all needed headers to the blob description object. If you set a headerprefix, the service will additionally put all header prefixed with this text to the description, too.
 
@@ -124,10 +124,10 @@ In the config you can map the header to other header names. Example:
 
 ```yaml
 headermapping:
- headerprefix: x-
- retention: X-es-retention
- tenant: X-es-tenant
- filename: X-es-filename
- apikey: X-es-apikey
+ headerprefix: x-mcs
+ retention: X-mcs-retention
+ tenant: X-mcs-tenant
+ filename: X-mcs-filename
+ apikey: X-mcs-apikey
 ```
 
