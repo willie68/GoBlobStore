@@ -20,6 +20,11 @@ type JWT struct {
 	Header    map[string]interface{}
 	Payload   map[string]interface{}
 	Signature string
+	IsValid   bool
+}
+
+type JWTAuth struct {
+	Config JWTAuthConfig
 }
 
 func ParseJWTConfig(cfg config.Authentcation) (JWTAuthConfig, error) {
@@ -37,13 +42,17 @@ func ParseJWTConfig(cfg config.Authentcation) (JWTAuthConfig, error) {
 }
 
 func DecodeJWT(token string) (JWT, error) {
+	jwt := JWT{
+		Token:   token,
+		IsValid: false,
+	}
+
 	if token == "" {
 		return JWT{}, errors.New("missing token string")
 	}
 
-	token = strings.TrimPrefix(token, "Bearer ")
-	jwt := JWT{
-		Token: token,
+	if len(token) > 7 && strings.ToUpper(token[0:6]) == "BEARER" {
+		token = token[7:]
 	}
 
 	// decode JWT token without verifying the signature
@@ -68,7 +77,7 @@ func DecodeJWT(token string) (JWT, error) {
 	if len(jwtParts) > 2 {
 		jwt.Signature = jwtParts[2]
 	}
-
+	jwt.IsValid = true
 	return jwt, nil
 }
 
@@ -87,7 +96,7 @@ func jwtDecodePart(payload string) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (j *JWT) Validate() error {
+func (j *JWT) Validate(cfg JWTAuthConfig) error {
 	//TODO here should be the implementation of the validation of the token
 	return nil
 }
