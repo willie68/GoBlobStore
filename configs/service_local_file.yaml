@@ -29,3 +29,8 @@ headermapping:
   apikey: 
   filename:
 #  apikey: X-es-apikey
+auth:
+  type: jwt
+  properties: 
+    validate: false
+    tenantKey:  "tenant"

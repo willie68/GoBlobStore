@@ -89,7 +89,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	var err error
 	switch stg.Storageclass {
 	case STGCLASS_SIMPLE_FILE:
-		rootpath, err := config.GetConfigValueAsString(stg, "rootpath")
+		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
 			return nil, err
 		}
@@ -124,27 +124,27 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 }
 
 func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) (*s3.S3BlobStorage, error) {
-	endpoint, err := config.GetConfigValueAsString(stg, "endpoint")
+	endpoint, err := config.GetConfigValueAsString(stg.Properties, "endpoint")
 	if err != nil {
 		return nil, err
 	}
-	insecure, err := config.GetConfigValueAsBool(stg, "insecure")
+	insecure, err := config.GetConfigValueAsBool(stg.Properties, "insecure")
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := config.GetConfigValueAsString(stg, "bucket")
+	bucket, err := config.GetConfigValueAsString(stg.Properties, "bucket")
 	if err != nil {
 		return nil, err
 	}
-	accessKey, err := config.GetConfigValueAsString(stg, "accessKey")
+	accessKey, err := config.GetConfigValueAsString(stg.Properties, "accessKey")
 	if err != nil {
 		return nil, err
 	}
-	secretKey, err := config.GetConfigValueAsString(stg, "secretKey")
+	secretKey, err := config.GetConfigValueAsString(stg.Properties, "secretKey")
 	if err != nil {
 		return nil, err
 	}
-	password, err := config.GetConfigValueAsString(stg, "password")
+	password, err := config.GetConfigValueAsString(stg.Properties, "password")
 	if err != nil {
 		return nil, err
 	}
@@ -163,19 +163,19 @@ func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) 
 	// as cache there will be always the same instance delivered
 	if d.CchDao == nil {
 
-		rootpath, err := config.GetConfigValueAsString(stg, "rootpath")
+		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
 			return nil, err
 		}
-		maxcount, err := config.GetConfigValueAsInt(stg, "maxcount")
+		maxcount, err := config.GetConfigValueAsInt(stg.Properties, "maxcount")
 		if err != nil {
 			return nil, err
 		}
-		ramusage, err := config.GetConfigValueAsInt(stg, "maxramusage")
+		ramusage, err := config.GetConfigValueAsInt(stg.Properties, "maxramusage")
 		if err != nil {
 			return nil, err
 		}
-		mffrs, err := config.GetConfigValueAsInt(stg, "maxfilesizeforram")
+		mffrs, err := config.GetConfigValueAsInt(stg.Properties, "maxfilesizeforram")
 		if err != nil {
 			mffrs = fastcache.Defaultmffrs
 		}

@@ -4,7 +4,6 @@ go 1.16
 
 require (
 	github.com/aphistic/golf v0.0.0-20180712155816-02c07f170c5a
-	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/cors v1.2.0
 	github.com/go-chi/render v1.0.1
 	github.com/go-playground/validator/v10 v10.9.0
@@ -19,6 +18,7 @@ require (
 require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
 	github.com/aphistic/sweet v0.3.0 // indirect
+	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/stretchr/objx v0.1.1 // indirect
 )

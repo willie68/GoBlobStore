@@ -13,7 +13,7 @@ import (
 func CreateTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 	switch stgCfng.Storageclass {
 	case STGCLASS_SIMPLE_FILE:
-		rootpath, err := config.GetConfigValueAsString(stgCfng, "rootpath")
+		rootpath, err := config.GetConfigValueAsString(stgCfng.Properties, "rootpath")
 		if err != nil {
 			return nil, err
 		}
@@ -40,27 +40,27 @@ func CreateTenantDao(stgCfng config.Storage) (interfaces.TenantDao, error) {
 }
 
 func getS3TenantManager(stgCfng config.Storage) (*s3.S3TenantManager, error) {
-	endpoint, err := config.GetConfigValueAsString(stgCfng, "endpoint")
+	endpoint, err := config.GetConfigValueAsString(stgCfng.Properties, "endpoint")
 	if err != nil {
 		return nil, err
 	}
-	insecure, err := config.GetConfigValueAsBool(stgCfng, "insecure")
+	insecure, err := config.GetConfigValueAsBool(stgCfng.Properties, "insecure")
 	if err != nil {
 		return nil, err
 	}
-	bucket, err := config.GetConfigValueAsString(stgCfng, "bucket")
+	bucket, err := config.GetConfigValueAsString(stgCfng.Properties, "bucket")
 	if err != nil {
 		return nil, err
 	}
-	accessKey, err := config.GetConfigValueAsString(stgCfng, "accessKey")
+	accessKey, err := config.GetConfigValueAsString(stgCfng.Properties, "accessKey")
 	if err != nil {
 		return nil, err
 	}
-	secretKey, err := config.GetConfigValueAsString(stgCfng, "secretKey")
+	secretKey, err := config.GetConfigValueAsString(stgCfng.Properties, "secretKey")
 	if err != nil {
 		return nil, err
 	}
-	password, err := config.GetConfigValueAsString(stgCfng, "password")
+	password, err := config.GetConfigValueAsString(stgCfng.Properties, "password")
 	if err != nil {
 		return nil, err
 	}

@@ -12,12 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/apiv1"
+	"github.com/willie68/GoBlobStore/internal/auth"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/crypt"
 	"github.com/willie68/GoBlobStore/internal/dao"
@@ -54,7 +55,7 @@ func init() {
 	flag.StringVarP(&serviceURL, "serviceURL", "u", "", "service url from outside")
 }
 
-func apiRoutes() *chi.Mux {
+func apiRoutes() (*chi.Mux, error) {
 	baseURL := apiv1.Baseurl
 	clog.Logger.Infof("baseurl : %s", baseURL)
 	router := chi.NewRouter()
@@ -75,7 +76,7 @@ func apiRoutes() *chi.Mux {
 		}),
 	)
 
-	if config.Get().Apikey {
+	if serviceConfig.Apikey {
 		router.Use(
 			api.SysAPIHandler(api.SysAPIConfig{
 				Apikey:           apikey,
@@ -93,13 +94,22 @@ func apiRoutes() *chi.Mux {
 			}),
 		)
 	}
+
+	if strings.EqualFold(serviceConfig.Auth.Type, "jwt") {
+		jwtConfig, err := auth.ParseJWTConfig(serviceConfig.Auth)
+		if err != nil {
+			return router, err
+		}
+		clog.Logger.Infof("jwt config: %v", jwtConfig)
+	}
+
 	router.Route("/", func(r chi.Router) {
 		r.Mount(apiv1.Baseurl+apiv1.BlobsSubpath, apiv1.BlobRoutes())
 		r.Mount(apiv1.Baseurl+apiv1.ConfigSubpath, apiv1.ConfigRoutes())
 		r.Mount("/health", health.Routes())
 	})
 
-	return router
+	return router, nil
 }
 
 func healthRoutes() *chi.Mux {
@@ -179,7 +189,10 @@ func main() {
 		panic(errstr)
 	}
 
-	router := apiRoutes()
+	router, err := apiRoutes()
+	if err != nil {
+		clog.Logger.Alertf("could not create api routes. %s", err.Error())
+	}
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		clog.Logger.Infof("%s %s", method, route)
 		return nil

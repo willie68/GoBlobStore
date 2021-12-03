@@ -29,6 +29,13 @@ type Config struct {
 	Engine Engine `yaml:"engine"`
 
 	HeaderMapping map[string]string `yaml:"headermapping"`
+
+	Auth Authentcation `yaml:"auth"`
+}
+
+type Authentcation struct {
+	Type       string                 `yaml:"type"`
+	Properties map[string]interface{} `yaml:"properties"`
 }
 
 type Engine struct {

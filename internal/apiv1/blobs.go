@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
@@ -151,7 +151,6 @@ GetBlobResetRetentionEndpoint restting the retention time of a blob to the new v
 path param:
 id: the id of the lob file
 */
-//TODO missing implementation
 func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -181,7 +180,12 @@ func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.R
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-
+	if found {
+		err = storage.ResetRetention(idStr)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+		}
+	}
 	render.JSON(response, request, found)
 }
 
