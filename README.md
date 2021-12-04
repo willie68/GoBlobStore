@@ -131,3 +131,15 @@ headermapping:
  apikey: X-mcs-apikey
 ```
 
+## JWT Tenant discovery and Authorisation
+
+Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Headermapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim named "Tenant" on the jwt. Simply activate jwt authentication with 
+
+```yaml
+auth:
+ type: jwt
+ properties: 
+  validate: false
+```
+
+validate false means, the token is not validated against the issuer. (this is normally ok, when the token is already checked by an api gateway or other serving services)
