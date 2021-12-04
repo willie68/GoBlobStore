@@ -27,11 +27,11 @@ func FromContext(ctx context.Context) (*JWT, map[string]interface{}, error) {
 	var err error
 	var claims map[string]interface{}
 
-	if ok {
+	if ok && (token != nil) {
 		claims = token.Payload
 	} else {
 		claims = map[string]interface{}{}
-		return token, claims, errors.New("token not presen")
+		return token, claims, errors.New("token not present")
 	}
 
 	err, _ = ctx.Value(ErrorCtxKey).(error)

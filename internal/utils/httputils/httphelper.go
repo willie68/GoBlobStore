@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/auth"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/serror"
 )
@@ -18,6 +19,13 @@ var Validate *validator.Validate
 // TenantID gets the tenant-id of the given request
 func TenantID(r *http.Request) (string, error) {
 	var id string
+	_, claims, _ := auth.FromContext(r.Context())
+	if claims != nil {
+		tenant, ok := claims["Tenant"].(string)
+		if ok {
+			return tenant, nil
+		}
+	}
 	tenantHeader, ok := config.Get().HeaderMapping[api.TenantHeaderKey]
 	if ok {
 		id = r.Header.Get(tenantHeader)
