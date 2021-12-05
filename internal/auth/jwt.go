@@ -34,10 +34,10 @@ func ParseJWTConfig(cfg config.Authentcation) (JWTAuthConfig, error) {
 	if err != nil {
 		return jwtcfg, err
 	}
-	jwtcfg.TenantKey, err = config.GetConfigValueAsString(cfg.Properties, "tenantKey")
-	if err != nil {
-		return jwtcfg, err
-	}
+	//	jwtcfg.TenantKey, err = config.GetConfigValueAsString(cfg.Properties, "tenantKey")
+	//	if err != nil {
+	//		return jwtcfg, err
+	//	}
 	return jwtcfg, nil
 }
 
