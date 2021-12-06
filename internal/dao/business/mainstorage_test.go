@@ -2,6 +2,7 @@ package business
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -115,7 +116,7 @@ func TestManyFiles(t *testing.T) {
 	}
 
 	for _, b := range ids {
-		fmt.Printf("%s: id: %s\r\n", b.Properties["X-externalid"], b.BlobID)
+		checkBlob(ast, b)
 	}
 }
 
@@ -130,17 +131,22 @@ func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error
 	ast.NotNil(id)
 	ast.Equal(id, b.BlobID)
 
-	time.Sleep(10 * time.Millisecond)
+	return b, err
+}
 
-	info, err := main.GetBlobDescription(id)
-	ast.Nil(err, fmt.Sprintf("is: %s", is))
-	ast.Equal(id, info.BlobID)
+func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
+	info, err := main.GetBlobDescription(b.BlobID)
+	ast.Nil(err, fmt.Sprintf("id: %s", b.BlobID))
+	ast.Equal(b.BlobID, info.BlobID)
 
 	var buf bytes.Buffer
 
-	err = main.RetrieveBlob(id, &buf)
+	err = main.RetrieveBlob(b.BlobID, &buf)
 	ast.Nil(err)
 
-	ast.Equal(payload, buf.String())
-	return b, err
+	json, err := json.Marshal(b)
+	ast.Nil(err)
+
+	ast.Equal(b.Properties["payload"], buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+
 }
