@@ -53,6 +53,12 @@ func (s *SimpleFileBlobStorageDao) getDescV2(id string) string {
 
 func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobDescription, error) {
 	var info model.BlobDescription
+	s.cm.RLock()
+	bdc, ok := s.bdCch[id]
+	s.cm.RUnlock()
+	if ok {
+		return &bdc, nil
+	}
 	descFile := s.getDescV2(id)
 	if _, err := os.Stat(descFile); os.IsNotExist(err) {
 		return nil, os.ErrNotExist
@@ -73,18 +79,21 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
 	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
 	if err != nil {
+		clog.Logger.Errorf("error building filename: %v", err)
 		return err
 	}
 	if _, err := os.Stat(binFile); os.IsNotExist(err) {
+		clog.Logger.Errorf("error not exists: %v", err)
 		return os.ErrNotExist
 	}
 	f, err := os.Open(binFile)
 	if err != nil {
+		clog.Logger.Errorf("error opening file: %v", err)
 		return err
 	}
 	defer f.Close()
-	_, err = io.Copy(w, f)
-	if err != nil {
+	if _, err = io.Copy(w, f); err != nil {
+		clog.Logger.Errorf("error on copy: %v", err)
 		return err
 	}
 	return nil
@@ -109,7 +118,9 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 		s.deleteFilesV2(b.BlobID)
 		return "", err
 	}
-
+	s.cm.Lock()
+	defer s.cm.Unlock()
+	s.bdCch[b.BlobID] = *b
 	go s.buildHash(b.BlobID)
 	return b.BlobID, nil
 }
@@ -134,6 +145,9 @@ func (s *SimpleFileBlobStorageDao) buildHash(id string) {
 		clog.Logger.Errorf("buildHash: error writing description for: %s\r\n%v", id, err)
 		return
 	}
+	s.cm.Lock()
+	defer s.cm.Unlock()
+	delete(s.bdCch, d.BlobID)
 }
 
 func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64, error) {

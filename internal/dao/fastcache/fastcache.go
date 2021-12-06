@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -107,13 +108,16 @@ func (f *FastCache) GetBlobs(callback func(id string) bool) error {
 func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) {
 	ok, err := f.HasBlob(b.BlobID)
 	if err != nil {
+		clog.Logger.Errorf("cache: error checking file: %v", err)
 		return "", err
 	}
 	if ok {
+		clog.Logger.Errorf("cache: file exists")
 		return b.BlobID, os.ErrExist
 	}
 	size, dat, err := f.writeBinFile(b.BlobID, r)
 	if err != nil {
+		clog.Logger.Errorf("cache: writing file: %v", err)
 		return "", err
 	}
 	atomic.AddInt64(&f.size, size)
@@ -122,7 +126,10 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 		description: *b,
 		data:        dat,
 	})
-	f.handleContrains()
+	err = f.handleContrains()
+	if err != nil {
+		clog.Logger.Errorf("cache: handle constrains: %v", err)
+	}
 	return b.BlobID, nil
 }
 

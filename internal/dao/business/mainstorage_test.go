@@ -62,10 +62,7 @@ func removeContents(dir string) error {
 		return err
 	}
 	for _, name := range names {
-		err = os.RemoveAll(filepath.Join(dir, name))
-		if err != nil {
-			return err
-		}
+		os.RemoveAll(filepath.Join(dir, name))
 	}
 	return nil
 }
@@ -96,38 +93,54 @@ func TestManyFiles(t *testing.T) {
 	clear(t)
 	initTest(t)
 	ast := assert.New(t)
+	ast.NotNil(main)
+
+	ids := make([]model.BlobDescription, 0)
 	for i := 0; i < 100000; i++ {
-		if i%1000 == 0 {
-			fmt.Print(".")
+		if i%100 == 0 {
 			if i%10000 == 0 {
 				fmt.Println()
 				fmt.Printf("%d", i/10000)
 			}
+			fmt.Print(".")
 		}
 		is := strconv.Itoa(i)
-		b := createBlobDescription(is)
-		payload := fmt.Sprintf("this is a blob content of %s", is)
-		b.ContentLength = int64(len(payload))
-		r := strings.NewReader(payload)
-		id, err := main.StoreBlob(&b, r)
+
+		b, err := createBlob(ast, is)
 		ast.Nil(err)
-		ast.NotNil(id)
-		ast.Equal(id, b.BlobID)
+		ast.NotNil(b)
 
-		time.Sleep(2 * time.Millisecond)
-
-		info, err := main.GetBlobDescription(id)
-		ast.Nil(err)
-		ast.Equal(id, info.BlobID)
-
-		var buf bytes.Buffer
-
-		err = main.RetrieveBlob(id, &buf)
-		ast.Nil(err)
-
-		ast.Equal(payload, buf.String())
+		ids = append(ids, b)
 
 	}
-	ast.NotNil(main)
 
+	for _, b := range ids {
+		fmt.Printf("%s: id: %s\r\n", b.Properties["X-externalid"], b.BlobID)
+	}
+}
+
+func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error) {
+	b := createBlobDescription(is)
+	payload := fmt.Sprintf("this is a blob content of %s", is)
+	b.Properties["payload"] = payload
+	b.ContentLength = int64(len(payload))
+	r := strings.NewReader(payload)
+	id, err := main.StoreBlob(&b, r)
+	ast.Nil(err)
+	ast.NotNil(id)
+	ast.Equal(id, b.BlobID)
+
+	time.Sleep(10 * time.Millisecond)
+
+	info, err := main.GetBlobDescription(id)
+	ast.Nil(err, fmt.Sprintf("is: %s", is))
+	ast.Equal(id, info.BlobID)
+
+	var buf bytes.Buffer
+
+	err = main.RetrieveBlob(id, &buf)
+	ast.Nil(err)
+
+	ast.Equal(payload, buf.String())
+	return b, err
 }
