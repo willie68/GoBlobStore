@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/akgarhwal/bloomfilter/bloomfilter"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -35,6 +36,10 @@ type FastCache struct {
 	count             int64
 	entries           []LRUEntry
 	dmu               sync.Mutex
+	bf                bloomfilter.BloomFilter
+	bfDirty           bool
+	background        *time.Ticker
+	quit              chan bool
 }
 
 type LRUEntry struct {
@@ -65,6 +70,24 @@ func (f *FastCache) Init() error {
 	if f.MaxFileSizeForRAM == 0 {
 		f.MaxFileSizeForRAM = Defaultmffrs
 	}
+
+	// initialise the bloomfilter
+	f.bf = *bloomfilter.NewBloomFilter(uint64(f.MaxCount), 0.1)
+	f.bfDirty = false
+	f.background = time.NewTicker(60 * time.Second)
+	f.quit = make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-f.background.C:
+				f.rebuildBloomFilter()
+			case <-f.quit:
+				f.background.Stop()
+				return
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -130,6 +153,7 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 	if err != nil {
 		clog.Logger.Errorf("cache: handle constrains: %v", err)
 	}
+	f.bf.Insert([]byte(b.BlobID))
 	return b.BlobID, nil
 }
 
@@ -229,9 +253,11 @@ func (f *FastCache) HasBlob(id string) (bool, error) {
 	if id == "" {
 		return false, errEmptyIndex
 	}
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			return true, nil
+	if f.bf.Lookup([]byte(id)) {
+		for _, e := range f.entries {
+			if e.description.BlobID == id {
+				return true, nil
+			}
 		}
 	}
 	return false, nil
@@ -256,22 +282,24 @@ func (f *FastCache) RetrieveBlob(id string, w io.Writer) error {
 	if id == "" {
 		return errEmptyIndex
 	}
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			go f.updateAccess(id)
-			// checking memory cache
-			if e.data != nil {
-				_, err := w.Write(e.data)
-				if err != nil {
-					return err
+	if f.bf.Lookup([]byte(id)) {
+		for _, e := range f.entries {
+			if e.description.BlobID == id {
+				go f.updateAccess(id)
+				// checking memory cache
+				if e.data != nil {
+					_, err := w.Write(e.data)
+					if err != nil {
+						return err
+					}
+					return nil
+				} else {
+					err := f.getBlob(id, w)
+					if err != nil {
+						return err
+					}
+					return nil
 				}
-				return nil
-			} else {
-				err := f.getBlob(id, w)
-				if err != nil {
-					return err
-				}
-				return nil
 			}
 		}
 	}
@@ -326,6 +354,7 @@ func (f *FastCache) deleteBlobWithIndex(x int) {
 		ret := make([]LRUEntry, 0)
 		ret = append(ret, f.entries[:x]...)
 		f.entries = append(ret, f.entries[x+1:]...)
+		f.bfDirty = true
 	}
 }
 
@@ -342,6 +371,24 @@ func (f *FastCache) deleteBlobFile(id string) error {
 		return err
 	}
 	return nil
+}
+
+func (f *FastCache) rebuildBloomFilter() {
+	if f.bfDirty {
+		ids := make([]string, 0)
+		f.dmu.Lock()
+		for _, e := range f.entries {
+			ids = append(ids, e.description.BlobID)
+		}
+		f.dmu.Unlock()
+
+		tb := bloomfilter.NewBloomFilter(uint64(f.MaxCount), 0.1)
+		for _, id := range ids {
+			tb.Insert([]byte(id))
+		}
+		f.bf = *tb
+		f.bfDirty = false
+	}
 }
 
 //Retentionrelated methods
@@ -364,5 +411,6 @@ func (f *FastCache) ResetRetention(id string) error {
 
 // closing the storage
 func (f *FastCache) Close() error {
+	f.quit <- true
 	return nil
 }

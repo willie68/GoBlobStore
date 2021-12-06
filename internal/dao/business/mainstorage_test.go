@@ -115,7 +115,14 @@ func TestManyFiles(t *testing.T) {
 
 	}
 
-	for _, b := range ids {
+	for i, b := range ids {
+		if i%100 == 0 {
+			if i%10000 == 0 {
+				fmt.Println()
+				fmt.Printf("%d", i/10000)
+			}
+			fmt.Print(".")
+		}
 		checkBlob(ast, b)
 	}
 }
