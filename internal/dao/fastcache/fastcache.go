@@ -154,7 +154,7 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 	if id != "" {
 		f.DeleteBlob(id)
 	}
-	f.bf.Insert([]byte(b.BlobID))
+	f.updateBloom(b.BlobID)
 	return b.BlobID, nil
 }
 
@@ -302,6 +302,12 @@ func (f *FastCache) deleteBlobFile(id string) error {
 		return err
 	}
 	return nil
+}
+
+func (f *FastCache) updateBloom(id string) {
+	f.bfm.Lock()
+	defer f.bfm.Unlock()
+	f.bf.Insert([]byte(id))
 }
 
 func (f *FastCache) inBloom(id string) bool {

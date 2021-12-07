@@ -156,11 +156,5 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	json, err := json.Marshal(b)
 	ast.Nil(err)
 
-	if b.BlobURL != buf.String() {
-		fmt.Sprintf("payload doesn't match: %s", json)
-		err = main.RetrieveBlob(b.BlobID, &buf)
-		ast.Nil(err)
-	}
 	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
-
 }
