@@ -28,6 +28,7 @@ func (b BlobDescription) MarshalJSON() ([]byte, error) {
 	mymap["filename"] = b.Filename
 	mymap["tenantID"] = b.TenantID
 	mymap["blobID"] = b.BlobID
+	mymap["blobUrl"] = b.BlobURL
 	mymap["lastAccess"] = b.LastAccess
 	mymap["retention"] = b.Retention
 	mymap["hash"] = b.Hash
@@ -46,6 +47,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 		Filename      string `yaml:"filename" json:"filename"`
 		TenantID      string `yaml:"tenantID" json:"tenantID"`
 		BlobID        string `yaml:"blobID" json:"blobID"`
+		BlobURL       string `yaml:"blobUrl" json:"blobUrl"`
 		LastAccess    int    `yaml:"lastAccess" json:"lastAccess"`
 		Retention     int64  `yaml:"retention" json:"retention"`
 		Hash          string `yaml:"hash" json:"hash"`
@@ -67,11 +69,13 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	delete(mymap, "filename")
 	delete(mymap, "tenantID")
 	delete(mymap, "blobID")
+	delete(mymap, "blobUrl")
 	delete(mymap, "lastAccess")
 	delete(mymap, "retention")
 	delete(mymap, "hash")
 
 	b.BlobID = blob.BlobID
+	b.BlobURL = blob.BlobURL
 	b.ContentLength = blob.ContentLength
 	b.ContentType = blob.ContentType
 	b.CreationDate = blob.CreationDate

@@ -34,18 +34,12 @@ type FastCache struct {
 	MaxFileSizeForRAM int64
 	size              int64
 	count             int64
-	entries           []LRUEntry
-	dmu               sync.Mutex
+	entries           LRUList
 	bf                bloomfilter.BloomFilter
 	bfDirty           bool
+	bfm               sync.Mutex
 	background        *time.Ticker
 	quit              chan bool
-}
-
-type LRUEntry struct {
-	lastAccess  time.Time
-	description model.BlobDescription
-	data        []byte
 }
 
 var _ interfaces.BlobStorageDao = &FastCache{}
@@ -65,7 +59,12 @@ func (f *FastCache) Init() error {
 		return err
 	}
 
-	f.entries = make([]LRUEntry, 0)
+	f.entries = LRUList{
+		MaxCount:   int(f.MaxCount),
+		MaxRamSize: f.MaxRamSize,
+	}
+
+	f.entries.Init()
 
 	if f.MaxFileSizeForRAM == 0 {
 		f.MaxFileSizeForRAM = Defaultmffrs
@@ -91,6 +90,7 @@ func (f *FastCache) Init() error {
 	return nil
 }
 
+//removeContents delete all files in directory
 func (f *FastCache) removeContents(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
@@ -117,8 +117,9 @@ func (f *FastCache) GetTenant() string {
 
 // getting a list of blob from the storage
 func (f *FastCache) GetBlobs(callback func(id string) bool) error {
-	for _, d := range f.entries {
-		next := callback(d.description.BlobID)
+	ids := f.entries.GetFullIDList()
+	for _, id := range ids {
+		next := callback(id)
 		if !next {
 			break
 		}
@@ -144,69 +145,17 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 		return "", err
 	}
 	atomic.AddInt64(&f.size, size)
-	f.entries = append(f.entries, LRUEntry{
-		lastAccess:  time.Now(),
-		description: *b,
-		data:        dat,
+	f.entries.Add(LRUEntry{
+		LastAccess:  time.Now(),
+		Description: *b,
+		Data:        dat,
 	})
-	err = f.handleContrains()
-	if err != nil {
-		clog.Logger.Errorf("cache: handle constrains: %v", err)
+	id := f.entries.HandleContrains()
+	if id != "" {
+		f.DeleteBlob(id)
 	}
 	f.bf.Insert([]byte(b.BlobID))
 	return b.BlobID, nil
-}
-
-func (f *FastCache) updateAccess(id string) {
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			e.lastAccess = time.Now()
-			break
-		}
-	}
-}
-
-func (f *FastCache) handleContrains() error {
-	f.dmu.Lock()
-	defer f.dmu.Unlock()
-	if len(f.entries) > int(f.MaxCount) {
-		oldest := 0
-		for x, e := range f.entries {
-			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
-				oldest = x
-			}
-		}
-		// remove oldest entry from cache
-		f.deleteBlobWithIndex(oldest)
-	}
-	var ramsize int64 = 0
-	oldest := 0
-	for x, e := range f.entries {
-		if e.data != nil {
-			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
-				oldest = x
-			}
-			ramsize += int64(len(e.data))
-		}
-	}
-	for ramsize > f.MaxRamSize {
-		ramsize -= int64(len(f.entries[oldest].data))
-		f.entries[oldest].data = nil
-		oldest = f.getOldestWithData()
-	}
-	return nil
-}
-
-func (f *FastCache) getOldestWithData() int {
-	oldest := 0
-	for x, e := range f.entries {
-		if e.data != nil {
-			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
-				oldest = x
-			}
-		}
-	}
-	return oldest
 }
 
 func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) {
@@ -253,11 +202,9 @@ func (f *FastCache) HasBlob(id string) (bool, error) {
 	if id == "" {
 		return false, errEmptyIndex
 	}
-	if f.bf.Lookup([]byte(id)) {
-		for _, e := range f.entries {
-			if e.description.BlobID == id {
-				return true, nil
-			}
+	if f.inBloom(id) {
+		if f.entries.Has(id) {
+			return true, nil
 		}
 	}
 	return false, nil
@@ -268,10 +215,10 @@ func (f *FastCache) GetBlobDescription(id string) (*model.BlobDescription, error
 	if id == "" {
 		return nil, errEmptyIndex
 	}
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			go f.updateAccess(id)
-			return &e.description, nil
+	if f.inBloom(id) {
+		l, ok := f.entries.Get(id)
+		if ok {
+			return &l.Description, nil
 		}
 	}
 	return nil, os.ErrNotExist
@@ -282,24 +229,22 @@ func (f *FastCache) RetrieveBlob(id string, w io.Writer) error {
 	if id == "" {
 		return errEmptyIndex
 	}
-	if f.bf.Lookup([]byte(id)) {
-		for _, e := range f.entries {
-			if e.description.BlobID == id {
-				go f.updateAccess(id)
-				// checking memory cache
-				if e.data != nil {
-					_, err := w.Write(e.data)
-					if err != nil {
-						return err
-					}
-					return nil
-				} else {
-					err := f.getBlob(id, w)
-					if err != nil {
-						return err
-					}
-					return nil
+	if f.inBloom(id) {
+		l, ok := f.entries.Get(id)
+		if ok {
+			// checking memory cache
+			if l.Data != nil {
+				_, err := w.Write(l.Data)
+				if err != nil {
+					return err
 				}
+				return nil
+			} else {
+				err := f.getBlob(id, w)
+				if err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}
@@ -331,31 +276,17 @@ func (f *FastCache) DeleteBlob(id string) error {
 	if id == "" {
 		return errEmptyIndex
 	}
-	f.dmu.Lock()
-	defer f.dmu.Unlock()
-	index := -1
-	for x, e := range f.entries {
-		if e.description.BlobID == id {
-			index = x
-			break
+	if f.inBloom(id) {
+		if f.entries.Has(id) {
+			lid := f.entries.Delete(id)
+			if lid != "" {
+				f.deleteBlobFile(lid)
+				f.bfDirty = true
+			}
+			return nil
 		}
 	}
-	if index >= 0 {
-		f.deleteBlobWithIndex(index)
-		return nil
-	}
 	return os.ErrNotExist
-}
-
-func (f *FastCache) deleteBlobWithIndex(x int) {
-	if x >= 0 {
-		bd := f.entries[x]
-		f.deleteBlobFile(bd.description.BlobID)
-		ret := make([]LRUEntry, 0)
-		ret = append(ret, f.entries[:x]...)
-		f.entries = append(ret, f.entries[x+1:]...)
-		f.bfDirty = true
-	}
 }
 
 func (f *FastCache) deleteBlobFile(id string) error {
@@ -373,19 +304,22 @@ func (f *FastCache) deleteBlobFile(id string) error {
 	return nil
 }
 
+func (f *FastCache) inBloom(id string) bool {
+	f.bfm.Lock()
+	defer f.bfm.Unlock()
+	return f.bf.Lookup([]byte(id))
+}
+
 func (f *FastCache) rebuildBloomFilter() {
 	if f.bfDirty {
-		ids := make([]string, 0)
-		f.dmu.Lock()
-		for _, e := range f.entries {
-			ids = append(ids, e.description.BlobID)
-		}
-		f.dmu.Unlock()
-
+		ids := f.entries.GetFullIDList()
 		tb := bloomfilter.NewBloomFilter(uint64(f.MaxCount), 0.1)
 		for _, id := range ids {
 			tb.Insert([]byte(id))
 		}
+		// thats maybe not atomic!
+		f.bfm.Lock()
+		defer f.bfm.Unlock()
 		f.bf = *tb
 		f.bfDirty = false
 	}

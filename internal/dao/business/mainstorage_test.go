@@ -22,6 +22,7 @@ import (
 const (
 	rootFilePrefix = "R:/"
 	tenant         = "test"
+	blbcount       = 100000
 )
 
 var main interfaces.BlobStorageDao
@@ -34,7 +35,7 @@ func initTest(t *testing.T) {
 	stgDao.Init()
 	cchDao := &fastcache.FastCache{
 		RootPath:   rootFilePrefix + "blbcch",
-		MaxCount:   100000,
+		MaxCount:   blbcount,
 		MaxRamSize: 1 * 1024 * 1024 * 1024,
 	}
 	cchDao.Init()
@@ -87,6 +88,7 @@ func createBlobDescription(id string) model.BlobDescription {
 	b.Properties["X-retention"] = []int{123456}
 	b.Properties["X-tenant"] = tenant
 	b.Properties["X-externalid"] = id
+	b.Properties["X-id"] = uuid
 	return b
 }
 
@@ -97,7 +99,7 @@ func TestManyFiles(t *testing.T) {
 	ast.NotNil(main)
 
 	ids := make([]model.BlobDescription, 0)
-	for i := 0; i < 100000; i++ {
+	for i := 0; i < blbcount; i++ {
 		if i%100 == 0 {
 			if i%10000 == 0 {
 				fmt.Println()
@@ -130,7 +132,7 @@ func TestManyFiles(t *testing.T) {
 func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error) {
 	b := createBlobDescription(is)
 	payload := fmt.Sprintf("this is a blob content of %s", is)
-	b.Properties["payload"] = payload
+	b.BlobURL = payload
 	b.ContentLength = int64(len(payload))
 	r := strings.NewReader(payload)
 	id, err := main.StoreBlob(&b, r)
@@ -154,6 +156,11 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	json, err := json.Marshal(b)
 	ast.Nil(err)
 
-	ast.Equal(b.Properties["payload"], buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+	if b.BlobURL != buf.String() {
+		fmt.Sprintf("payload doesn't match: %s", json)
+		err = main.RetrieveBlob(b.BlobID, &buf)
+		ast.Nil(err)
+	}
+	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
 
 }
