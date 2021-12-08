@@ -69,3 +69,15 @@ Here is the implementation of the business part of the storage. The mainstorage 
 ## dao/retentionmanager
 
 Because of some circle dependencies the retention manager class must be in the main dao folder. At the moment only the single node retention manager is implemented, which will take control over all retention related parts. It can consist with other single retention manager nodes, but they will not share any workload. Every retention manager will have a full list of all retentions of the complete system. So on a multi node setup,  there can be some errors present because f missing retention files (because another retention manager was faster on deletion)
+
+# FastCache
+
+The FastCache is an LRU implementation with 2-level data storage. All files in the cache are stored on a separate volume. This should be a very fast local medium. (e.g. local SSD) Files up to a certain file size (100kb) are also stored in the RAM.
+
+First you set the maximum number of files in the cache with an option. These are all stored on the assigned volume.
+
+In addition, a memory size is specified that specifies how much memory the files stored in the memory can use. Thus, small files can be served directly from the memory, which brings additional performance.
+
+Why LRU? There is a corresponding note here: https://dropbox.tech/infrastructure/caching-in-theory-and-practice
+
+A bloom filter is also used to determine whether a file is in the cache. Thus, the CacheMiss case can be decided quickly in most cases (the setting is 0.1%).

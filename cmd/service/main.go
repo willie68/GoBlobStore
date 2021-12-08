@@ -101,6 +101,13 @@ func apiRoutes() (*chi.Mux, error) {
 			return router, err
 		}
 		clog.Logger.Infof("jwt config: %v", jwtConfig)
+		jwtAuth := auth.JWTAuth{
+			Config: jwtConfig,
+		}
+		router.Use(
+			auth.Verifier(&jwtAuth),
+			auth.Authenticator,
+		)
 	}
 
 	router.Route("/", func(r chi.Router) {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
@@ -23,9 +24,11 @@ type SimpleFileTenantManager struct {
 var _ interfaces.TenantDao = &SimpleFileTenantManager{}
 
 type SimpleFileBlobStorageDao struct {
-	RootPath string // this is the root path for the file system storage
-	Tenant   string // this is the tenant, on which this dao will work
-	filepath string // direct path to the tenant specifig sub path
+	RootPath string                           // this is the root path for the file system storage
+	Tenant   string                           // this is the tenant, on which this dao will work
+	filepath string                           // direct path to the tenant specifig sub path
+	bdCch    map[string]model.BlobDescription // short time cache of blobdescriptions
+	cm       sync.RWMutex
 }
 
 var _ interfaces.BlobStorageDao = &SimpleFileBlobStorageDao{}
@@ -130,6 +133,7 @@ func (s *SimpleFileBlobStorageDao) Init() error {
 	if _, err := os.Stat(s.filepath); os.IsNotExist(err) {
 		clog.Logger.Debugf("tenant not exists: %s", s.Tenant)
 	}
+	s.bdCch = make(map[string]model.BlobDescription)
 	return nil
 }
 
@@ -156,9 +160,9 @@ func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
 }
 
 func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
-	info, err := s.getBlobDescriptionV1(id)
+	info, err := s.getBlobDescriptionV2(id)
 	if err == os.ErrNotExist {
-		info, err = s.getBlobDescriptionV2(id)
+		info, err = s.getBlobDescriptionV1(id)
 	}
 	if err != nil {
 		return nil, err
@@ -167,9 +171,9 @@ func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDes
 }
 
 func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) error {
-	err := s.getBlobV1(id, writer)
+	err := s.getBlobV2(id, writer)
 	if err == os.ErrNotExist {
-		err = s.getBlobV2(id, writer)
+		err = s.getBlobV1(id, writer)
 	}
 	if err != nil {
 		return err

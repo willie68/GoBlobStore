@@ -10,7 +10,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/akgarhwal/bloomfilter/bloomfilter"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	clog "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -32,14 +34,12 @@ type FastCache struct {
 	MaxFileSizeForRAM int64
 	size              int64
 	count             int64
-	entries           []LRUEntry
-	dmu               sync.Mutex
-}
-
-type LRUEntry struct {
-	lastAccess  time.Time
-	description model.BlobDescription
-	data        []byte
+	entries           LRUList
+	bf                bloomfilter.BloomFilter
+	bfDirty           bool
+	bfm               sync.Mutex
+	background        *time.Ticker
+	quit              chan bool
 }
 
 var _ interfaces.BlobStorageDao = &FastCache{}
@@ -59,14 +59,38 @@ func (f *FastCache) Init() error {
 		return err
 	}
 
-	f.entries = make([]LRUEntry, 0)
+	f.entries = LRUList{
+		MaxCount:   int(f.MaxCount),
+		MaxRamSize: f.MaxRamSize,
+	}
+
+	f.entries.Init()
 
 	if f.MaxFileSizeForRAM == 0 {
 		f.MaxFileSizeForRAM = Defaultmffrs
 	}
+
+	// initialise the bloomfilter
+	f.bf = *bloomfilter.NewBloomFilter(uint64(f.MaxCount), 0.1)
+	f.bfDirty = false
+	f.background = time.NewTicker(60 * time.Second)
+	f.quit = make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-f.background.C:
+				f.rebuildBloomFilter()
+			case <-f.quit:
+				f.background.Stop()
+				return
+			}
+		}
+	}()
+
 	return nil
 }
 
+//removeContents delete all files in directory
 func (f *FastCache) removeContents(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
@@ -93,8 +117,9 @@ func (f *FastCache) GetTenant() string {
 
 // getting a list of blob from the storage
 func (f *FastCache) GetBlobs(callback func(id string) bool) error {
-	for _, d := range f.entries {
-		next := callback(d.description.BlobID)
+	ids := f.entries.GetFullIDList()
+	for _, id := range ids {
+		next := callback(id)
 		if !next {
 			break
 		}
@@ -107,75 +132,34 @@ func (f *FastCache) GetBlobs(callback func(id string) bool) error {
 func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) {
 	ok, err := f.HasBlob(b.BlobID)
 	if err != nil {
+		clog.Logger.Errorf("cache: error checking file: %v", err)
 		return "", err
 	}
 	if ok {
+		clog.Logger.Errorf("cache: file exists")
 		return b.BlobID, os.ErrExist
 	}
 	size, dat, err := f.writeBinFile(b.BlobID, r)
 	if err != nil {
+		clog.Logger.Errorf("cache: writing file: %v", err)
 		return "", err
 	}
 	atomic.AddInt64(&f.size, size)
-	f.entries = append(f.entries, LRUEntry{
-		lastAccess:  time.Now(),
-		description: *b,
-		data:        dat,
+	f.entries.Add(LRUEntry{
+		LastAccess:  time.Now(),
+		Description: *b,
+		Data:        dat,
 	})
-	f.handleContrains()
-	return b.BlobID, nil
-}
-
-func (f *FastCache) updateAccess(id string) {
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			e.lastAccess = time.Now()
+	for {
+		id := f.entries.HandleContrains()
+		if id != "" {
+			f.DeleteBlob(id)
+		} else {
 			break
 		}
 	}
-}
-
-func (f *FastCache) handleContrains() error {
-	f.dmu.Lock()
-	defer f.dmu.Unlock()
-	if len(f.entries) > int(f.MaxCount) {
-		oldest := 0
-		for x, e := range f.entries {
-			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
-				oldest = x
-			}
-		}
-		// remove oldest entry from cache
-		f.deleteBlobWithIndex(oldest)
-	}
-	var ramsize int64 = 0
-	oldest := 0
-	for x, e := range f.entries {
-		if e.data != nil {
-			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
-				oldest = x
-			}
-			ramsize += int64(len(e.data))
-		}
-	}
-	for ramsize > f.MaxRamSize {
-		ramsize -= int64(len(f.entries[oldest].data))
-		f.entries[oldest].data = nil
-		oldest = f.getOldestWithData()
-	}
-	return nil
-}
-
-func (f *FastCache) getOldestWithData() int {
-	oldest := 0
-	for x, e := range f.entries {
-		if e.data != nil {
-			if e.lastAccess.Before(f.entries[oldest].lastAccess) {
-				oldest = x
-			}
-		}
-	}
-	return oldest
+	f.updateBloom(b.BlobID)
+	return b.BlobID, nil
 }
 
 func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) {
@@ -209,7 +193,6 @@ func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) 
 func (f *FastCache) buildFilename(id string, ext string) (string, error) {
 	fp := f.RootPath
 	fp = filepath.Join(fp, id[:2])
-	fp = filepath.Join(fp, id[2:4])
 	err := os.MkdirAll(fp, os.ModePerm)
 	if err != nil {
 		return "", err
@@ -222,8 +205,8 @@ func (f *FastCache) HasBlob(id string) (bool, error) {
 	if id == "" {
 		return false, errEmptyIndex
 	}
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
+	if f.inBloom(id) {
+		if f.entries.Has(id) {
 			return true, nil
 		}
 	}
@@ -235,10 +218,10 @@ func (f *FastCache) GetBlobDescription(id string) (*model.BlobDescription, error
 	if id == "" {
 		return nil, errEmptyIndex
 	}
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			go f.updateAccess(id)
-			return &e.description, nil
+	if f.inBloom(id) {
+		l, ok := f.entries.Get(id)
+		if ok {
+			return &l.Description, nil
 		}
 	}
 	return nil, os.ErrNotExist
@@ -249,12 +232,12 @@ func (f *FastCache) RetrieveBlob(id string, w io.Writer) error {
 	if id == "" {
 		return errEmptyIndex
 	}
-	for _, e := range f.entries {
-		if e.description.BlobID == id {
-			go f.updateAccess(id)
+	if f.inBloom(id) {
+		l, ok := f.entries.Get(id)
+		if ok {
 			// checking memory cache
-			if e.data != nil {
-				_, err := w.Write(e.data)
+			if l.Data != nil {
+				_, err := w.Write(l.Data)
 				if err != nil {
 					return err
 				}
@@ -296,30 +279,21 @@ func (f *FastCache) DeleteBlob(id string) error {
 	if id == "" {
 		return errEmptyIndex
 	}
-	f.dmu.Lock()
-	defer f.dmu.Unlock()
-	index := -1
-	for x, e := range f.entries {
-		if e.description.BlobID == id {
-			index = x
-			break
+	if f.inBloom(id) {
+		if f.entries.Has(id) {
+			lid := f.entries.Delete(id)
+			if lid != "" {
+				err := f.deleteBlobFile(lid)
+				if err != nil {
+					clog.Logger.Errorf("error deleting file: %v", err)
+					return err
+				}
+				f.bfDirty = true
+			}
+			return nil
 		}
 	}
-	if index >= 0 {
-		f.deleteBlobWithIndex(index)
-		return nil
-	}
 	return os.ErrNotExist
-}
-
-func (f *FastCache) deleteBlobWithIndex(x int) {
-	if x >= 0 {
-		bd := f.entries[x]
-		f.deleteBlobFile(bd.description.BlobID)
-		ret := make([]LRUEntry, 0)
-		ret = append(ret, f.entries[:x]...)
-		f.entries = append(ret, f.entries[x+1:]...)
-	}
 }
 
 func (f *FastCache) deleteBlobFile(id string) error {
@@ -337,25 +311,57 @@ func (f *FastCache) deleteBlobFile(id string) error {
 	return nil
 }
 
+func (f *FastCache) updateBloom(id string) {
+	f.bfm.Lock()
+	defer f.bfm.Unlock()
+	f.bf.Insert([]byte(id))
+}
+
+func (f *FastCache) inBloom(id string) bool {
+	f.bfm.Lock()
+	defer f.bfm.Unlock()
+	return f.bf.Lookup([]byte(id))
+}
+
+func (f *FastCache) rebuildBloomFilter() {
+	if f.bfDirty {
+		ids := f.entries.GetFullIDList()
+		tb := bloomfilter.NewBloomFilter(uint64(f.MaxCount), 0.1)
+		for _, id := range ids {
+			tb.Insert([]byte(id))
+		}
+		// thats maybe not atomic!
+		f.bfm.Lock()
+		defer f.bfm.Unlock()
+		f.bf = *tb
+		f.bfDirty = false
+	}
+}
+
 //Retentionrelated methods
 // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (f *FastCache) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return errNotImplemented
 }
+
 func (f *FastCache) AddRetention(r *model.RetentionEntry) error {
 	return errNotImplemented
 }
+
 func (f *FastCache) GetRetention(id string) (model.RetentionEntry, error) {
 	return model.RetentionEntry{}, errNotImplemented
 }
+
 func (f *FastCache) DeleteRetention(id string) error {
 	return errNotImplemented
 }
+
 func (f *FastCache) ResetRetention(id string) error {
 	return errNotImplemented
 }
 
 // closing the storage
 func (f *FastCache) Close() error {
+	f.quit <- true
 	return nil
 }

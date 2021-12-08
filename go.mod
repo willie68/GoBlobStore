@@ -17,6 +17,7 @@ require (
 
 require (
 	github.com/BurntSushi/toml v0.4.1 // indirect
+	github.com/akgarhwal/bloomfilter v0.1.1 // indirect
 	github.com/aphistic/sweet v0.3.0 // indirect
 	github.com/go-chi/chi/v5 v5.0.7 // indirect
 	github.com/onsi/gomega v1.16.0 // indirect

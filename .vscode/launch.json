@@ -3,11 +3,8 @@
     // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [
-    
+    "configurations": [   
 
-
-    
         {
             "name": "Launch GoBLobStore",
             "type": "go",
@@ -19,6 +16,19 @@
             "args": [
                 "-c",
                 "${workspaceFolder}/configs/service_local_file.yaml",
+            ]
+        },
+        {
+            "name": "Launch GoBLobStore RAM Disk",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd/service/main.go",
+            "cwd": "${workspaceFolder}",
+            "env": {},
+            "args": [
+                "-c",
+                "${workspaceFolder}/testdata/service_local_file.yaml",
             ]
         }
     ]
