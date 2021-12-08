@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -36,7 +37,7 @@ func initTest(t *testing.T) {
 	cchDao := &fastcache.FastCache{
 		RootPath:   rootFilePrefix + "blbcch",
 		MaxCount:   blbcount,
-		MaxRamSize: 1 * 1024 * 1024 * 1024,
+		MaxRamSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
 	main = &MainStorageDao{
@@ -102,7 +103,7 @@ func TestManyFiles(t *testing.T) {
 	for i := 0; i < blbcount; i++ {
 		if i%100 == 0 {
 			if i%10000 == 0 {
-				fmt.Println()
+				fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
 				fmt.Printf("%d", i/10000)
 			}
 			fmt.Print(".")
@@ -116,17 +117,19 @@ func TestManyFiles(t *testing.T) {
 		ids = append(ids, b)
 
 	}
-
+	fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
 	for i, b := range ids {
 		if i%100 == 0 {
 			if i%10000 == 0 {
-				fmt.Println()
+				fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
 				fmt.Printf("%d", i/10000)
 			}
 			fmt.Print(".")
 		}
 		checkBlob(ast, b)
 	}
+
+	fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
 }
 
 func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error) {

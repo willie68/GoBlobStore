@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	rootpath = "../../../testdata/blobcache"
+	rootpath = "R:/blbcch/"
 )
 
 func initTest(t *testing.T) {
@@ -164,7 +164,7 @@ func TestMaxCount(t *testing.T) {
 	dao := getStoreageDao(t)
 	ids := make([]string, 0)
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 50; i++ {
 		b := getBlobDescription(strconv.Itoa(i))
 		ids = append(ids, b.BlobID)
 
@@ -210,13 +210,13 @@ func TestMaxCount(t *testing.T) {
 
 			assert.Equal(t, "this is a blob content", buf.String())
 
-			err = dao.DeleteBlob(id)
-			ast.Nil(err)
+			//			err = dao.DeleteBlob(id)
+			//			ast.Nil(err)
 		}
 	}
 
 	dao.Close()
-	clear(t)
+	//clear(t)
 }
 
 func getBlobDescription(id string) *model.BlobDescription {

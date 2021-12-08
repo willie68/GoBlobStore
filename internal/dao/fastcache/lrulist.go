@@ -19,6 +19,7 @@ type LRUList struct {
 	MaxRamSize int64
 	entries    []LRUEntry
 	dmu        sync.Mutex
+	ramsize    int64
 }
 
 func (l *LRUList) Init() {
@@ -33,6 +34,9 @@ func (l *LRUList) Add(e LRUEntry) bool {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
 	l.entries = l.insertSorted(l.entries, e)
+	if e.Data != nil {
+		l.ramsize += int64(len(e.Data))
+	}
 	return true
 }
 
@@ -64,21 +68,15 @@ func (l *LRUList) HandleContrains() string {
 		oldest := l.getOldest()
 		id = l.entries[oldest].Description.BlobID
 	}
-	var ramsize int64 = 0
-	oldest := 0
-	for x, e := range l.entries {
-		if e.Data != nil {
-			if e.LastAccess.Before(l.entries[oldest].LastAccess) {
-				oldest = x
-			}
-			ramsize += int64(len(e.Data))
-		}
-	}
 	if l.MaxRamSize > 0 {
-		for ramsize > l.MaxRamSize {
-			ramsize -= int64(len(l.entries[oldest].Data))
+		for l.ramsize > l.MaxRamSize {
+			oldest := l.getOldestWithData()
+			if oldest == -1 {
+				l.ramsize = 0
+				break
+			}
+			l.ramsize -= int64(len(l.entries[oldest].Data))
 			l.entries[oldest].Data = nil
-			oldest = l.getOldestWithData()
 		}
 	}
 	return id
@@ -110,6 +108,9 @@ func (l *LRUList) Delete(id string) string {
 	defer l.dmu.Unlock()
 	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
 	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
+		if l.entries[i].Data != nil {
+			l.ramsize -= int64(len(l.entries[i].Data))
+		}
 		ret := make([]LRUEntry, 0)
 		ret = append(ret, l.entries[:i]...)
 		l.entries = append(ret, l.entries[i+1:]...)
@@ -129,10 +130,10 @@ func (l *LRUList) getOldest() int {
 }
 
 func (l *LRUList) getOldestWithData() int {
-	oldest := 0
+	oldest := -1
 	for x, e := range l.entries {
 		if e.Data != nil {
-			if e.LastAccess.Before(l.entries[oldest].LastAccess) {
+			if oldest == -1 || e.LastAccess.Before(l.entries[oldest].LastAccess) {
 				oldest = x
 			}
 		}

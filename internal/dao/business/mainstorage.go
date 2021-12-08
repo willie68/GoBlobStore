@@ -2,6 +2,8 @@ package business
 
 import (
 	"io"
+	"runtime"
+	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	clog "github.com/willie68/GoBlobStore/internal/logging"
@@ -53,6 +55,8 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 		}
 	}
 	go m.cacheFile(b)
+	gor := (runtime.NumGoroutine() / 1000)
+	time.Sleep(time.Duration(gor) * time.Millisecond)
 	return id, err
 }
 
@@ -211,6 +215,7 @@ func (m *MainStorageDao) DeleteRetention(id string) error {
 	}
 	return err
 }
+
 func (m *MainStorageDao) ResetRetention(id string) error {
 	err := m.StgDao.ResetRetention(id)
 	if m.BckDao != nil {

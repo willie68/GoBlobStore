@@ -150,9 +150,13 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 		Description: *b,
 		Data:        dat,
 	})
-	id := f.entries.HandleContrains()
-	if id != "" {
-		f.DeleteBlob(id)
+	for {
+		id := f.entries.HandleContrains()
+		if id != "" {
+			f.DeleteBlob(id)
+		} else {
+			break
+		}
 	}
 	f.updateBloom(b.BlobID)
 	return b.BlobID, nil
@@ -189,7 +193,6 @@ func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) 
 func (f *FastCache) buildFilename(id string, ext string) (string, error) {
 	fp := f.RootPath
 	fp = filepath.Join(fp, id[:2])
-	fp = filepath.Join(fp, id[2:4])
 	err := os.MkdirAll(fp, os.ModePerm)
 	if err != nil {
 		return "", err
@@ -280,7 +283,11 @@ func (f *FastCache) DeleteBlob(id string) error {
 		if f.entries.Has(id) {
 			lid := f.entries.Delete(id)
 			if lid != "" {
-				f.deleteBlobFile(lid)
+				err := f.deleteBlobFile(lid)
+				if err != nil {
+					clog.Logger.Errorf("error deleting file: %v", err)
+					return err
+				}
 				f.bfDirty = true
 			}
 			return nil
@@ -336,15 +343,19 @@ func (f *FastCache) rebuildBloomFilter() {
 func (f *FastCache) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return errNotImplemented
 }
+
 func (f *FastCache) AddRetention(r *model.RetentionEntry) error {
 	return errNotImplemented
 }
+
 func (f *FastCache) GetRetention(id string) (model.RetentionEntry, error) {
 	return model.RetentionEntry{}, errNotImplemented
 }
+
 func (f *FastCache) DeleteRetention(id string) error {
 	return errNotImplemented
 }
+
 func (f *FastCache) ResetRetention(id string) error {
 	return errNotImplemented
 }
