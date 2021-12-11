@@ -1,6 +1,6 @@
 module github.com/willie68/GoBlobStore
 
-go 1.16
+go 1.17
 
 require (
 	github.com/aphistic/golf v0.0.0-20180712155816-02c07f170c5a

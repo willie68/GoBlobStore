@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,7 +35,6 @@ const servicename = "goblob-service"
 
 var port int
 var sslport int
-var statFile string
 var serviceURL string
 var apikey string
 var ssl bool
@@ -299,9 +297,6 @@ func initConfig() {
 	if serviceURL != "" {
 		serviceConfig.ServiceURL = serviceURL
 	}
-
-	portStr := strconv.Itoa(serviceConfig.Port)
-	ioutil.WriteFile(statFile, []byte(portStr), 0644)
 
 	clog.Logger.SetLevel(serviceConfig.Logging.Level)
 	var err error
