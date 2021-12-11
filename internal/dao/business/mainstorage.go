@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -64,13 +64,13 @@ func (m *MainStorageDao) cacheFileByID(id string) {
 	if m.CchDao != nil {
 		ok, err := m.CchDao.HasBlob(id)
 		if err != nil {
-			clog.Logger.Errorf("main: cacheFileByID: check blob: %s, %v", id, err)
+			log.Logger.Errorf("main: cacheFileByID: check blob: %s, %v", id, err)
 			return
 		}
 		if !ok {
 			b, err := m.GetBlobDescription(id)
 			if err != nil {
-				clog.Logger.Errorf("main: cacheFileByID: getDescription: %s, %v", id, err)
+				log.Logger.Errorf("main: cacheFileByID: getDescription: %s, %v", id, err)
 				return
 			}
 			m.cacheFile(b)
@@ -82,7 +82,7 @@ func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
 	if m.CchDao != nil {
 		ok, err := m.CchDao.HasBlob(b.BlobID)
 		if err != nil {
-			clog.Logger.Errorf("main: cacheFile: check blob: %s, %v", b.BlobID, err)
+			log.Logger.Errorf("main: cacheFile: check blob: %s, %v", b.BlobID, err)
 			return
 		}
 		if !ok {
@@ -90,13 +90,13 @@ func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
 			go func() {
 				defer wr.Close()
 				if err := m.StgDao.RetrieveBlob(b.BlobID, wr); err != nil {
-					clog.Logger.Errorf("main: cacheFile: retrieve, error getting blob: %s, %v", b.BlobID, err)
+					log.Logger.Errorf("main: cacheFile: retrieve, error getting blob: %s, %v", b.BlobID, err)
 				}
 				// close the writer, so the reader knows there's no more data
 			}()
 			defer rd.Close()
 			if _, err := m.CchDao.StoreBlob(b, rd); err != nil {
-				clog.Logger.Errorf("main: cacheFile: store, error getting blob: %s, %v", b.BlobID, err)
+				log.Logger.Errorf("main: cacheFile: store, error getting blob: %s, %v", b.BlobID, err)
 			}
 		}
 	}
@@ -106,7 +106,7 @@ func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
 	if m.BckDao != nil {
 		ok, err := m.BckDao.HasBlob(b.BlobID)
 		if err != nil {
-			clog.Logger.Errorf("main: backupFile: check blob: %s, %v", b.BlobID, err)
+			log.Logger.Errorf("main: backupFile: check blob: %s, %v", b.BlobID, err)
 			return
 		}
 		if !ok {
@@ -115,12 +115,12 @@ func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
 				// close the writer, so the reader knows there's no more data
 				defer wr.Close()
 				if err := m.StgDao.RetrieveBlob(id, wr); err != nil {
-					clog.Logger.Errorf("main: backupFile: retrieve, error getting blob: %s, %v", id, err)
+					log.Logger.Errorf("main: backupFile: retrieve, error getting blob: %s, %v", id, err)
 				}
 			}()
 			defer rd.Close()
 			if _, err := m.BckDao.StoreBlob(b, rd); err != nil {
-				clog.Logger.Errorf("main: backupFile: store, error getting blob: %s, %v", id, err)
+				log.Logger.Errorf("main: backupFile: store, error getting blob: %s, %v", id, err)
 			}
 		}
 	}
@@ -175,13 +175,13 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 	}
 	if m.BckDao != nil {
 		if err = m.BckDao.DeleteBlob(id); err != nil {
-			clog.Logger.Errorf("error deleting blob on backup: %v", err)
+			log.Logger.Errorf("error deleting blob on backup: %v", err)
 		}
 	}
 	m.RtnMng.DeleteRetention(m.Tenant, id)
 	if m.CchDao != nil {
 		if err = m.CchDao.DeleteBlob(id); err != nil {
-			clog.Logger.Errorf("error deleting blob on cache: %v", err)
+			log.Logger.Errorf("error deleting blob on cache: %v", err)
 		}
 	}
 	return nil
@@ -196,7 +196,7 @@ func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	err := m.StgDao.AddRetention(r)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.AddRetention(r); err1 != nil {
-			clog.Logger.Errorf("error adding retention on backup: %v", err1)
+			log.Logger.Errorf("error adding retention on backup: %v", err1)
 		}
 	}
 	return err
@@ -210,7 +210,7 @@ func (m *MainStorageDao) DeleteRetention(id string) error {
 	err := m.StgDao.DeleteRetention(id)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.DeleteRetention(id); err1 != nil {
-			clog.Logger.Errorf("error deleting retention on backup:%s, %v", id, err1)
+			log.Logger.Errorf("error deleting retention on backup:%s, %v", id, err1)
 		}
 	}
 	return err
@@ -220,7 +220,7 @@ func (m *MainStorageDao) ResetRetention(id string) error {
 	err := m.StgDao.ResetRetention(id)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.ResetRetention(id); err1 != nil {
-			clog.Logger.Errorf("error reseting retention on backup:%s, %v", id, err1)
+			log.Logger.Errorf("error reseting retention on backup:%s, %v", id, err1)
 		}
 	}
 	return err
@@ -231,7 +231,7 @@ func (m *MainStorageDao) Close() error {
 	err := m.StgDao.Close()
 	if m.BckDao != nil {
 		if err1 := m.BckDao.Close(); err1 != nil {
-			clog.Logger.Errorf("error closing backup storage: %v", err1)
+			log.Logger.Errorf("error closing backup storage: %v", err1)
 		}
 	}
 	return err

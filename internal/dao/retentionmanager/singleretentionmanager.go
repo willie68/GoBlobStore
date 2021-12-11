@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -31,7 +31,7 @@ func (s *SingleRetentionManager) Init(stgf interfaces.StorageFactory) error {
 	s.retentionList = make([]model.RetentionEntry, 0)
 	err := s.refereshRetention()
 	if err != nil {
-		clog.Logger.Errorf("RetMgr: error on refresh: %v", err)
+		log.Logger.Errorf("RetMgr: error on refresh: %v", err)
 		return err
 	}
 	s.background = time.NewTicker(60 * time.Second)
@@ -42,11 +42,11 @@ func (s *SingleRetentionManager) Init(stgf interfaces.StorageFactory) error {
 			case <-s.background.C:
 				err := s.processRetention()
 				if err != nil {
-					clog.Logger.Errorf("RetMgr: error on process: %v", err)
+					log.Logger.Errorf("RetMgr: error on process: %v", err)
 				}
 				err = s.refereshRetention()
 				if err != nil {
-					clog.Logger.Errorf("RetMgr: error on refresh: %v", err)
+					log.Logger.Errorf("RetMgr: error on refresh: %v", err)
 				}
 			case <-s.quit:
 				s.background.Stop()
@@ -65,12 +65,12 @@ func (s *SingleRetentionManager) processRetention() error {
 			stg, err := s.stgf.GetStorageDao(v.TenantID)
 			defer s.removeEntry(x)
 			if err != nil {
-				clog.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
+				log.Logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
 				continue
 			}
 			err = stg.DeleteBlob(v.BlobID)
 			if err != nil {
-				clog.Logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
+				log.Logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
 				continue
 			}
 		}
@@ -90,7 +90,7 @@ func (s *SingleRetentionManager) removeEntry(i int) {
 
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.TntDao.GetTenants(func(t string) bool {
-		clog.Logger.Debugf("RetMgr: found tenant: %s", t)
+		log.Logger.Debugf("RetMgr: found tenant: %s", t)
 		stg, err := s.stgf.GetStorageDao(t)
 		if err != nil {
 			return true

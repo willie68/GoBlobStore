@@ -6,7 +6,7 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
 type BackupCheck struct {
@@ -16,7 +16,7 @@ type BackupCheck struct {
 // MigrateBackup migrates all blobs in the main storage for all tenants into the backup storage, if not already present
 func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactory) error {
 	err := tenantDao.GetTenants(func(t string) bool {
-		clog.Logger.Debugf("BckMgr: found tenant: %s", t)
+		log.Logger.Debugf("BckMgr: found tenant: %s", t)
 		stg, err := stgf.GetStorageDao(t)
 		if err != nil {
 			return true
@@ -24,7 +24,7 @@ func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactor
 		mainstg, ok := stg.(*business.MainStorageDao)
 		if ok {
 			if mainstg.BckDao == nil {
-				clog.Logger.Debugf("no backstorage found for tenant %s", t)
+				log.Logger.Debugf("no backstorage found for tenant %s", t)
 				return true
 			}
 			go migrateBckTnt(mainstg.StgDao, mainstg.BckDao)
@@ -39,14 +39,14 @@ func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactor
 
 // migrateBckTnt migrates all files from the main storage of the teant to the backup storage
 func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao) error {
-	clog.Logger.Infof("starting backup migration for tenant: %s", stg.GetTenant())
+	log.Logger.Infof("starting backup migration for tenant: %s", stg.GetTenant())
 	stg.GetBlobs(func(id string) bool {
 		found, err := bck.HasBlob(id)
 		if err != nil {
-			clog.Logger.Errorf("error checking blob from backup storage %s: %s\r\n%v ", bck.GetTenant(), id, err)
+			log.Logger.Errorf("error checking blob from backup storage %s: %s\r\n%v ", bck.GetTenant(), id, err)
 		}
 		if !found {
-			clog.Logger.Infof("migrating file for tenant: %s, %s", stg.GetTenant(), id)
+			log.Logger.Infof("migrating file for tenant: %s, %s", stg.GetTenant(), id)
 			go backup(id, stg, bck)
 		}
 		return true
@@ -58,13 +58,13 @@ func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao)
 func backup(id string, stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao) error {
 	found, err := stg.HasBlob(id)
 	if err != nil {
-		clog.Logger.Errorf("error checking blob: %s\n%v", id, err)
+		log.Logger.Errorf("error checking blob: %s\n%v", id, err)
 		return err
 	}
 	if found {
 		b, err := stg.GetBlobDescription(id)
 		if err != nil {
-			clog.Logger.Errorf("error checking blob: %s\n%v", id, err)
+			log.Logger.Errorf("error checking blob: %s\n%v", id, err)
 			return err
 		}
 
@@ -76,18 +76,18 @@ func backup(id string, stg interfaces.BlobStorageDao, bck interfaces.BlobStorage
 
 			err := stg.RetrieveBlob(id, wr)
 			if err != nil {
-				clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+				log.Logger.Errorf("error getting blob: %s,%v", id, err)
 			}
 		}()
 		_, err = bck.StoreBlob(b, rd)
 		if err != nil {
-			clog.Logger.Errorf("error getting blob: %s,%v", id, err)
+			log.Logger.Errorf("error getting blob: %s,%v", id, err)
 		}
 		defer rd.Close()
 		if b.Retention > 0 {
 			rt, err := stg.GetRetention(id)
 			if err != nil {
-				clog.Logger.Errorf("error getting retention: %s,%v", id, err)
+				log.Logger.Errorf("error getting retention: %s,%v", id, err)
 			} else {
 				bck.AddRetention(&rt)
 			}

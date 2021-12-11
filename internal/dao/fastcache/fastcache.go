@@ -12,7 +12,7 @@ import (
 
 	"github.com/akgarhwal/bloomfilter/bloomfilter"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -132,16 +132,16 @@ func (f *FastCache) GetBlobs(callback func(id string) bool) error {
 func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) {
 	ok, err := f.HasBlob(b.BlobID)
 	if err != nil {
-		clog.Logger.Errorf("cache: error checking file: %v", err)
+		log.Logger.Errorf("cache: error checking file: %v", err)
 		return "", err
 	}
 	if ok {
-		clog.Logger.Errorf("cache: file exists")
+		log.Logger.Errorf("cache: file exists")
 		return b.BlobID, os.ErrExist
 	}
 	size, dat, err := f.writeBinFile(b.BlobID, r)
 	if err != nil {
-		clog.Logger.Errorf("cache: writing file: %v", err)
+		log.Logger.Errorf("cache: writing file: %v", err)
 		return "", err
 	}
 	atomic.AddInt64(&f.size, size)
@@ -285,7 +285,7 @@ func (f *FastCache) DeleteBlob(id string) error {
 			if lid != "" {
 				err := f.deleteBlobFile(lid)
 				if err != nil {
-					clog.Logger.Errorf("error deleting file: %v", err)
+					log.Logger.Errorf("error deleting file: %v", err)
 					return err
 				}
 				f.bfDirty = true

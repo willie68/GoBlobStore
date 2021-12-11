@@ -22,7 +22,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/crypt"
 	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/health"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 
 	flag "github.com/spf13/pflag"
@@ -46,7 +46,7 @@ var srv *http.Server
 func init() {
 	// variables for parameter override
 	ssl = false
-	clog.Logger.Info("init service")
+	log.Logger.Info("init service")
 	flag.IntVarP(&port, "port", "p", 0, "port of the http server.")
 	flag.IntVarP(&sslport, "sslport", "t", 0, "port of the https server.")
 	flag.StringVarP(&configFile, "config", "c", "", "this is the path and filename to the config file")
@@ -55,7 +55,7 @@ func init() {
 
 func apiRoutes() (*chi.Mux, error) {
 	baseURL := apiv1.Baseurl
-	clog.Logger.Infof("baseurl : %s", baseURL)
+	log.Logger.Infof("baseurl : %s", baseURL)
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
@@ -98,7 +98,7 @@ func apiRoutes() (*chi.Mux, error) {
 		if err != nil {
 			return router, err
 		}
-		clog.Logger.Infof("jwt config: %v", jwtConfig)
+		log.Logger.Infof("jwt config: %v", jwtConfig)
 		jwtAuth := auth.JWTAuth{
 			Config: jwtConfig,
 		}
@@ -140,20 +140,20 @@ func main() {
 
 	flag.Parse()
 
-	clog.Logger.Infof("starting server, config folder: %s", configFolder)
-	defer clog.Logger.Close()
+	log.Logger.Infof("starting server, config folder: %s", configFolder)
+	defer log.Logger.Close()
 
 	serror.Service = servicename
 	if configFile == "" {
 		configFolder, err := config.GetDefaultConfigFolder()
 		if err != nil {
-			clog.Logger.Alertf("can't load config file: %s", err.Error())
+			log.Logger.Alertf("can't load config file: %s", err.Error())
 			os.Exit(1)
 		}
 		configFolder = fmt.Sprintf("%s/service/", configFolder)
 		err = os.MkdirAll(configFolder, os.ModePerm)
 		if err != nil {
-			clog.Logger.Alertf("can't load config file: %s", err.Error())
+			log.Logger.Alertf("can't load config file: %s", err.Error())
 			os.Exit(1)
 		}
 		configFile = configFolder + "/service.yaml"
@@ -163,14 +163,14 @@ func main() {
 
 	// autorestart starts here...
 	if err := config.Load(); err != nil {
-		clog.Logger.Alertf("can't load config file: %s", err.Error())
+		log.Logger.Alertf("can't load config file: %s", err.Error())
 		os.Exit(1)
 	}
 
 	serviceConfig = config.Get()
 	initConfig()
 
-	clog.Logger.Info("service is starting")
+	log.Logger.Info("service is starting")
 
 	healthCheckConfig := health.CheckConfig(serviceConfig.HealthCheck)
 
@@ -178,38 +178,39 @@ func main() {
 
 	if serviceConfig.Sslport > 0 {
 		ssl = true
+		log.Logger.Info("ssl active")
 	}
 
 	apikey = getApikey()
 	if config.Get().Apikey {
-		clog.Logger.Infof("apikey: %s", apikey)
+		log.Logger.Infof("apikey: %s", apikey)
 	}
-	clog.Logger.Infof("ssl: %t", ssl)
-	clog.Logger.Infof("serviceURL: %s", serviceConfig.ServiceURL)
-	clog.Logger.Infof("%s api routes", servicename)
+	log.Logger.Infof("ssl: %t", ssl)
+	log.Logger.Infof("serviceURL: %s", serviceConfig.ServiceURL)
+	log.Logger.Infof("%s api routes", servicename)
 
 	if err := initStorageSystem(); err != nil {
 		errstr := fmt.Sprintf("could not initialise dao factory. %s", err.Error())
-		clog.Logger.Alertf(errstr)
+		log.Logger.Alertf(errstr)
 		panic(errstr)
 	}
 
 	router, err := apiRoutes()
 	if err != nil {
-		clog.Logger.Alertf("could not create api routes. %s", err.Error())
+		log.Logger.Alertf("could not create api routes. %s", err.Error())
 	}
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		clog.Logger.Infof("%s %s", method, route)
+		log.Logger.Infof("%s %s", method, route)
 		return nil
 	}
 
 	if err := chi.Walk(router, walkFunc); err != nil {
-		clog.Logger.Alertf("could not walk api routes. %s", err.Error())
+		log.Logger.Alertf("could not walk api routes. %s", err.Error())
 	}
-	clog.Logger.Info("health api routes")
+	log.Logger.Info("health api routes")
 	healthRouter := healthRoutes()
 	if err := chi.Walk(healthRouter, walkFunc); err != nil {
-		clog.Logger.Alertf("could not walk health routes. %s", err.Error())
+		log.Logger.Alertf("could not walk health routes. %s", err.Error())
 	}
 
 	if ssl {
@@ -223,7 +224,7 @@ func main() {
 		}
 		tlsConfig, err := gc.GenerateTLSConfig()
 		if err != nil {
-			clog.Logger.Alertf("could not create tls config. %s", err.Error())
+			log.Logger.Alertf("could not create tls config. %s", err.Error())
 		}
 		sslsrv = &http.Server{
 			Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Sslport),
@@ -234,9 +235,9 @@ func main() {
 			TLSConfig:    tlsConfig,
 		}
 		go func() {
-			clog.Logger.Infof("starting https server on address: %s", sslsrv.Addr)
+			log.Logger.Infof("starting https server on address: %s", sslsrv.Addr)
 			if err := sslsrv.ListenAndServeTLS("", ""); err != nil {
-				clog.Logger.Alertf("error starting server: %s", err.Error())
+				log.Logger.Alertf("error starting server: %s", err.Error())
 			}
 		}()
 		srv = &http.Server{
@@ -247,9 +248,9 @@ func main() {
 			Handler:      healthRouter,
 		}
 		go func() {
-			clog.Logger.Infof("starting http server on address: %s", srv.Addr)
+			log.Logger.Infof("starting http server on address: %s", srv.Addr)
 			if err := srv.ListenAndServe(); err != nil {
-				clog.Logger.Alertf("error starting server: %s", err.Error())
+				log.Logger.Alertf("error starting server: %s", err.Error())
 			}
 		}()
 	} else {
@@ -262,14 +263,14 @@ func main() {
 			Handler:      router,
 		}
 		go func() {
-			clog.Logger.Infof("starting http server on address: %s", srv.Addr)
+			log.Logger.Infof("starting http server on address: %s", srv.Addr)
 			if err := srv.ListenAndServe(); err != nil {
-				clog.Logger.Alertf("error starting server: %s", err.Error())
+				log.Logger.Alertf("error starting server: %s", err.Error())
 			}
 		}()
 	}
 
-	clog.Logger.Info("waiting for clients")
+	log.Logger.Info("waiting for clients")
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	<-c
@@ -282,7 +283,7 @@ func main() {
 		sslsrv.Shutdown(ctx)
 	}
 
-	clog.Logger.Info("finished")
+	log.Logger.Info("finished")
 
 	os.Exit(0)
 }
@@ -298,16 +299,16 @@ func initConfig() {
 		serviceConfig.ServiceURL = serviceURL
 	}
 
-	clog.Logger.SetLevel(serviceConfig.Logging.Level)
+	log.Logger.SetLevel(serviceConfig.Logging.Level)
 	var err error
 	serviceConfig.Logging.Filename, err = config.ReplaceConfigdir(serviceConfig.Logging.Filename)
 	if err != nil {
-		clog.Logger.Alertf("error wrong logging folder: %s", err.Error())
+		log.Logger.Alertf("error wrong logging folder: %s", err.Error())
 		os.Exit(1)
 	}
 
-	clog.Logger.Filename = serviceConfig.Logging.Filename
-	clog.Logger.InitGelf()
+	log.Logger.Filename = serviceConfig.Logging.Filename
+	log.Logger.InitGelf()
 }
 
 func getApikey() string {

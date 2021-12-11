@@ -8,7 +8,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/factory"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
 // test for interface compatibility
@@ -81,16 +81,16 @@ func GetStorageFactory() (interfaces.StorageFactory, error) {
 func Close() {
 	err := stgf.Close()
 	if err != nil {
-		clog.Logger.Errorf("error closing storage factory:\r\n%v,", err)
+		log.Logger.Errorf("error closing storage factory:\r\n%v,", err)
 	}
 
 	err = rtnMgr.Close()
 	if err != nil {
-		clog.Logger.Errorf("error closing retention manager:\r\n%v,", err)
+		log.Logger.Errorf("error closing retention manager:\r\n%v,", err)
 	}
 
 	err = tenantDao.Close()
 	if err != nil {
-		clog.Logger.Errorf("error closing tenant dao:\r\n%v,", err)
+		log.Logger.Errorf("error closing tenant dao:\r\n%v,", err)
 	}
 }

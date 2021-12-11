@@ -10,7 +10,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
 const STGCLASS_SIMPLE_FILE = "SimpleFile"
@@ -41,7 +41,7 @@ func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobSto
 	if !ok {
 		storageDao, err := d.createStorage(tenant)
 		if err != nil {
-			clog.Logger.Errorf("can't create storage for tenant: %s\n %v", tenant, err)
+			log.Logger.Errorf("can't create storage for tenant: %s\n %v", tenant, err)
 			return nil, err
 		}
 		d.tenantStores[tenant] = &storageDao
@@ -199,7 +199,7 @@ func (d *DefaultStorageFactory) Close() error {
 		tDao = *v
 		err := tDao.Close()
 		if err != nil {
-			clog.Logger.Errorf("error closing tenant storage dao: %s\r\n%v,", k, err)
+			log.Logger.Errorf("error closing tenant storage dao: %s\r\n%v,", k, err)
 		}
 	}
 	return nil

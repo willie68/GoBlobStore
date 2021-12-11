@@ -20,7 +20,7 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -223,7 +223,7 @@ func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) b
 	})
 	for object := range objectCh {
 		if object.Err != nil {
-			clog.Logger.Errorf("S3BlobStorage: unknown error on listfiles: %v", object.Err)
+			log.Logger.Errorf("S3BlobStorage: unknown error on listfiles: %v", object.Err)
 			return object.Err
 		}
 		r, err := s.getRetentionByFile(object.Key)

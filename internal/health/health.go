@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
 var myhealthy bool
@@ -20,9 +20,9 @@ func check() (bool, string) {
 	myhealthy = true
 	message := ""
 	if myhealthy {
-		clog.Logger.Debug("healthy")
+		log.Logger.Debug("healthy")
 	} else {
-		clog.Logger.Alert("not healthy")
+		log.Logger.Alert("not healthy")
 		message = "ungesund"
 	}
 	return myhealthy, message
@@ -48,7 +48,7 @@ type Msg struct {
 // InitHealthSystem initialise the complete health system
 func InitHealthSystem(config CheckConfig) {
 	period = config.Period
-	clog.Logger.Infof("healthcheck starting with period: %d seconds", period)
+	log.Logger.Infof("healthcheck starting with period: %d seconds", period)
 	healthmessage = "service starting"
 	healthy = false
 	doCheck()

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	clog "github.com/willie68/GoBlobStore/internal/logging"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -79,21 +79,21 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
 	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
 	if err != nil {
-		clog.Logger.Errorf("error building filename: %v", err)
+		log.Logger.Errorf("error building filename: %v", err)
 		return err
 	}
 	if _, err := os.Stat(binFile); os.IsNotExist(err) {
-		clog.Logger.Errorf("error not exists: %v", err)
+		log.Logger.Errorf("error not exists: %v", err)
 		return os.ErrNotExist
 	}
 	f, err := os.Open(binFile)
 	if err != nil {
-		clog.Logger.Errorf("error opening file: %v", err)
+		log.Logger.Errorf("error opening file: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err = io.Copy(w, f); err != nil {
-		clog.Logger.Errorf("error on copy: %v", err)
+		log.Logger.Errorf("error on copy: %v", err)
 		return err
 	}
 	return nil
@@ -128,21 +128,21 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 func (s *SimpleFileBlobStorageDao) buildHash(id string) {
 	d, err := s.getBlobDescriptionV2(id)
 	if err != nil {
-		clog.Logger.Errorf("buildHash: error getting descritpion for: %s\r\n%v", id, err)
+		log.Logger.Errorf("buildHash: error getting descritpion for: %s\r\n%v", id, err)
 		return
 	}
 
 	h := sha256.New()
 	err = s.getBlobV2(id, h)
 	if err != nil {
-		clog.Logger.Errorf("buildHash: error building sha 256 hash for: %s\r\n%v", id, err)
+		log.Logger.Errorf("buildHash: error building sha 256 hash for: %s\r\n%v", id, err)
 		return
 	}
 	d.Hash = fmt.Sprintf("sha-256:%x", h.Sum(nil))
 
 	err = s.writeJsonFileV2(d)
 	if err != nil {
-		clog.Logger.Errorf("buildHash: error writing description for: %s\r\n%v", id, err)
+		log.Logger.Errorf("buildHash: error writing description for: %s\r\n%v", id, err)
 		return
 	}
 	s.cm.Lock()
@@ -230,13 +230,13 @@ func (s *SimpleFileBlobStorageDao) getRetention(id string) (*model.RetentionEntr
 	}
 	dat, err := os.ReadFile(jsonFile)
 	if err != nil {
-		clog.Logger.Errorf("GetRetention: error getting file data for: %s\r\n%v", jsonFile, err)
+		log.Logger.Errorf("GetRetention: error getting file data for: %s\r\n%v", jsonFile, err)
 		return nil, err
 	}
 	r := model.RetentionEntry{}
 	err = json.Unmarshal(dat, &r)
 	if err != nil {
-		clog.Logger.Errorf("GetRetention: error deserialising: %s\r\n%v", jsonFile, err)
+		log.Logger.Errorf("GetRetention: error deserialising: %s\r\n%v", jsonFile, err)
 		return nil, err
 	}
 	return &r, nil
