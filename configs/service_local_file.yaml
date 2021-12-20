@@ -5,6 +5,9 @@ secretfile: ""
 apikey: false
 healthcheck:
   period: 30
+# enable/disable metrics 
+metrics:
+  enable: true
 logging:
   level: debug
   filename: ""
