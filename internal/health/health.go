@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/opentracing/opentracing-go"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
@@ -15,7 +16,7 @@ var myhealthy bool
 /*
 This is the healtchcheck you will have to provide.
 */
-func check() (bool, string) {
+func check(tracer opentracing.Tracer) (bool, string) {
 	// TODO implement here your healthcheck.
 	myhealthy = true
 	message := ""
@@ -46,16 +47,16 @@ type Msg struct {
 }
 
 // InitHealthSystem initialise the complete health system
-func InitHealthSystem(config CheckConfig) {
+func InitHealthSystem(config CheckConfig, tracer opentracing.Tracer) {
 	period = config.Period
 	log.Logger.Infof("healthcheck starting with period: %d seconds", period)
 	healthmessage = "service starting"
 	healthy = false
-	doCheck()
+	doCheck(tracer)
 	go func() {
 		background := time.NewTicker(time.Second * time.Duration(period))
 		for _ = range background.C {
-			doCheck()
+			doCheck(tracer)
 		}
 	}()
 }
@@ -63,9 +64,9 @@ func InitHealthSystem(config CheckConfig) {
 /*
 internal function to process the health check
 */
-func doCheck() {
+func doCheck(tracer opentracing.Tracer) {
 	var msg string
-	healthy, msg = check()
+	healthy, msg = check(tracer)
 	if !healthy {
 		healthmessage = msg
 	} else {
@@ -116,4 +117,13 @@ func GetReadinessEndpoint(response http.ResponseWriter, req *http.Request) {
 			LastCheck: lastChecked.String(),
 		})
 	}
+}
+
+/*
+sendMessage sending a span message to tracer
+*/
+func sendMessage(tracer opentracing.Tracer, message string) {
+	span := tracer.StartSpan("say-hello")
+	println(message)
+	span.Finish()
 }

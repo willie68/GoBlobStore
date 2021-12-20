@@ -22,15 +22,19 @@ type Config struct {
 
 	Apikey bool `yaml:"apikey"`
 
+	Logging LoggingConfig `yaml:"logging"`
+
 	HealthCheck HealthCheck `yaml:"healthcheck"`
 
-	Logging LoggingConfig `yaml:"logging"`
+	Auth Authentcation `yaml:"auth"`
 
 	Engine Engine `yaml:"engine"`
 
 	HeaderMapping map[string]string `yaml:"headermapping"`
 
-	Auth Authentcation `yaml:"auth"`
+	OpenTracing OpenTracing `yaml:"opentracing"`
+
+	Metrics Metrics `yaml:"metrics"`
 }
 
 type Authentcation struct {
@@ -57,12 +61,27 @@ type HealthCheck struct {
 	Period int `yaml:"period"`
 }
 
+// Logging configuration for the gelf logging
 type LoggingConfig struct {
 	Level    string `yaml:"level"`
 	Filename string `yaml:"filename"`
+
+	Gelfurl  string `yaml:"gelf-url"`
+	Gelfport int    `yaml:"gelf-port"`
 }
 
+type OpenTracing struct {
+	Host     string `yaml:"host"`
+	Endpoint string `yaml:"endpoint"`
+}
+
+type Metrics struct {
+	Enable bool `yaml:"enable"`
+}
+
+
 var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", "headerprefix": "X-"}
+
 
 var DefaultConfig = Config{
 	Port:       8000,
