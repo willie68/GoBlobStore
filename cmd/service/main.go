@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,10 +12,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/uber/jaeger-client-go"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httptracer"
 	"github.com/go-chi/render"
+	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/apiv1"
 	"github.com/willie68/GoBlobStore/internal/auth"
@@ -32,6 +39,7 @@ import (
 apVersion implementing api version for this service
 */
 const servicename = "goblob-service"
+const apiVersion = "V1"
 
 var port int
 var sslport int
@@ -40,6 +48,7 @@ var apikey string
 var ssl bool
 var configFile string
 var serviceConfig config.Config
+var Tracer opentracing.Tracer
 var sslsrv *http.Server
 var srv *http.Server
 
@@ -72,6 +81,19 @@ func apiRoutes() (*chi.Mux, error) {
 			AllowCredentials: true,
 			MaxAge:           300, // Maximum value not ignored by any of major browsers
 		}),
+		httptracer.Tracer(Tracer, httptracer.Config{
+			ServiceName:    servicename,
+			ServiceVersion: apiVersion,
+			SampleRate:     1,
+			SkipFunc: func(r *http.Request) bool {
+				return false
+				//return r.URL.Path == "/healthz"
+			},
+			Tags: map[string]interface{}{
+				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
+				// "_dd1.sr.eausr": 1, // datadog, event sample rate
+			},
+		}),
 	)
 
 	if serviceConfig.Apikey {
@@ -92,7 +114,7 @@ func apiRoutes() (*chi.Mux, error) {
 			}),
 		)
 	}
-
+	// jwt is activated, register the Authenticator and Validator
 	if strings.EqualFold(serviceConfig.Auth.Type, "jwt") {
 		jwtConfig, err := auth.ParseJWTConfig(serviceConfig.Auth)
 		if err != nil {
@@ -108,6 +130,7 @@ func apiRoutes() (*chi.Mux, error) {
 		)
 	}
 
+	// building the routes
 	router.Route("/", func(r chi.Router) {
 		r.Mount(apiv1.Baseurl+apiv1.BlobsSubpath, apiv1.BlobRoutes())
 		r.Mount(apiv1.Baseurl+apiv1.ConfigSubpath, apiv1.ConfigRoutes())
@@ -124,10 +147,25 @@ func healthRoutes() *chi.Mux {
 		middleware.Logger,
 		//middleware.DefaultCompress,
 		middleware.Recoverer,
+		httptracer.Tracer(Tracer, httptracer.Config{
+			ServiceName:    servicename,
+			ServiceVersion: apiVersion,
+			SampleRate:     1,
+			SkipFunc: func(r *http.Request) bool {
+				return false
+			},
+			Tags: map[string]interface{}{
+				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
+				// "_dd1.sr.eausr": 1, // datadog, event sample rate
+			},
+		}),
 	)
 
 	router.Route("/", func(r chi.Router) {
 		r.Mount("/", health.Routes())
+		if serviceConfig.Metrics.Enable {
+			r.Mount("/metrics", promhttp.Handler())
+		}
 	})
 	return router
 }
@@ -169,12 +207,18 @@ func main() {
 
 	serviceConfig = config.Get()
 	initConfig()
+	initLogging()
 
 	log.Logger.Info("service is starting")
 
+	var closer io.Closer
+	Tracer, closer = initJaeger(servicename, serviceConfig.OpenTracing)
+	opentracing.SetGlobalTracer(Tracer)
+	defer closer.Close()
+
 	healthCheckConfig := health.CheckConfig(serviceConfig.HealthCheck)
 
-	health.InitHealthSystem(healthCheckConfig)
+	health.InitHealthSystem(healthCheckConfig, Tracer)
 
 	if serviceConfig.Sslport > 0 {
 		ssl = true
@@ -288,6 +332,18 @@ func main() {
 	os.Exit(0)
 }
 
+func initLogging() {
+	log.Logger.SetLevel(serviceConfig.Logging.Level)
+	var err error
+	serviceConfig.Logging.Filename, err = config.ReplaceConfigdir(serviceConfig.Logging.Filename)
+	if err != nil {
+		log.Logger.Errorf("error on config dir: %v", err)
+	}
+	log.Logger.GelfURL = serviceConfig.Logging.Gelfurl
+	log.Logger.GelfPort = serviceConfig.Logging.Gelfport
+	log.Logger.Init()
+}
+
 func initConfig() {
 	if port > 0 {
 		serviceConfig.Port = port
@@ -298,17 +354,30 @@ func initConfig() {
 	if serviceURL != "" {
 		serviceConfig.ServiceURL = serviceURL
 	}
+}
 
-	log.Logger.SetLevel(serviceConfig.Logging.Level)
-	var err error
-	serviceConfig.Logging.Filename, err = config.ReplaceConfigdir(serviceConfig.Logging.Filename)
-	if err != nil {
-		log.Logger.Alertf("error wrong logging folder: %s", err.Error())
-		os.Exit(1)
+func initJaeger(servicename string, config config.OpenTracing) (opentracing.Tracer, io.Closer) {
+
+	cfg := jaegercfg.Configuration{
+		ServiceName: servicename,
+		Sampler: &jaegercfg.SamplerConfig{
+			Type:  "const",
+			Param: 1,
+		},
+		Reporter: &jaegercfg.ReporterConfig{
+			LogSpans:           true,
+			LocalAgentHostPort: config.Host,
+			CollectorEndpoint:  config.Endpoint,
+		},
 	}
-
-	log.Logger.Filename = serviceConfig.Logging.Filename
-	log.Logger.InitGelf()
+	if (config.Endpoint == "") && (config.Host == "") {
+		cfg.Disabled = true
+	}
+	tracer, closer, err := cfg.NewTracer(jaegercfg.Logger(jaeger.StdLogger))
+	if err != nil {
+		panic(fmt.Sprintf("ERROR: cannot init Jaeger: %v\n", err))
+	}
+	return tracer, closer
 }
 
 func getApikey() string {

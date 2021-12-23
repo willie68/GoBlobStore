@@ -82,8 +82,8 @@ LABEL org.opencontainers.image.title="go-blob-store" \
       org.opencontainers.image.description="MCS Blob storage service" \
       org.opencontainers.image.version="${IMG_VERSION}" \
       org.opencontainers.image.source="https://github.com/willie68/GoBlobStore.git" \
-      org.opencontainers.image.vendor="MCS (www.wk-music.de)" \
-      org.opencontainers.image.authors="Willie@mcs" \
+      org.opencontainers.image.vendor="MCS (www.rcarduino.de)" \
+      org.opencontainers.image.authors="info@wk-music.de" \
       maintainer="MCS" \
       NAME="go-blob-store"
 

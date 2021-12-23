@@ -4,6 +4,9 @@ serviceURL: https://127.0.0.1:8443
 secretfile: ""
 healthcheck:
   period: 30
+# enable/disable metrics 
+metrics:
+  enable: false
 logging:
   level: info
   filename: ""
