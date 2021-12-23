@@ -38,7 +38,6 @@ import (
 /*
 apVersion implementing api version for this service
 */
-const servicename = "goblob-service"
 const apiVersion = "V1"
 
 var port int
@@ -82,7 +81,7 @@ func apiRoutes() (*chi.Mux, error) {
 			MaxAge:           300, // Maximum value not ignored by any of major browsers
 		}),
 		httptracer.Tracer(Tracer, httptracer.Config{
-			ServiceName:    servicename,
+			ServiceName:    config.Servicename,
 			ServiceVersion: apiVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
@@ -95,7 +94,15 @@ func apiRoutes() (*chi.Mux, error) {
 			},
 		}),
 	)
-
+	if serviceConfig.Metrics.Enable {
+		router.Use(
+			api.MetricsHandler(api.MetricsConfig{
+				SkipFunc: func(r *http.Request) bool {
+					return false
+				},
+			}),
+		)
+	}
 	if serviceConfig.Apikey {
 		router.Use(
 			api.SysAPIHandler(api.SysAPIConfig{
@@ -103,10 +110,13 @@ func apiRoutes() (*chi.Mux, error) {
 				HeaderKeyMapping: serviceConfig.HeaderMapping,
 				SkipFunc: func(r *http.Request) bool {
 					path := strings.TrimSuffix(r.URL.Path, "/")
-					if strings.HasSuffix(path, "/health") {
+					if strings.HasSuffix(path, "/livez") {
 						return true
 					}
-					if strings.HasSuffix(path, "/readiness") {
+					if strings.HasSuffix(path, "/readyz") {
+						return true
+					}
+					if strings.HasSuffix(path, "/metrics") {
 						return true
 					}
 					return false
@@ -134,7 +144,10 @@ func apiRoutes() (*chi.Mux, error) {
 	router.Route("/", func(r chi.Router) {
 		r.Mount(apiv1.Baseurl+apiv1.BlobsSubpath, apiv1.BlobRoutes())
 		r.Mount(apiv1.Baseurl+apiv1.ConfigSubpath, apiv1.ConfigRoutes())
-		r.Mount("/health", health.Routes())
+		r.Mount("/", health.Routes())
+		if serviceConfig.Metrics.Enable {
+			r.Mount("/metrics", promhttp.Handler())
+		}
 	})
 
 	return router, nil
@@ -148,7 +161,7 @@ func healthRoutes() *chi.Mux {
 		//middleware.DefaultCompress,
 		middleware.Recoverer,
 		httptracer.Tracer(Tracer, httptracer.Config{
-			ServiceName:    servicename,
+			ServiceName:    config.Servicename,
 			ServiceVersion: apiVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
@@ -160,6 +173,15 @@ func healthRoutes() *chi.Mux {
 			},
 		}),
 	)
+	if serviceConfig.Metrics.Enable {
+		router.Use(
+			api.MetricsHandler(api.MetricsConfig{
+				SkipFunc: func(r *http.Request) bool {
+					return false
+				},
+			}),
+		)
+	}
 
 	router.Route("/", func(r chi.Router) {
 		r.Mount("/", health.Routes())
@@ -170,6 +192,13 @@ func healthRoutes() *chi.Mux {
 	return router
 }
 
+// @title GoBlobStore service API
+// @version 1.0
+// @description The GoBlobStore service is a microservices storing and serving binary data.
+// @BasePath /api/v1
+// @securityDefinitions.apikey api_key
+// @in header
+// @name apikey
 func main() {
 	configFolder, err := config.GetDefaultConfigFolder()
 	if err != nil {
@@ -181,7 +210,7 @@ func main() {
 	log.Logger.Infof("starting server, config folder: %s", configFolder)
 	defer log.Logger.Close()
 
-	serror.Service = servicename
+	serror.Service = config.Servicename
 	if configFile == "" {
 		configFolder, err := config.GetDefaultConfigFolder()
 		if err != nil {
@@ -212,7 +241,7 @@ func main() {
 	log.Logger.Info("service is starting")
 
 	var closer io.Closer
-	Tracer, closer = initJaeger(servicename, serviceConfig.OpenTracing)
+	Tracer, closer = initJaeger(config.Servicename, serviceConfig.OpenTracing)
 	opentracing.SetGlobalTracer(Tracer)
 	defer closer.Close()
 
@@ -231,7 +260,7 @@ func main() {
 	}
 	log.Logger.Infof("ssl: %t", ssl)
 	log.Logger.Infof("serviceURL: %s", serviceConfig.ServiceURL)
-	log.Logger.Infof("%s api routes", servicename)
+	log.Logger.Infof("%s api routes", config.Servicename)
 
 	if err := initStorageSystem(); err != nil {
 		errstr := fmt.Sprintf("could not initialise dao factory. %s", err.Error())
@@ -381,7 +410,7 @@ func initJaeger(servicename string, config config.OpenTracing) (opentracing.Trac
 }
 
 func getApikey() string {
-	value := fmt.Sprintf("%s_%s", servicename, "default")
+	value := fmt.Sprintf("%s_%s", config.Servicename, "default")
 	apikey := fmt.Sprintf("%x", md5.Sum([]byte(value)))
 	return strings.ToLower(apikey)
 }

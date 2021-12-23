@@ -9,6 +9,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const Servicename = "goblob-service"
+
 // Config our service configuration
 type Config struct {
 	//port of the http server
@@ -79,9 +81,7 @@ type Metrics struct {
 	Enable bool `yaml:"enable"`
 }
 
-
 var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", "headerprefix": "X-"}
-
 
 var DefaultConfig = Config{
 	Port:       8000,
@@ -116,7 +116,7 @@ func GetDefaultConfigFolder() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	configFolder := fmt.Sprintf("%s/GoBlob", home)
+	configFolder := fmt.Sprintf("%s/%s", home, Servicename)
 	err = os.MkdirAll(configFolder, os.ModePerm)
 	if err != nil {
 		return "", err
