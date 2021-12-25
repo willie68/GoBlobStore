@@ -154,9 +154,9 @@ func (s *S3TenantManager) AddTenant(tenant string) error {
 	return nil
 }
 
-func (s *S3TenantManager) RemoveTenant(tenant string) error {
+func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
 	if !s.HasTenant(tenant) {
-		return nil
+		return "", nil
 	}
 	tenant = strings.ToLower(tenant)
 	index := -1
@@ -171,9 +171,9 @@ func (s *S3TenantManager) RemoveTenant(tenant string) error {
 	}
 	err := s.writeStorelist()
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return "", nil
 }
 
 func (s *S3TenantManager) HasTenant(tenant string) bool {

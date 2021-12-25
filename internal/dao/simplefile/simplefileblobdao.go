@@ -71,16 +71,16 @@ func (s *SimpleFileTenantManager) AddTenant(tenant string) error {
 	return nil
 }
 
-func (s *SimpleFileTenantManager) RemoveTenant(tenant string) error {
+func (s *SimpleFileTenantManager) RemoveTenant(tenant string) (string, error) {
 	if !s.HasTenant(tenant) {
-		return errors.New("tenant not exists")
+		return "", errors.New("tenant not exists")
 	}
 	tenantPath := filepath.Join(s.RootPath, tenant)
 	err := os.RemoveAll(tenantPath)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return "", nil
 }
 
 func (s *SimpleFileTenantManager) HasTenant(tenant string) bool {

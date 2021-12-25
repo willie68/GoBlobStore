@@ -9,6 +9,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
+	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
 const ConfigSubpath = "/config"
@@ -72,9 +73,17 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, tenant)
 }
 
-/*
-DeleteConfigEndpoint deleting store for a tenant, this will automatically delete all data in the store
-*/
+// DeleteConfigEndpoint deleting the store for a tenant, this will automatically delete all data in the store async
+// @Summary deleting the store for a tenant, this will automatically delete all data in the store. On sync you will get an empty string as process, for async operations you will get an id of the deletion process
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} DeleteResponse "response with the id of the started process for deletion as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /config [get]
 func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -91,18 +100,29 @@ func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
 		return
 	}
-	err = dao.RemoveTenant(tenant)
+	process, err := dao.RemoveTenant(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	render.JSON(response, request, tenant)
+	rsp := model.DeleteResponse{
+		TenantID:  tenant,
+		ProcessID: process,
+	}
+	render.JSON(response, request, rsp)
 }
 
-/*
-GetConfigSizeEndpoint size of the store for a tenant
-*/
-//TODO missing implementation
+// GetConfigSizeEndpoint size of the store for a tenant
+// @Summary Get the size of the store for a tenant
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} SizeResponse "response with the size as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /config [get]
 func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -120,5 +140,9 @@ func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) 
 		return
 	}
 	size := dao.GetSize(tenant)
-	render.JSON(response, request, size)
+	rsp := model.SizeResponse{
+		TenantID: tenant,
+		Size:     size,
+	}
+	render.JSON(response, request, rsp)
 }
