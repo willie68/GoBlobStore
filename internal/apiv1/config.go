@@ -27,9 +27,20 @@ func ConfigRoutes() *chi.Mux {
 }
 
 /*
-GetConfigEndpoint getting if a store for a tenant is initialised
+GetConfigEndpoint
 because of the automatic store creation, the value is more likely that data is stored for this tenant
 */
+// GetConfigEndpoint getting if a store for a tenant is initialised
+// @Summary getting if a store for a tenant is initialised, because of the automatic store creation, the value is more likely that data is stored for this tenant
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} GetResponse "response with the id of the tenant and the created flag as bool as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /config [get]
 func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -42,13 +53,24 @@ func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	render.JSON(response, request, dao.HasTenant(tenant))
+	rsp := model.GetResponse{
+		TenantID: tenant,
+		Created:  dao.HasTenant(tenant),
+	}
+	render.JSON(response, request, rsp)
 }
 
-/*
-PostConfigEndpoint create a new store for a tenant
-because of the automatic store creation, this method will always return 201
-*/
+// PostConfigEndpoint create a new store for a tenant because of the automatic store creation, this method will always return 201
+// @Summary create a new store for a tenant because of the automatic store creation, this method will always return 201
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} CreateResponse "response with the id of the tenant as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /config [post]
 func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -69,8 +91,11 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	rsp := model.CreateResponse{
+		TenantID: tenant,
+	}
 	render.Status(request, http.StatusCreated)
-	render.JSON(response, request, tenant)
+	render.JSON(response, request, rsp)
 }
 
 // DeleteConfigEndpoint deleting the store for a tenant, this will automatically delete all data in the store async
@@ -83,7 +108,7 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} DeleteResponse "response with the id of the started process for deletion as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /config [get]
+// @Router /config [delete]
 func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -122,7 +147,7 @@ func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} SizeResponse "response with the size as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /config [get]
+// @Router /config/size [get]
 func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
