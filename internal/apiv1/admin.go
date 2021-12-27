@@ -1,37 +1,33 @@
 package apiv1
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/dao"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const ConfigSubpath = "/config"
+const AdminSubpath = "/admin"
 
 /*
-ConfigRoutes getting all routes for the config endpoint
+AdminRoutes getting all routes for the admin endpoint
 */
-func ConfigRoutes() *chi.Mux {
+func AdminRoutes() *chi.Mux {
 	router := chi.NewRouter()
-	router.Post("/", PostConfigEndpoint)
-	router.Get("/", GetConfigEndpoint)
-	router.Delete("/", DeleteConfigEndpoint)
-	router.Get("/size", GetConfigSizeEndpoint)
+	router.Post("/command", PostCommandEndpoint)
+	router.Get("/processes", GetProcessesEndpoint)
+	router.Get("/processes/{id}", GetProcessEndpoint)
+	router.Delete("/processes/{id}", DeleteProcessEndpoint)
 	return router
 }
 
-/*
-GetConfigEndpoint
-because of the automatic store creation, the value is more likely that data is stored for this tenant
-*/
-// GetConfigEndpoint getting if a store for a tenant is initialised
-// @Summary getting if a store for a tenant is initialised, because of the automatic store creation, the value is more likely that data is stored for this tenant
+// GetProcessesEndpoint getting all processes active for this tenant
+// @Summary getting all processes active for this tenant
 // @Tags configs
 // @Accept  json
 // @Produce  json
@@ -40,8 +36,8 @@ because of the automatic store creation, the value is more likely that data is s
 // @Success 200 {array} GetResponse "response with the id of the tenant and the created flag as bool as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /config [get]
-func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
+// @Router /admin/processes [get]
+func GetProcessesEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -60,8 +56,8 @@ func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, rsp)
 }
 
-// PostConfigEndpoint create a new store for a tenant because of the automatic store creation, this method will always return 201
-// @Summary create a new store for a tenant because of the automatic store creation, this method will always return 201
+// PostCommandEndpoint starting a new command for this tenant
+// @Summary starting a new command for this tenant
 // @Tags configs
 // @Accept  json
 // @Produce  json
@@ -70,15 +66,15 @@ func GetConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} CreateResponse "response with the id of the tenant as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /config [post]
-func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
+// @Router /admin/command [post]
+func PostCommandEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("create store for tenant %s", tenant)
+	log.Printf("create store for tenant %s", tenant)
 	dao, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
@@ -98,8 +94,49 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, rsp)
 }
 
-// DeleteConfigEndpoint deleting the store for a tenant, this will automatically delete all data in the store async
-// @Summary deleting the store for a tenant, this will automatically delete all data in the store. On sync you will get an empty string as process, for async operations you will get an id of the deletion process
+// GetProcessEndpoint getting a single process for a tenant
+// @Summary getting a single process for a tenant
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} SizeResponse "response with the size as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /admin/processes/{id} [get]
+func GetProcessEndpoint(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	idStr := chi.URLParam(request, "id")
+	if idStr == "" {
+		msg := "process id missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-id", msg))
+		return
+	}
+	dao, err := dao.GetTenantDao()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	if !dao.HasTenant(tenant) {
+		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
+		return
+	}
+	size := dao.GetSize(tenant)
+	rsp := model.SizeResponse{
+		TenantID: tenant,
+		Size:     size,
+	}
+	render.JSON(response, request, rsp)
+}
+
+// DeleteProcessEndpoint deleting a single process for a tenant, if the process is finished
+// @Summary deleting a single process for a tenant, if the process is finished
 // @Tags configs
 // @Accept  json
 // @Produce  json
@@ -108,12 +145,18 @@ func PostConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} DeleteResponse "response with the id of the started process for deletion as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /config [delete]
-func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
+// @Router /admin/processes/{id} [delete]
+func DeleteProcessEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	idStr := chi.URLParam(request, "id")
+	if idStr == "" {
+		msg := "process id missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-id", msg))
 		return
 	}
 	dao, err := dao.GetTenantDao()
@@ -133,41 +176,6 @@ func DeleteConfigEndpoint(response http.ResponseWriter, request *http.Request) {
 	rsp := model.DeleteResponse{
 		TenantID:  tenant,
 		ProcessID: process,
-	}
-	render.JSON(response, request, rsp)
-}
-
-// GetConfigSizeEndpoint size of the store for a tenant
-// @Summary Get the size of the store for a tenant
-// @Tags configs
-// @Accept  json
-// @Produce  json
-// @Security api_key
-// @Param tenant header string true "Tenant"
-// @Success 200 {array} SizeResponse "response with the size as json"
-// @Failure 400 {object} serror.Serr "client error information as json"
-// @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /config/size [get]
-func GetConfigSizeEndpoint(response http.ResponseWriter, request *http.Request) {
-	tenant, err := httputils.TenantID(request)
-	if err != nil {
-		msg := "tenant header missing"
-		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
-		return
-	}
-	dao, err := dao.GetTenantDao()
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
-	}
-	if !dao.HasTenant(tenant) {
-		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
-		return
-	}
-	size := dao.GetSize(tenant)
-	rsp := model.SizeResponse{
-		TenantID: tenant,
-		Size:     size,
 	}
 	render.JSON(response, request, rsp)
 }
