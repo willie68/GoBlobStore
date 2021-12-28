@@ -1,8 +1,9 @@
 package apiv1
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/willie68/GoBlobStore/internal/logging"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -74,7 +75,7 @@ func PostCommandEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Printf("create store for tenant %s", tenant)
+	log.Infof("create store for tenant %s", tenant)
 	dao, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
