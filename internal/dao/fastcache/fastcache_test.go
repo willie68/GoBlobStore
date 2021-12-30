@@ -150,6 +150,16 @@ func TestCRD(t *testing.T) {
 
 	ast.Equal("this is a blob content", buf.String())
 
+	// update
+	b.Properties["X-tenant"] = "MCS_2"
+	err = dao.UpdateBlobDescription(id, &b)
+	ast.Nil(err)
+
+	info, err = dao.GetBlobDescription(id)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
+	ast.Equal("MCS_2", info.Properties["X-tenant"])
+
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)
 

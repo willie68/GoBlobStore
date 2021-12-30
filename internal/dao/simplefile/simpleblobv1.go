@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -33,6 +34,21 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV1(id string) (*model.BlobD
 		return nil, err
 	}
 	return &info, nil
+}
+
+// updating the blob description
+func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV1(id string, b *model.BlobDescription) error {
+	if s.hasBlobV1(id) {
+		err := s.writeJsonFileV1(b)
+		if err != nil {
+			return err
+		}
+		s.cm.Lock()
+		defer s.cm.Unlock()
+		s.bdCch[b.BlobID] = *b
+		return nil
+	}
+	return os.ErrNotExist
 }
 
 func (s *SimpleFileBlobStorageDao) hasBlobV1(id string) bool {
@@ -83,4 +99,28 @@ func (s *SimpleFileBlobStorageDao) deleteFilesV1(id string) error {
 	jsonFile, _ = s.buildRetentionFilename(id)
 	os.Remove(jsonFile)
 	return nil
+}
+
+func (s *SimpleFileBlobStorageDao) writeJsonFileV1(b *model.BlobDescription) error {
+	jsonFile, err := s.buildFilenameV1(b.BlobID, DESCRIPTION_EXT)
+	if err != nil {
+		return err
+	}
+
+	json, err := json.Marshal(b)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(jsonFile, json, os.ModePerm)
+	if err != nil {
+		os.Remove(jsonFile)
+		return err
+	}
+
+	return nil
+}
+
+func (s *SimpleFileBlobStorageDao) buildFilenameV1(id string, ext string) (string, error) {
+	return filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, ext)), nil
 }

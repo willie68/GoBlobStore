@@ -10,6 +10,8 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+var _ interfaces.BlobStorageDao = &MainStorageDao{}
+
 type MainStorageDao struct {
 	RtnMng      interfaces.RetentionManager
 	StgDao      interfaces.BlobStorageDao
@@ -58,6 +60,28 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 	gor := (runtime.NumGoroutine() / 1000)
 	time.Sleep(time.Duration(gor) * time.Millisecond)
 	return id, err
+}
+
+// updating the blob description
+func (m *MainStorageDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+	err := m.StgDao.UpdateBlobDescription(id, b)
+	if err != nil {
+		return err
+	}
+	if m.BckDao != nil {
+		if m.Bcksyncmode {
+			err = m.BckDao.UpdateBlobDescription(id, b)
+			if err != nil {
+				return err
+			}
+		} else {
+			go m.BckDao.UpdateBlobDescription(id, b)
+		}
+	}
+	if m.CchDao != nil {
+		m.CchDao.UpdateBlobDescription(id, b)
+	}
+	return nil
 }
 
 func (m *MainStorageDao) cacheFileByID(id string) {

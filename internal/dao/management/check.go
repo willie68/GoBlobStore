@@ -24,12 +24,13 @@ func (c CheckContext) Check() error {
 			msg := "%s: can't read blobdescription"
 			log.Logger.Errorf(msg, id)
 		}
+		hash, err := utils.BuildHash(id, c.primary)
+		if err != nil {
+			msg := "%s: can't read blobdescription"
+			log.Logger.Errorf(msg, id)
+		}
 		if dsc.Hash == "" {
-			dsc.Hash, err = utils.BuildHash(id, c.primary)
-			if err != nil {
-				msg := "%s: can't read blobdescription"
-				log.Logger.Errorf(msg, id)
-			}
+			dsc.Hash = hash
 		}
 		return true
 	})

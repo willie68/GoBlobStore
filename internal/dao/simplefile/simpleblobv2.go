@@ -76,6 +76,18 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 	return &info, nil
 }
 
+// updating the blob description
+func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV2(id string, b *model.BlobDescription) error {
+	err := s.writeJsonFileV2(b)
+	if err != nil {
+		return err
+	}
+	s.cm.Lock()
+	defer s.cm.Unlock()
+	s.bdCch[b.BlobID] = *b
+	return nil
+}
+
 func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
 	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
 	if err != nil {

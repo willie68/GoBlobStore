@@ -132,6 +132,11 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	return b.BlobID, nil
 }
 
+// updating the blob description
+func (s *S3BlobStorage) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+	return nil
+}
+
 // checking, if a blob is present
 func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
 	filename := s.id2f(id)
