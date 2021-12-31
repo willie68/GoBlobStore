@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -30,15 +31,15 @@ const (
 )
 
 type S3BlobStorage struct {
-	Endpoint   string
-	Insecure   bool
-	Bucket     string
-	AccessKey  string
-	SecretKey  string
-	Tenant     string
-	Password   string
-	minioCient minio.Client
-	usetls     bool
+	Endpoint    string
+	Insecure    bool
+	Bucket      string
+	AccessKey   string
+	SecretKey   string
+	Tenant      string
+	Password    string
+	minioClient minio.Client
+	usetls      bool
 }
 
 var _ interfaces.BlobStorageDao = &S3BlobStorage{}
@@ -78,15 +79,15 @@ func (s *S3BlobStorage) Init() error {
 	if err != nil {
 		return err
 	}
-	s.minioCient = *client
+	s.minioClient = *client
 	// check the bucket and try to create it
 	ctx := context.Background()
-	ok, err := s.minioCient.BucketExists(ctx, s.Bucket)
+	ok, err := s.minioClient.BucketExists(ctx, s.Bucket)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		err := s.minioCient.MakeBucket(ctx, s.Bucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
+		err := s.minioClient.MakeBucket(ctx, s.Bucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
 		if err != nil {
 			return err
 		}
@@ -102,7 +103,29 @@ func (s *S3BlobStorage) GetTenant() string {
 
 // getting a list of blob from the filesystem using offset and limit
 func (s *S3BlobStorage) GetBlobs(callback func(id string) bool) error {
-	return errors.New("not yet implemented")
+	ctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	objectCh := s.minioClient.ListObjects(ctx, s.Bucket, minio.ListObjectsOptions{
+		Prefix:    s.Tenant,
+		Recursive: true,
+	})
+	for object := range objectCh {
+		if object.Err != nil {
+			cancel()
+			return object.Err
+		}
+		id := object.Key
+		id = strings.TrimPrefix(id, s.Tenant+"/")
+		id = strings.TrimSuffix(id, ".bin")
+		next := callback(id)
+		if !next {
+			cancel()
+			break
+		}
+	}
+	return nil
 }
 
 // CRUD operation on the blob files
@@ -121,7 +144,7 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	metadata[blobDescription] = string(metadatastr)
 
 	filename := s.id2f(b.BlobID)
-	_, err = s.minioCient.PutObject(ctx, s.Bucket, filename, f, b.ContentLength, minio.PutObjectOptions{
+	_, err = s.minioClient.PutObject(ctx, s.Bucket, filename, f, b.ContentLength, minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/octet-stream",
 		UserMetadata:         metadata,
@@ -134,6 +157,35 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 
 // updating the blob description
 func (s *S3BlobStorage) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+	metadatastr, err := json.Marshal(b)
+	if err != nil {
+		return err
+	}
+	metadata := make(map[string]string)
+	metadata[blobDescription] = string(metadatastr)
+
+	filename := s.id2f(b.BlobID)
+
+	srcOpts := minio.CopySrcOptions{
+		Bucket:     s.Bucket,
+		Object:     filename,
+		Encryption: s.getEncryption(),
+	}
+
+	// Destination object
+	dstOpts := minio.CopyDestOptions{
+		Bucket:          s.Bucket,
+		Object:          filename,
+		Encryption:      s.getEncryption(),
+		UserMetadata:    metadata,
+		ReplaceMetadata: true,
+	}
+
+	// Copy object call
+	_, err = s.minioClient.CopyObject(context.Background(), dstOpts, srcOpts)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -141,7 +193,7 @@ func (s *S3BlobStorage) UpdateBlobDescription(id string, b *model.BlobDescriptio
 func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	_, err := s.minioCient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -157,7 +209,7 @@ func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
 func (s *S3BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	stat, err := s.minioCient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
+	stat, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -183,7 +235,7 @@ func (s *S3BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, e
 func (s *S3BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	r, err := s.minioCient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{})
+	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -204,7 +256,7 @@ func (s *S3BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 func (s *S3BlobStorage) DeleteBlob(id string) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	err := s.minioCient.RemoveObject(ctx, s.Bucket, filename, minio.RemoveObjectOptions{})
+	err := s.minioClient.RemoveObject(ctx, s.Bucket, filename, minio.RemoveObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -222,7 +274,7 @@ func (s *S3BlobStorage) DeleteBlob(id string) error {
 func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	filename := s.tntrp()
 	ctx := context.Background()
-	objectCh := s.minioCient.ListObjects(ctx, s.Bucket, minio.ListObjectsOptions{
+	objectCh := s.minioClient.ListObjects(ctx, s.Bucket, minio.ListObjectsOptions{
 		Prefix:    filename,
 		Recursive: false,
 	})
@@ -251,7 +303,7 @@ func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
 		return err
 	}
 	f := bytes.NewReader(jsonstr)
-	_, err = s.minioCient.PutObject(ctx, s.Bucket, filename, f, int64(len(jsonstr)), minio.PutObjectOptions{
+	_, err = s.minioClient.PutObject(ctx, s.Bucket, filename, f, int64(len(jsonstr)), minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/json",
 	})
@@ -271,7 +323,7 @@ func (s *S3BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
 func (s *S3BlobStorage) DeleteRetention(id string) error {
 	filename := s.id2rf(id)
 	ctx := context.Background()
-	err := s.minioCient.RemoveObject(ctx, s.Bucket, filename, minio.RemoveObjectOptions{})
+	err := s.minioClient.RemoveObject(ctx, s.Bucket, filename, minio.RemoveObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -307,7 +359,7 @@ func (s *S3BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
 //getRetentionByFile get a retention entry for filename
 func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry, error) {
 	ctx := context.Background()
-	r, err := s.minioCient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{
+	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 	})
 	if err != nil {

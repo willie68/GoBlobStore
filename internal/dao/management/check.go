@@ -31,6 +31,8 @@ func (c CheckContext) Check() error {
 		}
 		if dsc.Hash == "" {
 			dsc.Hash = hash
+			err := c.primary.UpdateBlobDescription(id, dsc)
+			log.Logger.Errorf("error updating blob description on primary. \r\n%v", err)
 		}
 		return true
 	})

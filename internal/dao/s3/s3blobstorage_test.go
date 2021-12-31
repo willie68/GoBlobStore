@@ -115,7 +115,9 @@ func TestCRUDBlob(t *testing.T) {
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,
 		Retention:     0,
+		Properties:    make(map[string]interface{}),
 	}
+	b.Properties["X-tenant"] = "MCS"
 
 	r, err := os.Open(pdffile)
 	ast.Nil(err)
@@ -148,6 +150,23 @@ func TestCRUDBlob(t *testing.T) {
 	ok, err = readercomp.FilesEqual(pdffile, testfile)
 	ast.Nil(err)
 	ast.True(ok)
+
+	b.Properties["X-tenant"] = "MCS_2"
+	err = dao.UpdateBlobDescription(id, &b)
+	ast.Nil(err)
+
+	d, err = dao.GetBlobDescription(id)
+	ast.Nil(err)
+	ast.Equal(id, d.BlobID)
+	ast.Equal("MCS_2", d.Properties["X-tenant"])
+
+	blobs := make([]string, 0)
+	err = dao.GetBlobs(func(id string) bool {
+		blobs = append(blobs, id)
+		return true
+	})
+	ast.Nil(err)
+	ast.Equal(1, len(blobs))
 
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)

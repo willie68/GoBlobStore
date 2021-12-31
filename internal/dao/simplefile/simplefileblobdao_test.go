@@ -174,7 +174,8 @@ func TestInfo(t *testing.T) {
 	dao.Close()
 }
 
-func TestCRD(t *testing.T) {
+func TestCRUD(t *testing.T) {
+	ast := assert.New(t)
 	dao := getStoreageDao(t)
 
 	b := model.BlobDescription{
@@ -194,31 +195,31 @@ func TestCRD(t *testing.T) {
 
 	r := strings.NewReader("this is a blob content")
 	id, err := dao.StoreBlob(&b, r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.NotNil(t, id)
-	assert.Equal(t, id, b.BlobID)
+	ast.Nil(err)
+	ast.NotNil(id)
+	ast.Equal(id, b.BlobID)
 
 	info, err := dao.GetBlobDescription(id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, id, info.BlobID)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
 
 	var buf bytes.Buffer
 
 	err = dao.RetrieveBlob(id, &buf)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ast.Nil(err)
+	ast.Equal("this is a blob content", buf.String())
 
-	assert.Equal(t, "this is a blob content", buf.String())
+	b.Properties["X-tenant"] = "MCS_2"
+	err = dao.UpdateBlobDescription(id, &b)
+	ast.Nil(err)
+
+	info, err = dao.GetBlobDescription(id)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
+	ast.Equal("MCS_2", info.Properties["X-tenant"])
 
 	err = dao.DeleteBlob(id)
-	if err != nil {
-		t.Fatal(err)
-	}
+	ast.Nil(err)
 
 	dao.Close()
 }

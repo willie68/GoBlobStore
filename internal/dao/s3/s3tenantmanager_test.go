@@ -49,7 +49,7 @@ func TestS3TenantManager(t *testing.T) {
 	size := dao.GetSize(tenant)
 	ast.Equal(int64(0), size)
 
-	err = dao.RemoveTenant(tenant)
+	_, err = dao.RemoveTenant(tenant)
 	ast.Nil(err)
 
 	ok = dao.HasTenant(tenant)
