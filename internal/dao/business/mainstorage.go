@@ -150,6 +150,31 @@ func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
 	}
 }
 
+func (m *MainStorageDao) restoreFile(b *model.BlobDescription) {
+	if m.BckDao != nil {
+		id := b.BlobID
+		ok, err := m.BckDao.HasBlob(id)
+		if err != nil {
+			log.Logger.Errorf("main: restoreFile: check blob: %s, %v", id, err)
+			return
+		}
+		if ok {
+			rd, wr := io.Pipe()
+			go func() {
+				// close the writer, so the reader knows there's no more data
+				defer wr.Close()
+				if err := m.BckDao.RetrieveBlob(id, wr); err != nil {
+					log.Logger.Errorf("main: restoreFile: retrieve, error getting blob: %s, %v", id, err)
+				}
+			}()
+			defer rd.Close()
+			if _, err := m.StgDao.StoreBlob(b, rd); err != nil {
+				log.Logger.Errorf("main: restoreFile: store, error getting blob: %s, %v", id, err)
+			}
+		}
+	}
+}
+
 // HasBlob getting the description of the file
 func (m *MainStorageDao) HasBlob(id string) (bool, error) {
 	if m.CchDao != nil {
@@ -169,7 +194,17 @@ func (m *MainStorageDao) GetBlobDescription(id string) (*model.BlobDescription, 
 			return b, nil
 		}
 	}
-	return m.StgDao.GetBlobDescription(id)
+	b, err := m.StgDao.GetBlobDescription(id)
+	if err != nil {
+		if m.BckDao != nil {
+			bb, berr := m.BckDao.GetBlobDescription(id)
+			if berr == nil {
+				go m.restoreFile(bb)
+				return bb, nil
+			}
+		}
+	}
+	return b, err
 }
 
 // RetrieveBlob retrieving the binary data from the storage system
@@ -185,8 +220,19 @@ func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
 	}
 	err := m.StgDao.RetrieveBlob(id, w)
 	if err != nil {
+		if m.BckDao != nil {
+			berr := m.RetrieveBlob(id, w)
+			if berr == nil {
+				bb, berr := m.BckDao.GetBlobDescription(id)
+				if berr == nil {
+					go m.restoreFile(bb)
+				}
+				return nil
+			}
+		}
 		return err
 	}
+
 	go m.cacheFileByID(id)
 	return nil
 }
