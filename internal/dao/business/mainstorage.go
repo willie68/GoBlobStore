@@ -221,7 +221,7 @@ func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
 	err := m.StgDao.RetrieveBlob(id, w)
 	if err != nil {
 		if m.BckDao != nil {
-			berr := m.RetrieveBlob(id, w)
+			berr := m.BckDao.RetrieveBlob(id, w)
 			if berr == nil {
 				bb, berr := m.BckDao.GetBlobDescription(id)
 				if berr == nil {
