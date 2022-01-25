@@ -183,7 +183,20 @@ func (m *MainStorageDao) HasBlob(id string) (bool, error) {
 			return true, nil
 		}
 	}
-	return m.StgDao.HasBlob(id)
+	ok, err := m.StgDao.HasBlob(id)
+	if err != nil || !ok {
+		if m.BckDao != nil {
+			bok, berr := m.BckDao.HasBlob(id)
+			if berr == nil && bok {
+				bb, berr := m.BckDao.GetBlobDescription(id)
+				if berr == nil {
+					go m.restoreFile(bb)
+				}
+				return true, nil
+			}
+		}
+	}
+	return ok, err
 }
 
 // GetBlobDescription getting the description of the file
@@ -248,7 +261,9 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 			log.Logger.Errorf("error deleting blob on backup: %v", err)
 		}
 	}
-	m.RtnMng.DeleteRetention(m.Tenant, id)
+	if m.RtnMng != nil {
+		m.RtnMng.DeleteRetention(m.Tenant, id)
+	}
 	if m.CchDao != nil {
 		if err = m.CchDao.DeleteBlob(id); err != nil {
 			log.Logger.Errorf("error deleting blob on cache: %v", err)
