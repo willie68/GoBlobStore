@@ -1,117 +1,183 @@
 package management
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/utils"
-	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
 type CheckContext struct {
 	TenantID string
-	primary  interfaces.BlobStorageDao
-	backup   interfaces.BlobStorageDao
+	Cache    interfaces.BlobStorageDao
+	Primary  interfaces.BlobStorageDao
+	Backup   interfaces.BlobStorageDao
 	cancel   bool
 }
 
-func (c CheckContext) Check() error {
+type CheckResultLine struct {
+	ID            string
+	Filename      string
+	InCache       bool
+	InBackup      bool
+	PrimaryHashOK bool
+	BackupHashOK  bool
+	HasError      bool
+	Messages      []string
+}
+
+// Admin functions
+
+//CheckStorage checks the storage to find inconsistencies.
+// It will write a audit file with a line for every blob in the storage, including name, hash, and state
+func (c *CheckContext) CheckStorage() (string, error) {
 	c.cancel = false
-	err := c.primary.GetBlobs(func(id string) bool {
-		if c.cancel {
-			return false
-		}
-		ok := true
-		msgs := make([]string, 0)
-		msgs = append(msgs, fmt.Sprintf("%s:", id))
+	file, err := ioutil.TempFile("", "check.*.json")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	log.Logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
+	file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
 
-		dsc, err := c.primary.GetBlobDescription(id)
+	// checking all blobs in cache
+	if c.Cache != nil {
+		count := 0
+		log.Logger.Debug("checking cache")
+		file.WriteString(",\r\n\"Cache\": [")
+		err := c.Cache.GetBlobs(func(id string) bool {
+			// checking if the blob belongs to the tenant
+			b, err := c.Cache.GetBlobDescription(id)
+			if (err == nil) && (b.TenantID == c.TenantID) {
+				msg := "ok"
+				ip, _ := c.Primary.HasBlob(id)
+				if !ip {
+					msg = "cache inconsistent"
+				}
+				if count > 0 {
+					file.WriteString(",\r\n")
+				}
+				file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
+				count++
+			}
+			return true
+		})
+
+		file.WriteString("]")
 		if err != nil {
-			msg := "%s: can't read blobdescription"
-			log.Logger.Errorf(msg, id)
-			msgs = append(msgs, "can't read blobdescription")
-			ok = false
+			log.Logger.Errorf("check: error checking cache. %v", err)
 		}
-
-		msgs, ok = c.checkPrimary(*dsc, msgs)
-		if c.backup != nil {
-			msgs, ok = c.checkBackup(*dsc, msgs)
-
+		file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
+	}
+	// checking all blobs in main storage
+	count := 0
+	log.Logger.Debug("checking primary")
+	file.WriteString(",\r\n\"Primary\": [\r\n")
+	err = c.Primary.GetBlobs(func(id string) bool {
+		if count > 0 {
+			file.WriteString(",\r\n")
 		}
-		if !ok {
-			log.Logger.Errorf("errors: %v", msgs)
-		}
+		c.checkBlob(id, file)
+		count++
 		return true
 	})
-	return err
+	file.WriteString("]")
+	file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
+	if err != nil {
+		log.Logger.Errorf("check: error checking primary. %v", err)
+	}
+	// checking all blobs in backup storage
+	if c.Backup != nil {
+		log.Logger.Debug("checking backup")
+		count := 0
+		first := true
+		file.WriteString(",\r\n\"Backup\": [\r\n")
+		err := c.Backup.GetBlobs(func(id string) bool {
+			// only check blobs that are not already checked in primary
+			if ok, _ := c.Primary.HasBlob(id); !ok {
+				if !first {
+					file.WriteString(",\r\n")
+				}
+				file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
+				first = false
+			}
+			count++
+			return true
+		})
+		if err != nil {
+			log.Logger.Errorf("check: error checking backup. %v", err)
+		}
+		file.WriteString("]")
+		file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
+	}
+	file.WriteString("\r\n}")
+	return file.Name(), err
 }
 
-func (c CheckContext) checkPrimary(dsc model.BlobDescription, msgs []string) ([]string, bool) {
-	ok := true
-	id := dsc.BlobID
-	hash, err := utils.BuildHash(id, c.primary)
+func (c *CheckContext) checkBlob(id string, file *os.File) {
+	r := newResult()
+	r.ID = id
+	bd, err := c.Primary.GetBlobDescription(id)
 	if err != nil {
-		msg := "%s: error building hash, %v"
-		log.Logger.Errorf(msg, id, err)
-		msgs = append(msgs, fmt.Sprintf("error building hash: %v", err))
-		ok = false
+		r.Messages = append(r.Messages, err.Error())
+		r.HasError = true
 	}
-	if dsc.Hash == "" {
-		msgs = append(msgs, "missing hash on primary")
-		dsc.Hash = hash
-		err := c.primary.UpdateBlobDescription(id, &dsc)
-		if err != nil {
-			log.Logger.Errorf("error updating blob description on primary. \r\n%v", err)
-			msgs = append(msgs, fmt.Sprintf("error updating blob description on primary: %v", err))
-			ok = false
+	// getting the filename
+	r.Filename = bd.Filename
+	// checking if this blob is chached
+	if c.Cache != nil {
+		r.InCache, _ = c.Cache.HasBlob(id)
+	}
+	// checking if this blob is backuped
+	if c.Backup != nil {
+		r.InBackup, _ = c.Backup.HasBlob(id)
+		if !r.InBackup {
+			r.Messages = append(r.Messages, "missing blob in backup")
+			r.HasError = true
 		}
 	}
-	if dsc.Hash != hash {
-		msg := "%s: wrong hash"
-		log.Logger.Errorf(msg, id)
-		msgs = append(msgs, "wrong hash")
-		ok = false
+	// checking the hash of the primary blob
+	hash, err := utils.BuildHash(id, c.Primary)
+	if err != nil {
+		r.Messages = append(r.Messages, fmt.Sprintf("error building hash: %v", err))
 	}
-	return msgs, ok
+	if hash != bd.Hash {
+		r.PrimaryHashOK = false
+		r.Messages = append(r.Messages, "primary hash not correct")
+		r.HasError = true
+	}
+	// checking the hash of the backup blob
+	if r.InBackup {
+		hash, err = utils.BuildHash(id, c.Backup)
+		if err != nil {
+			r.Messages = append(r.Messages, fmt.Sprintf("error building hash on backup: %v", err))
+		}
+		if hash != bd.Hash {
+			r.BackupHashOK = false
+			r.Messages = append(r.Messages, "backup hash not correct")
+			r.HasError = true
+		}
+	}
+
+	if len(r.Messages) == 0 {
+		r.Messages = append(r.Messages, "ok")
+	}
+	// writing a line of check results
+	js, _ := json.Marshal(r)
+	file.WriteString(string(js))
 }
 
-func (c CheckContext) checkBackup(bd model.BlobDescription, msgs []string) ([]string, bool) {
-	ok := true
-	id := bd.BlobID
-	hash := bd.Hash
-
-	dsc, err := c.backup.GetBlobDescription(id)
-	if err != nil {
-		msg := "%s: bck: can't read blobdescription"
-		log.Logger.Errorf(msg, id)
-		msgs = append(msgs, "bck: can't read blobdescription")
-		ok = false
+func newResult() CheckResultLine {
+	return CheckResultLine{
+		HasError:      false,
+		InCache:       false,
+		InBackup:      false,
+		PrimaryHashOK: true,
+		BackupHashOK:  true,
+		Messages:      make([]string, 0),
 	}
-
-	bckhash, err := utils.BuildHash(id, c.backup)
-	if err != nil {
-		msg := "%s: bck: error building hash, %v"
-		log.Logger.Errorf(msg, id, err)
-		msgs = append(msgs, fmt.Sprintf("bck: error building hash: %v", err))
-		ok = false
-	} else {
-		if bckhash != hash {
-			msg := "%s: bck: wrong hash"
-			log.Logger.Errorf(msg, id)
-			msgs = append(msgs, "bck: wrong hash")
-			ok = false
-		}
-	}
-
-	if dsc.Hash == "" {
-		msgs = append(msgs, "missing hash on backup")
-		err := c.backup.UpdateBlobDescription(id, &bd)
-		if err != nil {
-			log.Logger.Errorf("error updating blob description on backup. \r\n%v", err)
-			msgs = append(msgs, fmt.Sprintf("error updating blob description on backup: %v", err))
-			ok = false
-		}
-	}
-	return msgs, ok
 }

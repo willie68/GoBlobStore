@@ -18,6 +18,7 @@ WORKDIR /src
 ## Task: fetch project deps
 
 RUN go mod download
+RUN go mod tidy
 
 ## Task: build project
 

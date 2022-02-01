@@ -4,6 +4,7 @@
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [   
+
             {
             "name": "Launch GoBLobStore",
             "type": "go",
@@ -11,6 +12,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/service/main.go",
             "cwd": "${workspaceFolder}",
+            "output": "debug",
             "env": {},
             "args": [
                 "-c",
@@ -24,6 +26,7 @@
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/service/main.go",
             "cwd": "${workspaceFolder}",
+            "output": "debug",
             "env": {},
             "args": [
                 "-c",

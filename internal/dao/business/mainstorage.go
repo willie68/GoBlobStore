@@ -204,7 +204,9 @@ func (m *MainStorageDao) GetBlobDescription(id string) (*model.BlobDescription, 
 	if m.CchDao != nil {
 		b, err := m.CchDao.GetBlobDescription(id)
 		if err == nil {
-			return b, nil
+			if b.TenantID == m.Tenant {
+				return b, nil
+			}
 		}
 	}
 	b, err := m.StgDao.GetBlobDescription(id)
@@ -225,9 +227,14 @@ func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
 	if m.CchDao != nil {
 		ok, _ := m.CchDao.HasBlob(id)
 		if ok {
-			err := m.CchDao.RetrieveBlob(id, w)
+			b, err := m.CchDao.GetBlobDescription(id)
 			if err == nil {
-				return nil
+				if b.TenantID == m.Tenant {
+					err := m.CchDao.RetrieveBlob(id, w)
+					if err == nil {
+						return nil
+					}
+				}
 			}
 		}
 	}

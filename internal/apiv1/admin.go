@@ -20,7 +20,7 @@ AdminRoutes getting all routes for the admin endpoint
 */
 func AdminRoutes() *chi.Mux {
 	router := chi.NewRouter()
-	router.Post("/command", PostCommandEndpoint)
+	router.Get("/check", GetCheckEndpoint)
 	router.Get("/processes", GetProcessesEndpoint)
 	router.Get("/processes/{id}", GetProcessEndpoint)
 	router.Delete("/processes/{id}", DeleteProcessEndpoint)
@@ -57,8 +57,8 @@ func GetProcessesEndpoint(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, rsp)
 }
 
-// PostCommandEndpoint starting a new command for this tenant
-// @Summary starting a new command for this tenant
+// GetCheckEndpoint starting a new check for this tenant
+// @Summary starting a new check for this tenant
 // @Tags configs
 // @Accept  json
 // @Produce  json
@@ -68,29 +68,22 @@ func GetProcessesEndpoint(response http.ResponseWriter, request *http.Request) {
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
 // @Router /admin/command [post]
-func PostCommandEndpoint(response http.ResponseWriter, request *http.Request) {
+func GetCheckEndpoint(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Infof("create store for tenant %s", tenant)
-	dao, err := dao.GetTenantDao()
+	log.Logger.Infof("check store for tenant %s", tenant)
+	dao, err := dao.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
-	err = dao.AddTenant(tenant)
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
-	}
+	
 
-	rsp := model.CreateResponse{
-		TenantID: tenant,
-	}
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, rsp)
 }
