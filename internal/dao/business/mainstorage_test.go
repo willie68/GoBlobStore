@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
-	"github.com/willie68/GoBlobStore/internal/dao/management"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -29,16 +28,6 @@ const (
 	cchPath        = rootFilePrefix + "blbcch"
 	bckPath        = rootFilePrefix + "bckstg"
 )
-
-type JsonResult struct {
-	Tenant       string
-	Cache        []management.CheckResultLine
-	CacheCount   int
-	Primary      []management.CheckResultLine
-	PrimaryCount int
-	Backup       []management.CheckResultLine
-	BackupCount  int
-}
 
 var main interfaces.BlobStorageDao
 
@@ -171,16 +160,6 @@ func TestManyFiles(t *testing.T) {
 	ast.Nil(err)
 
 	bMain := main.(*MainStorageDao)
-	cctx := management.CheckContext{
-		TenantID: bMain.Tenant,
-		Primary:  bMain.StgDao,
-		Backup:   bMain.BckDao,
-		Cache:    bMain.CchDao,
-	}
-
-	file, err := cctx.CheckStorage()
-	ast.Nil(err)
-	ast.NotNil(file)
 
 	for _, id := range blobs {
 		found := false

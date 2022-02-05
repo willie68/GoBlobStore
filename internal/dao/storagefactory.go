@@ -18,7 +18,7 @@ var tenantDao interfaces.TenantDao
 var rtnMgr interfaces.RetentionManager
 var cnfg config.Engine
 var stgf interfaces.StorageFactory
-var checkMan management.CheckManagement
+var checkMan *management.CheckManagement
 
 //Init initialise the storage factory
 func Init(storage config.Engine) error {
@@ -57,7 +57,7 @@ func Init(storage config.Engine) error {
 		return err
 	}
 
-	checkMan := management.CheckManagement{
+	checkMan = &management.CheckManagement{
 		StorageFactory: stgf,
 	}
 	err = checkMan.Init()
@@ -87,6 +87,14 @@ func GetStorageFactory() (interfaces.StorageFactory, error) {
 		return nil, errors.New("no storage factory present")
 	}
 	return stgf, nil
+}
+
+//GetCheckManagement returning the tenant for administration tenants
+func GetCheckManagement() (*management.CheckManagement, error) {
+	if checkMan == nil {
+		return nil, errors.New("no check management present")
+	}
+	return checkMan, nil
 }
 
 func Close() {

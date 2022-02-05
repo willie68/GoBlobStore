@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
@@ -12,13 +13,18 @@ import (
 )
 
 type CheckContext struct {
-	TenantID string
-	Cache    interfaces.BlobStorageDao
-	Primary  interfaces.BlobStorageDao
-	Backup   interfaces.BlobStorageDao
-	Running  bool
-	Filename string
-	cancel   bool
+	TenantID  string
+	CheckID   string
+	Started   time.Time
+	Finnished time.Time
+	Cache     interfaces.BlobStorageDao
+	Primary   interfaces.BlobStorageDao
+	Backup    interfaces.BlobStorageDao
+	Running   bool
+	Filename  string
+	BlobID    string
+	cancel    bool
+	Message   string
 }
 
 type CheckResultLine struct {
