@@ -75,8 +75,8 @@ func GetCheckEndpoint(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("check store for tenant %s", tenant)
-	dao, err := dao.GetStorageFactory()
+	log.Logger.Infof("create store for tenant %s", tenant)
+	dao, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
