@@ -22,6 +22,7 @@ func AdminRoutes() *chi.Mux {
 	router := chi.NewRouter()
 	router.Get("/check", GetCheck)
 	router.Post("/check", PostCheck)
+	router.Get("/restore", GetRestore)
 	router.Post("/restore", PostRestore)
 	return router
 }
@@ -44,13 +45,12 @@ func GetCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("create store for tenant %s", tenant)
 	cMan, err := dao.GetCheckManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	res, err := cMan.GetCheckResult(tenant)
+	res, err := cMan.GetResult(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.BadRequest(err))
 		return
@@ -83,16 +83,16 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if cMan.IsCheckRunning(tenant) {
+	if cMan.IsRunning(tenant) {
 		httputils.Err(response, request, serror.BadRequest(errors.New("Check is already running for tenant")))
 		return
 	}
-	_, err = cMan.StartCheck(tenant)
+	_, err = cMan.Start(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	res, err := cMan.GetCheckResult(tenant)
+	res, err := cMan.GetResult(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -120,21 +120,53 @@ func PostRestore(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("do restore for tenant %s", tenant)
-	cMan, err := dao.GetCheckManagement()
+	rMan, err := dao.GetRestoreManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if cMan.IsCheckRunning(tenant) {
-		httputils.Err(response, request, serror.BadRequest(errors.New("Check is already running for tenant")))
+	if rMan.IsRunning(tenant) {
+		httputils.Err(response, request, serror.BadRequest(errors.New("Restore is already running for tenant")))
 		return
 	}
-	_, err = cMan.StartCheck(tenant)
+	_, err = rMan.Start(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	res, err := cMan.GetCheckResult(tenant)
+	res, err := rMan.GetResult(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	render.Status(request, http.StatusCreated)
+	render.JSON(response, request, res)
+}
+
+// GetRestore starting a new check for this tenant
+// @Summary starting a new check for this tenant
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} CreateResponse "response with the id of the tenant as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /admin/command [post]
+func GetRestore(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	rMan, err := dao.GetRestoreManagement()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	res, err := rMan.GetResult(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return

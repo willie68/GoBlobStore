@@ -13,6 +13,7 @@ import (
 
 type RestoreContext struct {
 	TenantID  string
+	ID        string
 	Started   time.Time
 	Finnished time.Time
 	Primary   interfaces.BlobStorageDao
@@ -47,7 +48,7 @@ func (r *RestoreContext) Restore() {
 	defer func() { r.Running = false }()
 	r.cancel = false
 	log.Logger.Debugf("start restoring tenant \"%s\"", r.TenantID)
-
+	time.Sleep(10 * time.Second)
 	// restoring all blobs in backup storage
 	if r.Backup != nil {
 		log.Logger.Debug("checking backup")
