@@ -5,6 +5,8 @@ secretfile: ""
 apikey: false
 healthcheck:
   period: 30
+metrics:
+  enable: true
 logging:
   level: debug
   filename: ""
@@ -28,8 +30,7 @@ headermapping:
   tenant: 
   apikey: 
   filename:
-#  apikey: X-es-apikey
 auth:
-  type: jwt
+  type: none
   properties: 
     validate: false

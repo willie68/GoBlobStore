@@ -1,6 +1,6 @@
 ##### BUILDER #####
 
-FROM golang:1.17-alpine3.14 as builder
+FROM golang:1.17.6-alpine3.15 as builder
 
 ## Task: Install build deps
 
@@ -18,6 +18,7 @@ WORKDIR /src
 ## Task: fetch project deps
 
 RUN go mod download
+RUN go mod tidy
 
 ## Task: build project
 
@@ -58,7 +59,7 @@ RUN set -eu +x; \
 
 
 ##### TARGET #####
-FROM alpine:3.14
+FROM alpine:3.15
 
 ARG RELEASE
 ENV IMG_VERSION="${RELEASE}"
@@ -76,7 +77,7 @@ CMD ["--config","/data/config/service.yaml"]
 EXPOSE 8080 8443
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
-  CMD wget -q -T 5 --spider http://localhost:8080/health/health
+  CMD wget -q -T 5 --spider http://localhost:8080/livez
 
 LABEL org.opencontainers.image.title="go-blob-store" \
       org.opencontainers.image.description="MCS Blob storage service" \

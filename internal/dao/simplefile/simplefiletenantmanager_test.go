@@ -46,7 +46,8 @@ func TestSimplefileTenantManager(t *testing.T) {
 	err := dao.Init()
 	ast.Nil(err)
 
-	_ = dao.RemoveTenant(tenant)
+	_, err = dao.RemoveTenant(tenant)
+	ast.Nil(err)
 
 	time.Sleep(1 * time.Second)
 
@@ -80,7 +81,7 @@ func TestSimplefileTenantManager(t *testing.T) {
 	size := dao.GetSize(tenant)
 	ast.Equal(int64(0), size)
 
-	err = dao.RemoveTenant(tenant)
+	_, err = dao.RemoveTenant(tenant)
 	ast.Nil(err)
 
 	ok = dao.HasTenant(tenant)

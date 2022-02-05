@@ -25,6 +25,7 @@ type BlobStorageDao interface {
 	StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) // storing a blob to the storage system
 	HasBlob(id string) (bool, error)                                 // checking, if a blob is present
 	GetBlobDescription(id string) (*model.BlobDescription, error)    // getting the description of the file
+	UpdateBlobDescription(id string, b *model.BlobDescription) error // updating the blob description
 	RetrieveBlob(id string, w io.Writer) error                       // retrieving the binary data from the storage system
 	DeleteBlob(id string) error                                      // removing a blob from the storage system
 

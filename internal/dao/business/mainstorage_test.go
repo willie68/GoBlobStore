@@ -23,26 +23,37 @@ import (
 const (
 	rootFilePrefix = "R:/"
 	tenant         = "test"
-	blbcount       = 100000
+	blbcount       = 10000
+	blbPath        = rootFilePrefix + "blbstg"
+	cchPath        = rootFilePrefix + "blbcch"
+	bckPath        = rootFilePrefix + "bckstg"
 )
 
 var main interfaces.BlobStorageDao
 
 func initTest(t *testing.T) {
 	stgDao := &simplefile.SimpleFileBlobStorageDao{
-		RootPath: rootFilePrefix + "blbstg",
+		RootPath: blbPath,
 		Tenant:   tenant,
 	}
 	stgDao.Init()
 	cchDao := &fastcache.FastCache{
-		RootPath:   rootFilePrefix + "blbcch",
+		RootPath:   cchPath,
 		MaxCount:   blbcount,
 		MaxRamSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
+	bckDao := &simplefile.SimpleFileBlobStorageDao{
+		RootPath: bckPath,
+		Tenant:   tenant,
+	}
+	bckDao.Init()
+
 	main = &MainStorageDao{
 		StgDao: stgDao,
 		CchDao: cchDao,
+		BckDao: bckDao,
+		Tenant: tenant,
 	}
 
 	main.Init()
@@ -93,6 +104,15 @@ func createBlobDescription(id string) model.BlobDescription {
 	return b
 }
 
+func TestTenant(t *testing.T) {
+	clear(t)
+	initTest(t)
+	ast := assert.New(t)
+	ast.NotNil(main)
+
+	ast.Equal(tenant, main.GetTenant())
+}
+
 func TestManyFiles(t *testing.T) {
 	clear(t)
 	initTest(t)
@@ -130,6 +150,41 @@ func TestManyFiles(t *testing.T) {
 	}
 
 	fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
+
+	blobs := make([]string, 0)
+
+	err := main.GetBlobs(func(id string) bool {
+		blobs = append(blobs, id)
+		return true
+	})
+	ast.Nil(err)
+
+	bMain := main.(*MainStorageDao)
+
+	for _, id := range blobs {
+		found := false
+		for _, b := range ids {
+			if b.BlobID == id {
+				found = true
+			}
+		}
+		ast.True(found, "didn't found %s", id)
+		err := main.DeleteBlob(id)
+		ast.Nil(err)
+
+		ok, err := bMain.StgDao.HasBlob(id)
+		ast.Nil(err)
+		ast.False(ok)
+
+		ok, err = bMain.BckDao.HasBlob(id)
+		ast.Nil(err)
+		ast.False(ok)
+
+		ok, err = bMain.CchDao.HasBlob(id)
+		ast.Nil(err)
+		ast.False(ok)
+	}
+
 }
 
 func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error) {
@@ -147,6 +202,10 @@ func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error
 }
 
 func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
+	ok, err := main.HasBlob(b.BlobID)
+	ast.Nil(err, fmt.Sprintf("id: %s", b.BlobID))
+	ast.True(ok)
+
 	info, err := main.GetBlobDescription(b.BlobID)
 	ast.Nil(err, fmt.Sprintf("id: %s", b.BlobID))
 	ast.Equal(b.BlobID, info.BlobID)
@@ -160,4 +219,152 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	ast.Nil(err)
 
 	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+}
+
+func TestAutoRestoreByDescription(t *testing.T) {
+	clear(t)
+	initTest(t)
+	ast := assert.New(t)
+	ast.NotNil(main)
+	bMain := main.(*MainStorageDao)
+	bMain.Bcksyncmode = true
+	// disable caching
+	CchDao := bMain.CchDao
+	bMain.CchDao = nil
+	CchDao.Close()
+
+	ast.Nil(bMain.CchDao)
+
+	is := "12345"
+	// adding a blob
+	b, err := createBlob(ast, is)
+	ast.Nil(err)
+	ast.NotNil(b)
+
+	id := b.BlobID
+	ok, err := bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
+
+	// remove it from primary storage
+	bMain.StgDao.DeleteBlob(id)
+	time.Sleep(1 * time.Second)
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.False(ok)
+
+	bd, err := bMain.StgDao.GetBlobDescription(id)
+	ast.NotNil(err)
+	ast.Nil(bd)
+
+	// getting blobdescription
+	bd, err = main.GetBlobDescription(id)
+	ast.Nil(err)
+	ast.NotNil(bd)
+	time.Sleep(1 * time.Second)
+
+	// checking if present in primstorage
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
+}
+
+func TestAutoRestoreByContent(t *testing.T) {
+	clear(t)
+	initTest(t)
+	ast := assert.New(t)
+	ast.NotNil(main)
+	bMain := main.(*MainStorageDao)
+	bMain.Bcksyncmode = true
+	// disable caching
+	CchDao := bMain.CchDao
+	bMain.CchDao = nil
+	CchDao.Close()
+
+	ast.Nil(bMain.CchDao)
+
+	is := "wi_12345"
+	// adding a blob
+	b, err := createBlob(ast, is)
+	ast.Nil(err)
+	ast.NotNil(b)
+
+	id := b.BlobID
+	ok, err := bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
+
+	// remove it from primary storage
+	bMain.StgDao.DeleteBlob(id)
+	time.Sleep(1 * time.Second)
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.False(ok)
+
+	bd, err := bMain.StgDao.GetBlobDescription(id)
+	ast.NotNil(err)
+	ast.Nil(bd)
+
+	// getting blobdescription
+	var buf bytes.Buffer
+	err = main.RetrieveBlob(b.BlobID, &buf)
+	ast.Nil(err)
+	time.Sleep(1 * time.Second)
+
+	// checking if present in primstorage
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
+}
+
+func TestAutoRestoreByHasId(t *testing.T) {
+	clear(t)
+	initTest(t)
+	ast := assert.New(t)
+	ast.NotNil(main)
+	bMain := main.(*MainStorageDao)
+	bMain.Bcksyncmode = true
+	// disable caching
+	CchDao := bMain.CchDao
+	bMain.CchDao = nil
+	CchDao.Close()
+
+	ast.Nil(bMain.CchDao)
+
+	is := "12345"
+	// adding a blob
+	b, err := createBlob(ast, is)
+	ast.Nil(err)
+	ast.NotNil(b)
+
+	id := b.BlobID
+	ok, err := bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
+
+	// remove it from primary storage
+	bMain.StgDao.DeleteBlob(id)
+	time.Sleep(1 * time.Second)
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.False(ok)
+
+	bd, err := bMain.StgDao.GetBlobDescription(id)
+	ast.NotNil(err)
+	ast.Nil(bd)
+
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.False(ok)
+
+	// getting blobdescription
+	ok, err = main.HasBlob(b.BlobID)
+	ast.Nil(err)
+	ast.True(ok)
+	time.Sleep(1 * time.Second)
+
+	// checking if present in primstorage
+	ok, err = bMain.StgDao.HasBlob(id)
+	ast.Nil(err)
+	ast.True(ok)
 }

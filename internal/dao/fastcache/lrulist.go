@@ -40,6 +40,17 @@ func (l *LRUList) Add(e LRUEntry) bool {
 	return true
 }
 
+func (l *LRUList) Update(e LRUEntry) {
+	id := e.Description.BlobID
+	l.dmu.Lock()
+	defer l.dmu.Unlock()
+	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
+	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
+		e.LastAccess = time.Now()
+		l.entries[i] = e
+	}
+}
+
 func (l *LRUList) UpdateAccess(id string) {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()

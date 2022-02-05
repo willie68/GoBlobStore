@@ -1,5 +1,5 @@
 # port of the http server
-port: 8000
+port: 8080
 # port of the https server
 sslport: 8443
 # this is the servicURL from outside
@@ -12,7 +12,7 @@ healthcheck:
 metrics:
   enable: false
 logging:
-  level: debug
+  level: info
   filename: ""
   gelf-url:
   gelf-port:

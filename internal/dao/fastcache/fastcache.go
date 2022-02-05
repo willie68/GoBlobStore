@@ -162,6 +162,27 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 	return b.BlobID, nil
 }
 
+// updating the blob description
+func (f *FastCache) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+	ok, err := f.HasBlob(b.BlobID)
+	if err != nil {
+		log.Logger.Errorf("cache: error checking file: %v", err)
+		return err
+	}
+	if !ok {
+		log.Logger.Debugf("cache: file not exists: %s", id)
+		return nil
+	}
+	if f.inBloom(id) {
+		l, ok := f.entries.Get(id)
+		if ok {
+			l.Description = *b
+			f.entries.Update(l)
+		}
+	}
+	return nil
+}
+
 func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) {
 	binFile, err := f.buildFilename(id, BINARY_EXT)
 	if err != nil {
