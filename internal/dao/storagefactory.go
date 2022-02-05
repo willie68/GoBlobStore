@@ -3,6 +3,7 @@ package dao
 import (
 	"errors"
 
+	"github.com/willie68/GoBlobStore/internal/dao/management"
 	backup "github.com/willie68/GoBlobStore/internal/dao/migration"
 
 	"github.com/willie68/GoBlobStore/internal/config"
@@ -17,6 +18,7 @@ var tenantDao interfaces.TenantDao
 var rtnMgr interfaces.RetentionManager
 var cnfg config.Engine
 var stgf interfaces.StorageFactory
+var checkMan management.CheckManagement
 
 //Init initialise the storage factory
 func Init(storage config.Engine) error {
@@ -54,6 +56,15 @@ func Init(storage config.Engine) error {
 	if err != nil {
 		return err
 	}
+
+	checkMan := management.CheckManagement{
+		StorageFactory: stgf,
+	}
+	err = checkMan.Init()
+	if err != nil {
+		return err
+	}
+
 	// migrate backup
 	err = backup.MigrateBackup(tenantDao, stgf)
 	if err != nil {
@@ -92,5 +103,10 @@ func Close() {
 	err = tenantDao.Close()
 	if err != nil {
 		log.Logger.Errorf("error closing tenant dao:\r\n%v,", err)
+	}
+
+	err = checkMan.Close()
+	if err != nil {
+		log.Logger.Errorf("error closing check management:\r\n%v,", err)
 	}
 }

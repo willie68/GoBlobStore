@@ -16,6 +16,8 @@ type CheckContext struct {
 	Cache    interfaces.BlobStorageDao
 	Primary  interfaces.BlobStorageDao
 	Backup   interfaces.BlobStorageDao
+	Running  bool
+	Filename string
 	cancel   bool
 }
 
@@ -31,16 +33,18 @@ type CheckResultLine struct {
 }
 
 // Admin functions
-
 //CheckStorage checks the storage to find inconsistencies.
 // It will write a audit file with a line for every blob in the storage, including name, hash, and state
 func (c *CheckContext) CheckStorage() (string, error) {
+	c.Running = true
+	defer func() { c.Running = false }()
 	c.cancel = false
 	file, err := ioutil.TempFile("", "check.*.json")
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
+	c.Filename = file.Name()
 	log.Logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
 	file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
 
