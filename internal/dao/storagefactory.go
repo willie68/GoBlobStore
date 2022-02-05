@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/willie68/GoBlobStore/internal/dao/management"
-	backup "github.com/willie68/GoBlobStore/internal/dao/migration"
+	"github.com/willie68/GoBlobStore/internal/dao/migration"
 
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/factory"
@@ -19,6 +19,7 @@ var rtnMgr interfaces.RetentionManager
 var cnfg config.Engine
 var stgf interfaces.StorageFactory
 var checkMan *management.CheckManagement
+var resMan *migration.RestoreManagement
 
 //Init initialise the storage factory
 func Init(storage config.Engine) error {
@@ -65,8 +66,16 @@ func Init(storage config.Engine) error {
 		return err
 	}
 
+	resMan = &migration.RestoreManagement{
+		StorageFactory: stgf,
+	}
+	err = resMan.Init()
+	if err != nil {
+		return err
+	}
+
 	// migrate backup
-	err = backup.MigrateBackup(tenantDao, stgf)
+	err = migration.MigrateBackup(tenantDao, stgf)
 	if err != nil {
 		return err
 	}
@@ -95,6 +104,14 @@ func GetCheckManagement() (*management.CheckManagement, error) {
 		return nil, errors.New("no check management present")
 	}
 	return checkMan, nil
+}
+
+//GetRestoreManagement returning the tenant for administration tenants
+func GetRestoreManagement() (*migration.RestoreManagement, error) {
+	if resMan == nil {
+		return nil, errors.New("no reestore management present")
+	}
+	return resMan, nil
 }
 
 func Close() {

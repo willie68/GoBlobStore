@@ -18,11 +18,11 @@ type CheckManagement struct {
 }
 
 type CheckResult struct {
-	CheckID        string
-	CheckStartet   time.Time
-	CheckFinnished time.Time
-	Running        bool
-	BlobID         string
+	CheckID   string
+	Startet   time.Time
+	Finnished time.Time
+	Running   bool
+	BlobID    string
 }
 
 // management functions
@@ -32,7 +32,7 @@ func (c *CheckManagement) Init() error {
 	return nil
 }
 
-func (c *CheckManagement) IsCheckRunning(tenant string) bool {
+func (c *CheckManagement) IsRunning(tenant string) bool {
 	if c, ok := c.cCtxs[tenant]; ok {
 		if c.Running {
 			return true
@@ -41,13 +41,13 @@ func (c *CheckManagement) IsCheckRunning(tenant string) bool {
 	return false
 }
 
-func (c *CheckManagement) GetCheckResult(tenant string) (CheckResult, error) {
+func (c *CheckManagement) GetResult(tenant string) (CheckResult, error) {
 	if c, ok := c.cCtxs[tenant]; ok {
 		res := CheckResult{
-			CheckID:        c.CheckID,
-			Running:        c.Running,
-			CheckStartet:   c.Started,
-			CheckFinnished: c.Finnished,
+			CheckID:   c.CheckID,
+			Running:   c.Running,
+			Startet:   c.Started,
+			Finnished: c.Finnished,
 		}
 		if !c.Running {
 			res.BlobID = c.BlobID
@@ -57,7 +57,7 @@ func (c *CheckManagement) GetCheckResult(tenant string) (CheckResult, error) {
 	return CheckResult{}, errors.New("no check running for tenant")
 }
 
-func (c *CheckManagement) StartCheck(tenant string) (string, error) {
+func (c *CheckManagement) Start(tenant string) (string, error) {
 	if c, ok := c.cCtxs[tenant]; ok {
 		if c.Running {
 			return "", errors.New("check already running for tenant")
