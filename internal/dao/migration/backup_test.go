@@ -20,14 +20,13 @@ const (
 	zipfile  = "../../../testdata/mcs.zip"
 	rootpath = "../../../testdata/blobstorage"
 	bckpath  = "../../../testdata/bckstorage"
-	tenant   = "MCS"
 )
 
 type MockStorage struct {
 	mock.Mock
 }
 
-func initTest(t *testing.T) {
+func initBckTest(t *testing.T) {
 	os.RemoveAll(rootpath)
 	os.MkdirAll(rootpath, os.ModePerm)
 
@@ -97,7 +96,7 @@ func getRntCount(stg interfaces.BlobStorageDao) (int, error) {
 }
 
 func TestSyncForward(t *testing.T) {
-	initTest(t)
+	initBckTest(t)
 
 	ast := assert.New(t)
 	mainStg := &simplefile.SimpleFileBlobStorageDao{

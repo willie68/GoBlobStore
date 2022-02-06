@@ -45,7 +45,7 @@ func GetCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	cMan, err := dao.GetCheckManagement()
+	cMan, err := dao.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -78,7 +78,7 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("do check for tenant %s", tenant)
-	cMan, err := dao.GetCheckManagement()
+	cMan, err := dao.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -87,7 +87,7 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(errors.New("Check is already running for tenant")))
 		return
 	}
-	_, err = cMan.Start(tenant)
+	_, err = cMan.StartCheck(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -120,16 +120,16 @@ func PostRestore(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("do restore for tenant %s", tenant)
-	rMan, err := dao.GetRestoreManagement()
+	rMan, err := dao.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 	if rMan.IsRunning(tenant) {
-		httputils.Err(response, request, serror.BadRequest(errors.New("Restore is already running for tenant")))
+		httputils.Err(response, request, serror.BadRequest(errors.New("restore is already running for tenant")))
 		return
 	}
-	_, err = rMan.Start(tenant)
+	_, err = rMan.StartRestore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -161,7 +161,7 @@ func GetRestore(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	rMan, err := dao.GetRestoreManagement()
+	rMan, err := dao.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
