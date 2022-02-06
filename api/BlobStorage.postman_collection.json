@@ -1,0 +1,2150 @@
+{
+	"info": {
+		"_postman_id": "81e97323-7e23-7a28-48d2-da5c9c79f827",
+		"name": "BlobStorage",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "get store",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473"
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST"
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ="
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": ""
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://localhost:8443/api/v1/config",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"config"
+					]
+				},
+				"description": "The HTTP `POST` request method is meant to transfer data to a server \n(and elicit a response). What data is returned depends on the implementation\nof the server.\n\nA `POST` request can pass parameters to the server using \"Query String \nParameters\", as well as the Request Body. For example, in the following request,\n\n> POST /hi/there?hand=wave\n>\n> <request-body>\n\nThe parameter \"hand\" has the value \"wave\". The request body can be in multiple\nformats. These formats are defined by the MIME type of the request. The MIME \nType can be set using the ``Content-Type`` HTTP header. The most commonly used \nMIME types are:\n\n* `multipart/form-data`\n* `application/x-www-form-urlencoded`\n* `application/json`\n\nThis endpoint echoes the HTTP headers, request parameters, the contents of\nthe request body and the complete URI requested when data is sent as a form parameter."
+			},
+			"response": []
+		},
+		{
+			"name": "createStore",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473"
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST"
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ="
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "EASY"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n   \"name\":\"blink.tps\",\r\n   \"hardware\":\"arduinpsps\",\r\n   \"content\": \":loop\\nPORT #0x0F\\nWAIT 200ms\\nPORT #0x00\\nWAIT 200m\\nRJMP :loop\"\r\n}"
+				},
+				"url": {
+					"raw": "https://localhost:8443/api/v1/config/",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"config",
+						""
+					]
+				},
+				"description": "The HTTP `POST` request method is meant to transfer data to a server \n(and elicit a response). What data is returned depends on the implementation\nof the server.\n\nA `POST` request can pass parameters to the server using \"Query String \nParameters\", as well as the Request Body. For example, in the following request,\n\n> POST /hi/there?hand=wave\n>\n> <request-body>\n\nThe parameter \"hand\" has the value \"wave\". The request body can be in multiple\nformats. These formats are defined by the MIME type of the request. The MIME \nType can be set using the ``Content-Type`` HTTP header. The most commonly used \nMIME types are:\n\n* `multipart/form-data`\n* `application/x-www-form-urlencoded`\n* `application/json`\n\nThis endpoint echoes the HTTP headers, request parameters, the contents of\nthe request body and the complete URI requested when data is sent as a form parameter."
+			},
+			"response": []
+		},
+		{
+			"name": "delete store",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Authorization header generated by Postman.",
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ="
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"disabled": true
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "easy2",
+						"disabled": true
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1",
+						"disabled": true
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E",
+						"disabled": true
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"url": {
+					"raw": "https://localhost:8443/api/v1/config/",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"config",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get size",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473"
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST"
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ="
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "customerForeignId",
+							"value": "100212",
+							"disabled": true
+						},
+						{
+							"key": "templateName",
+							"value": "registration.vm",
+							"disabled": true
+						},
+						{
+							"key": "link",
+							"value": "https://archivierung.lexware.de/activation/activatePwd.html?tokenId=f5lgho6t8motabq82po8khr387",
+							"type": "text",
+							"disabled": true
+						},
+						{
+							"key": "deleteCustomer",
+							"value": "false",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://localhost:8443/api/v1/config/size",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"config",
+						"size"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get Blobs",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "tenant_2"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs?limit=10&offset=0",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "10"
+						},
+						{
+							"key": "offset",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create Blob Form",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					},
+					{
+						"key": "X-es-retention",
+						"value": "1",
+						"type": "text"
+					},
+					{
+						"key": "X-es-MeinSuperDuperHeader",
+						"value": "Willie was here",
+						"type": "text"
+					},
+					{
+						"key": "X-es-2.Header",
+						"value": "Wer das liest ist doof",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/wklaa/Desktop/SPS_Emu.xml"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs"
+					]
+				},
+				"description": "The HTTP `POST` request method is meant to transfer data to a server \n(and elicit a response). What data is returned depends on the implementation\nof the server.\n\nA `POST` request can pass parameters to the server using \"Query String \nParameters\", as well as the Request Body. For example, in the following request,\n\n> POST /hi/there?hand=wave\n>\n> <request-body>\n\nThe parameter \"hand\" has the value \"wave\". The request body can be in multiple\nformats. These formats are defined by the MIME type of the request. The MIME \nType can be set using the ``Content-Type`` HTTP header. The most commonly used \nMIME types are:\n\n* `multipart/form-data`\n* `application/x-www-form-urlencoded`\n* `application/json`\n\nThis endpoint echoes the HTTP headers, request parameters, the contents of\nthe request body and the complete URI requested when data is sent as a form parameter."
+			},
+			"response": []
+		},
+		{
+			"name": "post Blob form",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXX0.W5-81oFlhmLUgxnuUCiy8zwi6BLOssrTqQpXtbLSDtQ",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"disabled": true
+					},
+					{
+						"key": "X-Es-Tenant",
+						"value": "c133dut5bculje2nj2j0",
+						"disabled": true
+					},
+					{
+						"key": "X-Es-System",
+						"value": "easy1",
+						"disabled": true
+					},
+					{
+						"key": "X-Es-Apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E",
+						"disabled": true
+					},
+					{
+						"key": "X-es-retention",
+						"value": "1",
+						"type": "text"
+					},
+					{
+						"key": "x-tenant",
+						"value": "EASY1",
+						"type": "text"
+					},
+					{
+						"key": "x-apikey",
+						"value": "3156a3e47b47b4c57fbee903c737384a",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/w.klaas/Desktop/gopher_1.png"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs/",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "post Blob Direkt",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/pdf",
+						"type": "text"
+					},
+					{
+						"key": "X-es-filename",
+						"value": "readme.pdf",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "file",
+					"file": {
+						"src": "/C:/Users/w.klaas/Desktop/gopher_1.png"
+					}
+				},
+				"url": {
+					"raw": "https://localhost:8443/api/v1/blobs",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get Blob Info",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs/093b87f18dce4e05893c6e43972c7fb9/info",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs",
+						"093b87f18dce4e05893c6e43972c7fb9",
+						"info"
+					]
+				}
+			},
+			"response": [
+				{
+					"name": "get Blob Info",
+					"originalRequest": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-apiomat-apikey",
+								"value": "8469361967891789473",
+								"disabled": true
+							},
+							{
+								"key": "X-apiomat-system",
+								"value": "TEST",
+								"disabled": true
+							},
+							{
+								"key": "Authorization",
+								"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+								"disabled": true
+							},
+							{
+								"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							},
+							{
+								"key": "X-es-tenant",
+								"value": "c133dut5bculje2nj2j0"
+							},
+							{
+								"key": "X-es-system",
+								"value": "easy1"
+							},
+							{
+								"key": "X-es-apikey",
+								"value": "9DB6B3E13C150D6C000776A89409661E"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "https://127.0.0.1:8443/api/v1/blobs/5a4f76b7-fc4a-4809-900a-b8c0f1bb4886",
+							"protocol": "https",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"v1",
+								"blobs",
+								"5a4f76b7-fc4a-4809-900a-b8c0f1bb4886"
+							]
+						}
+					},
+					"status": "OK",
+					"code": 200,
+					"_postman_previewlanguage": "plain",
+					"header": [
+						{
+							"key": "Content-Type",
+							"value": "application/x-www-form-urlencoded"
+						},
+						{
+							"key": "Location",
+							"value": "5a4f76b7-fc4a-4809-900a-b8c0f1bb4886"
+						},
+						{
+							"key": "Vary",
+							"value": "Origin"
+						},
+						{
+							"key": "X-Es-2.header",
+							"value": "Wer das liest ist doof"
+						},
+						{
+							"key": "X-Es-Apikey",
+							"value": "9DB6B3E13C150D6C000776A89409661E"
+						},
+						{
+							"key": "X-Es-Meinsuperduperheader",
+							"value": "Willie was here"
+						},
+						{
+							"key": "X-Es-Retention",
+							"value": "0"
+						},
+						{
+							"key": "X-Es-System",
+							"value": "easy1"
+						},
+						{
+							"key": "X-Es-Tenant",
+							"value": "c133dut5bculje2nj2j0"
+						},
+						{
+							"key": "Date",
+							"value": "Thu, 21 Oct 2021 09:03:59 GMT"
+						},
+						{
+							"key": "Content-Length",
+							"value": "0"
+						}
+					],
+					"cookie": [],
+					"body": null
+				}
+			]
+		},
+		{
+			"name": "get Blob",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-Tenant",
+						"value": "Test"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs/1151dca3c3834ea094a54fbb639bc1fc",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs",
+						"1151dca3c3834ea094a54fbb639bc1fc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE bLob",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1aWxkZXIiLCJpYXQiOjE2Mzg2MDAxMTcsImV4cCI6MTY3MDEzNjExNywiYXVkIjoid3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpdmVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjpbIk1hbmFnZXIiLCJQcm9qZWN0IEFkbWluaXN0cmF0b3IiXSwiVGVuYW50IjoiRUFTWTEifQ.r12KWh3DYVJfYAQLF7gSFoqINfvV2JgG5MAjc5Ol624",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0",
+						"type": "text"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1",
+						"type": "text"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs/1df19564bf724bb3bf7030638bc902a2",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs",
+						"1df19564bf724bb3bf7030638bc902a2"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "reset Blob retention",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "EASY"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/blobs/f72992da-0f71-11ea-afb2-00090faa0001/resetretention",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"blobs",
+						"f72992da-0f71-11ea-afb2-00090faa0001",
+						"resetretention"
+					],
+					"query": [
+						{
+							"key": "X-es-apikey",
+							"value": "9DB6B3E13C150D6C000776A89409661E",
+							"disabled": true
+						},
+						{
+							"key": "X-es-tenant",
+							"value": "EASY",
+							"disabled": true
+						},
+						{
+							"key": "X-es-system",
+							"value": "easy1",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "health check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://one-dm-dev.easy02.proactcloud.de/dispatcher/blobstorage-ssd/service/healthcheck",
+					"protocol": "https",
+					"host": [
+						"one-dm-dev",
+						"easy02",
+						"proactcloud",
+						"de"
+					],
+					"path": [
+						"dispatcher",
+						"blobstorage-ssd",
+						"service",
+						"healthcheck"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "livez",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/livez",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"livez"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "readyz",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/readyz",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"readyz"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "metrics",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://127.0.0.1:8000/metrics",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"metrics"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: get Storage size",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/config/check",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"config",
+						"check"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: check storage",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": []
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/config/check",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"config",
+						"check"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: all Storage size",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/w.klaas/Desktop/arc42-template-EN.docx"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/stats/size",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"stats",
+						"size"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: test",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "X-apiomat-apikey",
+						"value": "8469361967891789473",
+						"disabled": true
+					},
+					{
+						"key": "X-apiomat-system",
+						"value": "TEST",
+						"disabled": true
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"warning": "This is a duplicate header and will be overridden by the Content-Type header generated by Postman.",
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					},
+					{
+						"key": "X-es-tenant",
+						"value": "c133dut5bculje2nj2j0"
+					},
+					{
+						"key": "X-es-system",
+						"value": "easy1"
+					},
+					{
+						"key": "X-es-apikey",
+						"value": "9DB6B3E13C150D6C000776A89409661E"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/C:/Users/w.klaas/Desktop/arc42-template-EN.docx"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/test",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"test"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: get check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "X-tenant",
+						"value": "Test"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/admin/check",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"admin",
+						"check"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: post check",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "X-tenant",
+						"value": "Test"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/admin/check",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"admin",
+						"check"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: get restore",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "X-tenant",
+						"value": "Test"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/admin/restore",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"admin",
+						"restore"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "local: post restore",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var responseJSON;",
+							"",
+							"try { ",
+							"    responseJSON = JSON.parse(responseBody); ",
+							"    tests['response is valid JSON'] = true;",
+							"}",
+							"catch (e) { ",
+							"    responseJSON = {}; ",
+							"    tests['response is valid JSON'] = false;",
+							"}",
+							"",
+							"",
+							"tests['response has post data'] = _.has(responseJSON, 'form');",
+							"tests['response matches the data posted'] = (responseJSON.form && responseJSON.form.strange === 'boom');"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic ZGV2dGVzdEBlYXN5LmRlOmVhc3lzcGlyaXQ=",
+						"disabled": true
+					},
+					{
+						"key": "X-tenant",
+						"value": "Test"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "https://127.0.0.1:8443/api/v1/admin/restore",
+					"protocol": "https",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8443",
+					"path": [
+						"api",
+						"v1",
+						"admin",
+						"restore"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
