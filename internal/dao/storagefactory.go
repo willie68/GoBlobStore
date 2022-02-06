@@ -3,7 +3,6 @@ package dao
 import (
 	"errors"
 
-	"github.com/willie68/GoBlobStore/internal/dao/management"
 	"github.com/willie68/GoBlobStore/internal/dao/migration"
 
 	"github.com/willie68/GoBlobStore/internal/config"
@@ -18,8 +17,7 @@ var tenantDao interfaces.TenantDao
 var rtnMgr interfaces.RetentionManager
 var cnfg config.Engine
 var stgf interfaces.StorageFactory
-var checkMan *management.CheckManagement
-var resMan *migration.RestoreManagement
+var migMan *migration.MigrationManagement
 
 //Init initialise the storage factory
 func Init(storage config.Engine) error {
@@ -58,18 +56,10 @@ func Init(storage config.Engine) error {
 		return err
 	}
 
-	checkMan = &management.CheckManagement{
+	migMan = &migration.MigrationManagement{
 		StorageFactory: stgf,
 	}
-	err = checkMan.Init()
-	if err != nil {
-		return err
-	}
-
-	resMan = &migration.RestoreManagement{
-		StorageFactory: stgf,
-	}
-	err = resMan.Init()
+	err = migMan.Init()
 	if err != nil {
 		return err
 	}
@@ -98,20 +88,12 @@ func GetStorageFactory() (interfaces.StorageFactory, error) {
 	return stgf, nil
 }
 
-//GetCheckManagement returning the tenant for administration tenants
-func GetCheckManagement() (*management.CheckManagement, error) {
-	if checkMan == nil {
+//GetMigrationManagement returning the tenant for administration tenants
+func GetMigrationManagement() (*migration.MigrationManagement, error) {
+	if migMan == nil {
 		return nil, errors.New("no check management present")
 	}
-	return checkMan, nil
-}
-
-//GetRestoreManagement returning the tenant for administration tenants
-func GetRestoreManagement() (*migration.RestoreManagement, error) {
-	if resMan == nil {
-		return nil, errors.New("no reestore management present")
-	}
-	return resMan, nil
+	return migMan, nil
 }
 
 func Close() {
@@ -130,7 +112,7 @@ func Close() {
 		log.Logger.Errorf("error closing tenant dao:\r\n%v,", err)
 	}
 
-	err = checkMan.Close()
+	err = migMan.Close()
 	if err != nil {
 		log.Logger.Errorf("error closing check management:\r\n%v,", err)
 	}

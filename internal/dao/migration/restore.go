@@ -22,6 +22,8 @@ type RestoreContext struct {
 	cancel    bool
 }
 
+var _ interfaces.Running = &RestoreContext{}
+
 // MigrateRestore migrates all blobs in the backup storage for a tenant into the main storage, if not already present
 func MigrateRestore(tenant string, stgf interfaces.StorageFactory) (*RestoreContext, error) {
 	d, err := stgf.GetStorageDao(tenant)
@@ -48,7 +50,6 @@ func (r *RestoreContext) Restore() {
 	defer func() { r.Running = false }()
 	r.cancel = false
 	log.Logger.Debugf("start restoring tenant \"%s\"", r.TenantID)
-	time.Sleep(10 * time.Second)
 	// restoring all blobs in backup storage
 	if r.Backup != nil {
 		log.Logger.Debug("checking backup")
@@ -65,6 +66,10 @@ func (r *RestoreContext) Restore() {
 			log.Logger.Errorf("error getting files from backup: %v", err)
 		}
 	}
+}
+
+func (r *RestoreContext) IsRunning() bool {
+	return r.Running
 }
 
 // restore migrates a file from the backup storage of the tenant to the primary storage

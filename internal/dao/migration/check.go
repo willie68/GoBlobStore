@@ -1,4 +1,4 @@
-package management
+package migration
 
 import (
 	"encoding/json"
@@ -26,6 +26,8 @@ type CheckContext struct {
 	cancel    bool
 	Message   string
 }
+
+var _ interfaces.Running = &CheckContext{}
 
 type CheckResultLine struct {
 	ID            string
@@ -126,6 +128,10 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	}
 	file.WriteString("\r\n}")
 	return file.Name(), err
+}
+
+func (c *CheckContext) IsRunning() bool {
+	return c.Running
 }
 
 func (c *CheckContext) checkBlob(id string, file *os.File) {

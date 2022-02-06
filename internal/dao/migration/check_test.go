@@ -1,4 +1,4 @@
-package management
+package migration
 
 import (
 	"bytes"
@@ -41,7 +41,7 @@ type JsonResult struct {
 
 var main *business.MainStorageDao
 
-func initTest(t *testing.T) {
+func initChkTest(t *testing.T) {
 	stgDao := &simplefile.SimpleFileBlobStorageDao{
 		RootPath: blbPath,
 		Tenant:   tenant,
@@ -221,7 +221,7 @@ func buildFilename(path string, tnt string, id string, ext string) (string, erro
 
 func TestCheck(t *testing.T) {
 	clear(t)
-	initTest(t)
+	initChkTest(t)
 
 	ast := assert.New(t)
 	ast.NotNil(main)
