@@ -4,8 +4,9 @@
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [   
+
             {
-            "name": "Launch GoBLobStore",
+            "name": "GoBLobStore",
             "type": "go",
             "request": "launch",
             "mode": "auto",
@@ -19,7 +20,7 @@
             ]
         },
         {
-            "name": "Launch GoBLobStore RAM Disk",
+            "name": "RAM GoBLobStore",
             "type": "go",
             "request": "launch",
             "mode": "auto",

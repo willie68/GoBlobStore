@@ -37,7 +37,7 @@ func AdminRoutes() *chi.Mux {
 // @Success 200 {array} CreateResponse "response with the id of the tenant as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /admin/command [post]
+// @Router /api/v1/admin/check [get]
 func GetCheck(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -69,7 +69,7 @@ func GetCheck(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} CreateResponse "response with the id of the tenant as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /admin/command [post]
+// @Router /api/v1/admin/check [post]
 func PostCheck(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -111,7 +111,7 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} CreateResponse "response with the id of the tenant as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /admin/command [post]
+// @Router /api/v1/admin/restore [post]
 func PostRestore(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -153,7 +153,7 @@ func PostRestore(response http.ResponseWriter, request *http.Request) {
 // @Success 200 {array} CreateResponse "response with the id of the tenant as json"
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
-// @Router /admin/command [post]
+// @Router /api/v1/admin/restore [get]
 func GetRestore(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
