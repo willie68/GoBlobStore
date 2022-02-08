@@ -1,6 +1,7 @@
 package apiv1
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,12 +30,13 @@ var BlobStore interfaces.BlobStorageDao
 
 func BlobRoutes() *chi.Mux {
 	router := chi.NewRouter()
-	router.Post("/", PostBlobEndpoint)
-	router.Get("/", GetBlobsEndpoint)
-	router.Get("/{id}", GetBlobEndpoint)
-	router.Get("/{id}/info", GetBlobInfoEndpoint)
-	router.Delete("/{id}", DeleteBlobEndpoint)
-	router.Get("/{id}/resetretention", GetBlobResetRetentionEndpoint)
+	router.Post("/", PostBlob)
+	router.Get("/", GetBlobs)
+	router.Get("/{id}", GetBlob)
+	router.Get("/{id}/info", GetBlobInfo)
+	router.Put("/{id}/info", PutBlobInfo)
+	router.Delete("/{id}", DeleteBlob)
+	router.Get("/{id}/resetretention", GetBlobResetRetention)
 	return router
 }
 
@@ -43,11 +45,11 @@ func getBlobLocation(blobid string) string {
 }
 
 /*
-GetBlobEndpoint getting one blob file for a tenant from the storage
+GetBlob getting one blob file for a tenant from the storage
 path parameter
 id: the id of the blob file
 */
-func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
+func GetBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -103,11 +105,11 @@ func GetBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 }
 
 /*
-GetBlobInfoEndpoint getting the info of a blob file from the storage
+GetBlobInfo getting the info of a blob file from the storage
 path param:
 id: the id of the blob file
 */
-func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
+func GetBlobInfo(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -147,11 +149,75 @@ func GetBlobInfoEndpoint(response http.ResponseWriter, request *http.Request) {
 }
 
 /*
-GetBlobResetRetentionEndpoint restting the retention time of a blob to the new value
+PutBlobInfo getting the info of a blob file from the storage
+path param:
+id: the id of the blob file
+*/
+func PutBlobInfo(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	id := chi.URLParam(request, "id")
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	b, err := storage.GetBlobDescription(id)
+	if err != nil {
+		if os.IsNotExist(err) {
+			httputils.Err(response, request, serror.NotFound("blob", id, nil))
+			return
+		}
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	if b == nil {
+		httputils.Err(response, request, serror.NotFound("blob", id, nil))
+		return
+	}
+	var bd model.BlobDescription
+	err = json.NewDecoder(request.Body).Decode(&bd)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	for k, v := range bd.Properties {
+		if v == nil {
+			delete(b.Properties, k)
+		} else {
+			b.Properties[k] = v
+		}
+	}
+
+	err = storage.UpdateBlobDescription(id, b)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	b.BlobURL = getBlobLocation(b.BlobID)
+
+	render.JSON(response, request, b)
+}
+
+/*
+GetBlobResetRetention restting the retention time of a blob to the new value
 path param:
 id: the id of the lob file
 */
-func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.Request) {
+func GetBlobResetRetention(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -190,12 +256,12 @@ func GetBlobResetRetentionEndpoint(response http.ResponseWriter, request *http.R
 }
 
 /*
-GetBlobsEndpoint query all blobs from the storage for a tenant
+GetBlobs query all blobs from the storage for a tenant
 query params
 offset: the offset to start from
 limit: max count of blobs
 */
-func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
+func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -247,7 +313,7 @@ func GetBlobsEndpoint(response http.ResponseWriter, request *http.Request) {
 /*
 PostBlobsEndpoint creating a new blob in the storage for the tenant.
 */
-func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
+func PostBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -348,11 +414,11 @@ func PostBlobEndpoint(response http.ResponseWriter, request *http.Request) {
 }
 
 /*
-DeleteBlobEndpoint delete a dedicated blob from the storage for the tenant
+DeleteBlob delete a dedicated blob from the storage for the tenant
 path param
 id: the id of the blob to remove
 */
-func DeleteBlobEndpoint(response http.ResponseWriter, request *http.Request) {
+func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
