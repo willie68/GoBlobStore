@@ -1,6 +1,7 @@
 package httputils
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -14,16 +15,22 @@ import (
 )
 
 // Validate validator
-var Validate *validator.Validate
+var val *validator.Validate
+var TenantClaim string
+var Strict bool
 
 // TenantID gets the tenant-id of the given request
 func TenantID(r *http.Request) (string, error) {
 	var id string
 	_, claims, _ := auth.FromContext(r.Context())
 	if claims != nil {
-		tenant, ok := claims["Tenant"].(string)
+		tenant, ok := claims[TenantClaim].(string)
 		if ok {
 			return tenant, nil
+		} else {
+			if Strict {
+				return "", errors.New("no tenant claim in jwt token")
+			}
 		}
 	}
 	tenantHeader, ok := config.Get().HeaderMapping[api.TenantHeaderKey]
@@ -43,7 +50,7 @@ func Decode(r *http.Request, v interface{}) error {
 	if err != nil {
 		serror.BadRequest(err, "decode-body", "could not decode body")
 	}
-	if err := Validate.Struct(v); err != nil {
+	if err := val.Struct(v); err != nil {
 		serror.BadRequest(err, "validate-body", "body invalid")
 	}
 	return nil
@@ -75,5 +82,5 @@ func Err(w http.ResponseWriter, r *http.Request, err error) {
 }
 
 func init() {
-	Validate = validator.New()
+	val = validator.New()
 }
