@@ -31,6 +31,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/health"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
+	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 
 	flag "github.com/spf13/pflag"
 )
@@ -195,7 +196,7 @@ func healthRoutes() *chi.Mux {
 
 // @title GoBlobStore service API
 // @version 1.0
-// @description The GoBlobStore service is a microservices storing and serving binary data.
+// @description The GoBlobStore service is a micro services for storing and serving binary data.
 // @BasePath /api/v1
 // @securityDefinitions.apikey api_key
 // @in header
@@ -383,6 +384,25 @@ func initConfig() {
 	}
 	if serviceURL != "" {
 		serviceConfig.ServiceURL = serviceURL
+	}
+
+	httputils.TenantClaim = "Tenant"
+
+	if strings.EqualFold(serviceConfig.Auth.Type, "jwt") {
+		v, ok := serviceConfig.Auth.Properties["strict"]
+		if ok {
+			val, ok := v.(bool)
+			if ok {
+				httputils.Strict = val
+			}
+		}
+		v, ok = serviceConfig.Auth.Properties["tenantClaim"]
+		if ok {
+			tc, ok := v.(string)
+			if ok {
+				httputils.TenantClaim = tc
+			}
+		}
 	}
 }
 

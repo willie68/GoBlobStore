@@ -31,6 +31,8 @@ headermapping:
   apikey: 
   filename:
 auth:
-  type: none
+  type: jwt
   properties: 
-    validate: false
+    validate: true
+    strict: true
+    tenantClaim: Tenant

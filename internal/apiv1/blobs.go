@@ -264,7 +264,7 @@ limit: max count of blobs
 func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
-		msg := "tenant header missing"
+		msg := fmt.Sprintf("tenant missing: %v", err)
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}

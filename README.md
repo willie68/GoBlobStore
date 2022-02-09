@@ -133,13 +133,19 @@ headermapping:
 
 ## JWT Tenant discovery and Authorisation
 
-Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Headermapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim named "Tenant" on the jwt. Simply activate jwt authentication with 
+Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Headermapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim on the jwt. Simply activate jwt authentication with 
 
 ```yaml
 auth:
  type: jwt
  properties: 
   validate: false
+  strict: true
+  tenantClaim: Tenant
 ```
 
-validate false means, the token is not validated against the issuer. (this is normally ok, when the token is already checked by an api gateway or other serving services)
+`validate` `false` means, the token is not validated against the issuer. (this is normally ok, when the token is already checked by an api gateway or other serving services) (At the moment this is the only option. JWT Token validation is not implemented.)
+
+`strict` `true` means the call will fail, if not all needed parameters, (at the moment only the tenant) can be evaluated from the token. `false` will fall back to http headers
+
+`tenantClaim` will name the claim name of the tenant value. Defaults to Tenant (optional)
