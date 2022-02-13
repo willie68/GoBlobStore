@@ -9,7 +9,7 @@ features
 - simple http interface
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based access control
-- automatic config substitution with EnvSubst (https://github.com/drone/envsubst) 
+- automatic config substitutio
 
 Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase.
 

@@ -9,7 +9,7 @@ metrics:
   enable: true
 logging:
   level: debug
-  filename: ""
+  filename: "${logfile}"
 engine:
   retentionManager: SingleRetention
   tenantautoadd: true
