@@ -1,5 +1,9 @@
 package business
 
+/*
+This type doing all the business logic of storing blobs of the service.
+Managing backup and cache requests, managing the Retentions
+*/
 import (
 	"io"
 	"runtime"

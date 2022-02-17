@@ -9,7 +9,7 @@ type TenantDao interface {
 	AddTenant(tenant string) error              // adding a new tenant
 	RemoveTenant(tenant string) (string, error) // removing a tenant, deleting all data async, return the processid for this
 	HasTenant(tenant string) bool               // checking if a tenant is present
-	GetSize(tenant string) int64                // getting the overall storage size for this tenant
+	GetSize(tenant string) int64                // getting the overall storage size for this tenant, if tenant not present -1 is returned
 
 	Close() error // closing the dao
 }
