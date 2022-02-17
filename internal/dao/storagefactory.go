@@ -3,6 +3,7 @@ package dao
 import (
 	"errors"
 
+	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/migration"
 
 	"github.com/willie68/GoBlobStore/internal/config"
@@ -26,11 +27,21 @@ func Init(storage config.Engine) error {
 		return errors.New("no storage class given")
 	}
 
+	var bktDao interfaces.TenantDao
 	tntDao, err := factory.CreateTenantDao(cnfg.Storage)
 	if err != nil {
 		return err
 	}
-	tenantDao = tntDao
+	if cnfg.Backup.Storageclass != "" {
+		bktDao, err = factory.CreateTenantDao(cnfg.Backup)
+		if err != nil {
+			return err
+		}
+	}
+	tenantDao = &business.MainTenantDao{
+		TntDao: tntDao,
+		BckDao: bktDao,
+	}
 
 	if cnfg.RetentionManager == "" {
 		return errors.New("no retention class given")
