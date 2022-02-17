@@ -84,8 +84,16 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	for k, v := range b.Properties {
-		response.Header().Set(k, v.(string))
+	for k, i := range b.Properties {
+		switch v := i.(type) {
+		case int:
+			response.Header().Set(k, strconv.Itoa(v))
+		case int64:
+			response.Header().Set(k, strconv.FormatInt(v, 10))
+		case string:
+			response.Header().Set(k, v)
+		default:
+		}
 	}
 
 	response.Header().Add("Location", idStr)
