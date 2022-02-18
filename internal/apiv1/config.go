@@ -18,25 +18,25 @@ const StoresSubpath = "/stores"
 /*
 ConfigRoutes getting all routes for the config endpoint
 */
-func ConfigRoutes() *chi.Mux {
+func ConfigRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Post("/", PostConfig)
 	router.Get("/", GetConfig)
 	router.Delete("/", DeleteConfig)
 	router.Get("/size", GetConfigSize)
-	return router
+	return Baseurl + ConfigSubpath, router
 }
 
 /*
 StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
 */
-func StoresRoutes() *chi.Mux {
+func StoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Post("/", PostConfig)
 	router.Get("/", GetConfig)
 	router.Delete("/", DeleteConfig)
 	router.Get("/size", GetConfigSize)
-	return router
+	return Baseurl + StoresSubpath, router
 }
 
 /*

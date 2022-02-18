@@ -18,13 +18,13 @@ const AdminSubpath = "/admin"
 /*
 AdminRoutes getting all routes for the admin endpoint
 */
-func AdminRoutes() *chi.Mux {
+func AdminRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Get("/check", GetCheck)
 	router.Post("/check", PostCheck)
 	router.Get("/restore", GetRestore)
 	router.Post("/restore", PostRestore)
-	return router
+	return Baseurl + AdminSubpath, router
 }
 
 // GetCheck starting a new check for this tenant

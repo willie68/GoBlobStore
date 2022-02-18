@@ -29,7 +29,10 @@ type BlobStorageDao interface {
 	RetrieveBlob(id string, w io.Writer) error                       // retrieving the binary data from the storage system
 	DeleteBlob(id string) error                                      // removing a blob from the storage system
 
-	//Retentionrelated methods
+	// Searching for blobs
+	SearchBlobs(query string, callback func(id string) bool) error // getting a list of blob from the storage
+
+	// Retentionrelated methods
 	GetAllRetentions(callback func(r model.RetentionEntry) bool) error // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 	AddRetention(r *model.RetentionEntry) error
 	GetRetention(id string) (model.RetentionEntry, error)

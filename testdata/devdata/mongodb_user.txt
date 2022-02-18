@@ -1,0 +1,9 @@
+use blobstore
+db.createUser( {
+    user: "blobstore",
+    pwd: "blobstore",  // or cleartext password
+    roles: [
+       { role: "dbOwner", db: "blobstore" }
+    ]
+  }
+)

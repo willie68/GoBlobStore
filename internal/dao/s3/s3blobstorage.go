@@ -268,6 +268,10 @@ func (s *S3BlobStorage) DeleteBlob(id string) error {
 	return nil
 }
 
+func (s *S3BlobStorage) SearchBlobs(q string, callback func(id string) bool) error {
+	return errors.New("not implemented yet")
+}
+
 // Retentionrelated methods
 //GetAllRetentions for every retention entry for this tenant we call the callback function,
 // you can stop the walk by returning a false in the callback

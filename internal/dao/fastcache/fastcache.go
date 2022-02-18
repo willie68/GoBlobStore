@@ -359,6 +359,10 @@ func (f *FastCache) rebuildBloomFilter() {
 	}
 }
 
+func (f *FastCache) SearchBlobs(q string, callback func(id string) bool) error {
+	return errors.New("not implemented yet")
+}
+
 //Retentionrelated methods
 // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (f *FastCache) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {

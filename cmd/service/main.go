@@ -143,10 +143,11 @@ func apiRoutes() (*chi.Mux, error) {
 
 	// building the routes
 	router.Route("/", func(r chi.Router) {
-		r.Mount(apiv1.Baseurl+apiv1.BlobsSubpath, apiv1.BlobRoutes())
-		r.Mount(apiv1.Baseurl+apiv1.ConfigSubpath, apiv1.ConfigRoutes())
-		r.Mount(apiv1.Baseurl+apiv1.AdminSubpath, apiv1.AdminRoutes())
-		r.Mount(apiv1.Baseurl+apiv1.StoresSubpath, apiv1.StoresRoutes())
+		r.Mount(apiv1.BlobRoutes())
+		r.Mount(apiv1.SearchRoutes())
+		r.Mount(apiv1.ConfigRoutes())
+		r.Mount(apiv1.AdminRoutes())
+		r.Mount(apiv1.StoresRoutes())
 		r.Mount("/", health.Routes())
 		if serviceConfig.Metrics.Enable {
 			r.Mount("/metrics", promhttp.Handler())

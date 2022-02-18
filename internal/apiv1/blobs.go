@@ -16,6 +16,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -24,11 +25,12 @@ import (
 const Baseurl = "/api/v1"
 
 const BlobsSubpath = "/blobs"
+const SearchSubpath = "/search"
 
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
 
-func BlobRoutes() *chi.Mux {
+func BlobRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Post("/", PostBlob)
 	router.Get("/", GetBlobs)
@@ -37,7 +39,13 @@ func BlobRoutes() *chi.Mux {
 	router.Put("/{id}/info", PutBlobInfo)
 	router.Delete("/{id}", DeleteBlob)
 	router.Get("/{id}/resetretention", GetBlobResetRetention)
-	return router
+	return Baseurl + BlobsSubpath, router
+}
+
+func SearchRoutes() (string, *chi.Mux) {
+	router := chi.NewRouter()
+	router.Get("/", SearchBlobs)
+	return Baseurl + SearchSubpath, router
 }
 
 func getBlobLocation(blobid string) string {
@@ -467,4 +475,67 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	render.JSON(response, request, idStr)
+}
+
+/*
+SearchBlobs search for blobs meeting the criteria
+query params
+offset: the offset to start from
+limit: max count of blobs
+q: query to use
+*/
+func SearchBlobs(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := fmt.Sprintf("tenant missing: %v", err)
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	url := request.URL
+	values := url.Query()
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	offset := 0
+	if values["offset"] != nil {
+		offset, _ = strconv.Atoi(values["offset"][0])
+	}
+	limit := 1000
+	if values["limit"] != nil {
+		limit, _ = strconv.Atoi(values["limit"][0])
+	}
+	var query string
+	if values["q"] != nil {
+		query = values["q"][0]
+	}
+	if query != "" {
+		log.Logger.Debugf("search for blobs with: %s", query)
+	}
+	blobs := make([]string, 0)
+	index := 0
+	err = storage.SearchBlobs(query, func(id string) bool {
+		if (index >= offset) && (index-offset < limit) {
+			blobs = append(blobs, id)
+		}
+		if index-offset > limit {
+			return false
+		}
+		index++
+		return true
+	})
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	render.JSON(response, request, blobs)
 }
