@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"time"
 )
 
 type BlobDescription struct {
@@ -16,7 +17,21 @@ type BlobDescription struct {
 	Retention     int64  `yaml:"retention" json:"retention"`
 	BlobURL       string `yaml:"blobUrl" json:"blobUrl"`
 	Hash          string `yaml:"hash" json:"hash"`
+	Check         *Check `yaml:"check,omitempty" json:"check,omitempty"`
 	Properties    map[string]interface{}
+}
+
+type Check struct {
+	Storage *CheckInfo `yaml:"storage,omitempty" json:"storage,omitempty"`
+	Backup  *CheckInfo `yaml:"backup,omitempty" json:"backup,omitempty"`
+	Healthy bool       `yaml:"healthy,omitempty" json:"healthy,omitempty"`
+	Message string     `yaml:"message,omitempty" json:"message,omitempty"`
+}
+
+type CheckInfo struct {
+	LastCheck *time.Time `yaml:"lastCheck,omitempty" json:"lastCheck,omitempty"`
+	Healthy   bool       `yaml:"healthy,omitempty" json:"healthy,omitempty"`
+	Message   string     `yaml:"message,omitempty" json:"message,omitempty"`
 }
 
 func (b BlobDescription) MarshalJSON() ([]byte, error) {
@@ -32,6 +47,9 @@ func (b BlobDescription) MarshalJSON() ([]byte, error) {
 	mymap["lastAccess"] = b.LastAccess
 	mymap["retention"] = b.Retention
 	mymap["hash"] = b.Hash
+	if b.Check != nil {
+		mymap["check"] = b.Check
+	}
 	for k, v := range b.Properties {
 		mymap[k] = v
 	}
@@ -51,6 +69,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 		LastAccess    int    `yaml:"lastAccess" json:"lastAccess"`
 		Retention     int64  `yaml:"retention" json:"retention"`
 		Hash          string `yaml:"hash" json:"hash"`
+		Check         *Check `yaml:"check,omitempty" json:"check,omitempty"`
 	}{}
 	err := json.Unmarshal(data, &blob)
 	if err != nil {
@@ -73,6 +92,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	delete(mymap, "lastAccess")
 	delete(mymap, "retention")
 	delete(mymap, "hash")
+	delete(mymap, "check")
 
 	b.BlobID = blob.BlobID
 	b.BlobURL = blob.BlobURL
@@ -85,6 +105,9 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	b.StoreID = blob.StoreID
 	b.TenantID = blob.TenantID
 	b.Hash = blob.Hash
+	if blob.Check != nil {
+		b.Check = blob.Check
+	}
 	b.Properties = mymap
 	return nil
 }

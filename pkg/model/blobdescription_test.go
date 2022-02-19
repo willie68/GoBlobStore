@@ -60,3 +60,55 @@ func TestParsing(t *testing.T) {
 	}
 	assert.Equal(t, "MCS", tenant.(string))
 }
+
+func TestCheck(t *testing.T) {
+	ast := assert.New(t)
+	now := time.Now()
+	blobDescription := BlobDescription{
+		StoreID:       "StoreID",
+		ContentLength: 12345,
+		ContentType:   "application/pdf",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		Filename:      "file.pdf",
+		TenantID:      "MCS",
+		BlobID:        "1234567890",
+		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		Retention:     0,
+		Properties:    make(map[string]interface{}),
+		Hash:          "sha-256:fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+		Check: &Check{
+			Storage: &CheckInfo{
+				LastCheck: &now,
+				Healthy:   true,
+				Message:   "checked",
+			},
+			Backup: &CheckInfo{
+				LastCheck: &now,
+				Healthy:   true,
+				Message:   "checked",
+			},
+			Healthy: true,
+			Message: "checked",
+		},
+	}
+	jsonStr, err := json.MarshalIndent(blobDescription, "", "\t")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(string(jsonStr))
+
+	var blobInfo *BlobDescription
+	err = json.Unmarshal(jsonStr, &blobInfo)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ast.Equal(blobDescription.BlobID, blobInfo.BlobID)
+
+	ast.True(now.Equal(*blobInfo.Check.Storage.LastCheck))
+	ast.True(now.Equal(*blobInfo.Check.Backup.LastCheck))
+
+	ast.True(blobInfo.Check.Healthy)
+	ast.True(blobInfo.Check.Storage.Healthy)
+	ast.True(blobInfo.Check.Backup.Healthy)
+}
