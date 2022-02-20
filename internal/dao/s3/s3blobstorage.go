@@ -268,6 +268,11 @@ func (s *S3BlobStorage) DeleteBlob(id string) error {
 	return nil
 }
 
+// CheckBlob checking a single blob from the storage system
+func (s *S3BlobStorage) CheckBlob(id string) (*model.CheckInfo, error) {
+	return utils.CheckBlob(id, s)
+}
+
 // Retentionrelated methods
 //GetAllRetentions for every retention entry for this tenant we call the callback function,
 // you can stop the walk by returning a false in the callback

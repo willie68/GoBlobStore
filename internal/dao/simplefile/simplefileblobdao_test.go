@@ -286,3 +286,31 @@ func TestRetentionStorage(t *testing.T) {
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)
 }
+
+func TestBlobCheck(t *testing.T) {
+	initTest(t)
+
+	ast := assert.New(t)
+
+	dao := getStoreageDao(t)
+	ast.NotNil(dao)
+
+	blobs := make([]string, 0)
+	err := dao.GetBlobs(func(id string) bool {
+		blobs = append(blobs, id)
+		return true
+	})
+	ast.Nil(err)
+
+	res, err := dao.CheckBlob("001a7543-cb7a-4c2c-9c23-1bb6b248034c")
+	ast.Nil(err)
+	ast.False(res.Healthy, "id: %s: %s", "001a7543-cb7a-4c2c-9c23-1bb6b248034c", res.Message)
+
+	res, err = dao.CheckBlob("0000fc02-050a-418a-a701-efd814aa6b36")
+	ast.Nil(err)
+	ast.True(res.Healthy, "id: %s: %s", "0000fc02-050a-418a-a701-efd814aa6b36", res.Message)
+
+	res, err = dao.CheckBlob("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
+	ast.Nil(err)
+	ast.True(res.Healthy, "id: %s: %s", "004b4987-42fb-43e4-8e13-d6994ce0e6f1", res.Message)
+}

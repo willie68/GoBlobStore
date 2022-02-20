@@ -14,6 +14,7 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -197,6 +198,11 @@ func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
 	s.deleteFilesV1(id)
 	s.deleteFilesV2(id)
 	return nil
+}
+
+// CheckBlob checking a single blob from the storage system
+func (s *SimpleFileBlobStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
+	return utils.CheckBlob(id, s)
 }
 
 //GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false

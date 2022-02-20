@@ -2,7 +2,6 @@ package apiv1
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -540,22 +539,22 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("do check for tenant %s", tenant)
-	cMan, err := dao.GetMigrationManagement()
+	idStr := chi.URLParam(request, "id")
+
+	log.Logger.Infof("do check for tenant %s on blob %s", tenant, idStr)
+	stgf, err := dao.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if cMan.IsRunning(tenant) {
-		httputils.Err(response, request, serror.BadRequest(errors.New("Check is already running for tenant")))
-		return
-	}
-	_, err = cMan.StartCheck(tenant)
+
+	storage, err := stgf.GetStorageDao(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	res, err := cMan.GetResult(tenant)
+
+	res, err := storage.CheckBlob(idStr)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return

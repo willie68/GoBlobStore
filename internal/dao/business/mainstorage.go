@@ -5,6 +5,7 @@ This type doing all the business logic of storing blobs of the service.
 Managing backup and cache requests, managing the Retentions
 */
 import (
+	"fmt"
 	"io"
 	"runtime"
 	"time"
@@ -281,6 +282,46 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 		}
 	}
 	return nil
+}
+
+// CheckBlob checking a single blob from the storage system
+func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
+	// check blob on main storage
+	stgCI, err := m.StgDao.CheckBlob(id)
+	if err != nil {
+		return nil, err
+	}
+	bd, err := m.StgDao.GetBlobDescription(id)
+	if err != nil {
+		return nil, err
+	}
+	ri := model.Check{
+		Storage: stgCI,
+		Healthy: stgCI.Healthy,
+		Message: stgCI.Message,
+	}
+	bd.Check = &ri
+	// check blob on main storage
+	if m.BckDao != nil {
+		bckDI, err := m.BckDao.CheckBlob(id)
+		if err != nil {
+			log.Logger.Errorf("error deleting blob on backup: %v", err)
+		}
+		// merge stgCI and bckCI
+		ri.Backup = bckDI
+		ri.Healthy = ri.Healthy && bckDI.Healthy
+		msg := bckDI.Message
+		if ri.Message != "" && msg != "" {
+			msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+		}
+		if msg != "" {
+			ri.Message = msg
+		}
+		bd.Check = &ri
+		m.BckDao.UpdateBlobDescription(id, bd)
+	}
+	m.StgDao.UpdateBlobDescription(id, bd)
+	return stgCI, nil
 }
 
 //GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returnong a false
