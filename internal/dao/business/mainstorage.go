@@ -301,11 +301,15 @@ func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
 		Message: stgCI.Message,
 	}
 	bd.Check = &ri
-	// check blob on main storage
+	// check blob on backup storage
 	if m.BckDao != nil {
 		bckDI, err := m.BckDao.CheckBlob(id)
 		if err != nil {
-			log.Logger.Errorf("error deleting blob on backup: %v", err)
+			log.Logger.Errorf("error checking blob on backup: %v", err)
+		}
+		bckBd, err := m.StgDao.GetBlobDescription(id)
+		if err != nil {
+			log.Logger.Errorf("error getting blob description on backup: %v", err)
 		}
 		// merge stgCI and bckCI
 		ri.Backup = bckDI
@@ -317,9 +321,20 @@ func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
 		if msg != "" {
 			ri.Message = msg
 		}
-		bd.Check = &ri
-		m.BckDao.UpdateBlobDescription(id, bd)
+
+		// checking if both hashes are equal
+		if bd.Hash != bckBd.Hash {
+			ri.Healthy = false
+			msg := "hashes are not equal"
+			if ri.Message != "" {
+				msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+			}
+			ri.Message = msg
+		}
+		bckBd.Check = &ri
+		m.BckDao.UpdateBlobDescription(id, bckBd)
 	}
+	bd.Check = &ri
 	m.StgDao.UpdateBlobDescription(id, bd)
 	return stgCI, nil
 }
