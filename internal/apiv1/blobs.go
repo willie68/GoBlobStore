@@ -22,14 +22,12 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const Baseurl = "/api/v1"
-
-const BlobsSubpath = "/blobs"
+const blobsSubpath = "/blobs"
 
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
 
-func BlobRoutes() *chi.Mux {
+func BlobRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Post("/", PostBlob)
 	router.Get("/", GetBlobs)
@@ -40,11 +38,11 @@ func BlobRoutes() *chi.Mux {
 	router.Get("/{id}/resetretention", GetBlobResetRetention)
 	router.Get("/{id}/check", GetBlobCheck)
 	router.Post("/{id}/check", PostBlobCheck)
-	return router
+	return BaseURL + blobsSubpath, router
 }
 
 func getBlobLocation(blobid string) string {
-	return fmt.Sprintf(Baseurl+BlobsSubpath+"/%s", blobid)
+	return fmt.Sprintf(BaseURL+blobsSubpath+"/%s", blobid)
 }
 
 /*

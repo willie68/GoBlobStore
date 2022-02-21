@@ -12,31 +12,31 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const ConfigSubpath = "/config"
-const StoresSubpath = "/stores"
+const configSubpath = "/config"
+const storesSubpath = "/stores"
 
 /*
 ConfigRoutes getting all routes for the config endpoint
 */
-func ConfigRoutes() *chi.Mux {
+func ConfigRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Post("/", PostConfig)
 	router.Get("/", GetConfig)
 	router.Delete("/", DeleteConfig)
 	router.Get("/size", GetConfigSize)
-	return router
+	return BaseURL + configSubpath, router
 }
 
 /*
 StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
 */
-func StoresRoutes() *chi.Mux {
+func StoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Post("/", PostConfig)
 	router.Get("/", GetConfig)
 	router.Delete("/", DeleteConfig)
 	router.Get("/size", GetConfigSize)
-	return router
+	return BaseURL + storesSubpath, router
 }
 
 /*
