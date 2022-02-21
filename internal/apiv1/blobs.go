@@ -23,11 +23,7 @@ import (
 )
 
 const blobsSubpath = "/blobs"
-
-const blobsSubpath = "/blobs"
-
-const BlobsSubpath = "/blobs"
-const SearchSubpath = "/search"
+const searchSubpath = "/search"
 
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
@@ -49,7 +45,7 @@ func BlobRoutes() (string, *chi.Mux) {
 func SearchRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.Get("/", SearchBlobs)
-	return Baseurl + SearchSubpath, router
+	return BaseURL + searchSubpath, router
 }
 
 func getBlobLocation(blobid string) string {
