@@ -16,6 +16,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -37,6 +38,8 @@ func BlobRoutes() *chi.Mux {
 	router.Put("/{id}/info", PutBlobInfo)
 	router.Delete("/{id}", DeleteBlob)
 	router.Get("/{id}/resetretention", GetBlobResetRetention)
+	router.Get("/{id}/check", GetBlobCheck)
+	router.Post("/{id}/check", PostBlobCheck)
 	return router
 }
 
@@ -467,4 +470,95 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	render.JSON(response, request, idStr)
+}
+
+/*
+GetBlobCheck getting the latest check info of a blob file from the storage
+path param:
+id: the id of the blob file
+*/
+func GetBlobCheck(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	idStr := chi.URLParam(request, "id")
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	b, err := storage.GetBlobDescription(idStr)
+	if err != nil {
+		if os.IsNotExist(err) {
+			httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+			return
+		}
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	if b == nil {
+		httputils.Err(response, request, serror.NotFound("blob", idStr, nil))
+		return
+	}
+	check := b.Check
+	if check == nil {
+		check = &model.Check{
+			Healthy: false,
+			Message: "not checked",
+		}
+	}
+	render.JSON(response, request, check)
+}
+
+// PostBlobCheck starting a new check for this tenant
+// @Summary starting a new check for this tenant
+// @Tags configs
+// @Accept  json
+// @Produce  json
+// @Security api_key
+// @Param tenant header string true "Tenant"
+// @Success 200 {array} CreateResponse "response with the id of the tenant as json"
+// @Failure 400 {object} serror.Serr "client error information as json"
+// @Failure 500 {object} serror.Serr "server error information as json"
+// @Router /api/v1/admin/check [post]
+func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := "tenant header missing"
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	idStr := chi.URLParam(request, "id")
+
+	log.Logger.Infof("do check for tenant %s on blob %s", tenant, idStr)
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	res, err := storage.CheckBlob(idStr)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	render.Status(request, http.StatusCreated)
+	render.JSON(response, request, res)
 }
