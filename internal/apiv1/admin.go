@@ -13,7 +13,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 )
 
-const AdminSubpath = "/admin"
+const adminSubpath = "/admin"
 
 /*
 AdminRoutes getting all routes for the admin endpoint
@@ -24,7 +24,7 @@ func AdminRoutes() (string, *chi.Mux) {
 	router.Post("/check", PostCheck)
 	router.Get("/restore", GetRestore)
 	router.Post("/restore", PostRestore)
-	return Baseurl + AdminSubpath, router
+	return BaseURL + adminSubpath, router
 }
 
 // GetCheck starting a new check for this tenant

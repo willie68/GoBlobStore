@@ -28,6 +28,7 @@ type BlobStorageDao interface {
 	UpdateBlobDescription(id string, b *model.BlobDescription) error // updating the blob description
 	RetrieveBlob(id string, w io.Writer) error                       // retrieving the binary data from the storage system
 	DeleteBlob(id string) error                                      // removing a blob from the storage system
+	CheckBlob(id string) (*model.CheckInfo, error)                   // checking a single blob from the storage system
 
 	// Searching for blobs
 	SearchBlobs(query string, callback func(id string) bool) error // getting a list of blob from the storage

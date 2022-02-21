@@ -12,8 +12,8 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const ConfigSubpath = "/config"
-const StoresSubpath = "/stores"
+const configSubpath = "/config"
+const storesSubpath = "/stores"
 
 /*
 ConfigRoutes getting all routes for the config endpoint
@@ -24,7 +24,7 @@ func ConfigRoutes() (string, *chi.Mux) {
 	router.Get("/", GetConfig)
 	router.Delete("/", DeleteConfig)
 	router.Get("/size", GetConfigSize)
-	return Baseurl + ConfigSubpath, router
+	return BaseURL + configSubpath, router
 }
 
 /*
@@ -36,7 +36,7 @@ func StoresRoutes() (string, *chi.Mux) {
 	router.Get("/", GetConfig)
 	router.Delete("/", DeleteConfig)
 	router.Get("/size", GetConfigSize)
-	return Baseurl + StoresSubpath, router
+	return BaseURL + storesSubpath, router
 }
 
 /*

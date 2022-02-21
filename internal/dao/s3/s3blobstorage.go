@@ -268,6 +268,11 @@ func (s *S3BlobStorage) DeleteBlob(id string) error {
 	return nil
 }
 
+// CheckBlob checking a single blob from the storage system
+func (s *S3BlobStorage) CheckBlob(id string) (*model.CheckInfo, error) {
+	return utils.CheckBlob(id, s)
+}
+
 func (s *S3BlobStorage) SearchBlobs(q string, callback func(id string) bool) error {
 	return errors.New("not implemented yet")
 }

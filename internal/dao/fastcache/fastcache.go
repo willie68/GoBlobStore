@@ -13,6 +13,7 @@ import (
 	"github.com/akgarhwal/bloomfilter/bloomfilter"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -315,6 +316,11 @@ func (f *FastCache) DeleteBlob(id string) error {
 		}
 	}
 	return os.ErrNotExist
+}
+
+// CheckBlob checking a single blob from the storage system
+func (f *FastCache) CheckBlob(id string) (*model.CheckInfo, error) {
+	return utils.CheckBlob(id, f)
 }
 
 func (f *FastCache) deleteBlobFile(id string) error {

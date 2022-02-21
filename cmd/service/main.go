@@ -63,8 +63,7 @@ func init() {
 }
 
 func apiRoutes() (*chi.Mux, error) {
-	baseURL := apiv1.Baseurl
-	log.Logger.Infof("baseurl : %s", baseURL)
+	log.Logger.Infof("baseurl : %s", apiv1.BaseURL)
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),

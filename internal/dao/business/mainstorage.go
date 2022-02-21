@@ -6,6 +6,7 @@ Managing backup and cache requests, managing the Retentions
 */
 import (
 	"errors"
+	"fmt"
 	"io"
 	"runtime"
 	"time"
@@ -308,6 +309,61 @@ func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) er
 		return err
 	}
 	return nil
+}
+
+// CheckBlob checking a single blob from the storage system
+func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
+	// check blob on main storage
+	stgCI, err := m.StgDao.CheckBlob(id)
+	if err != nil {
+		return nil, err
+	}
+	bd, err := m.StgDao.GetBlobDescription(id)
+	if err != nil {
+		return nil, err
+	}
+	ri := model.Check{
+		Storage: stgCI,
+		Healthy: stgCI.Healthy,
+		Message: stgCI.Message,
+	}
+	bd.Check = &ri
+	// check blob on backup storage
+	if m.BckDao != nil {
+		bckDI, err := m.BckDao.CheckBlob(id)
+		if err != nil {
+			log.Logger.Errorf("error checking blob on backup: %v", err)
+		}
+		bckBd, err := m.StgDao.GetBlobDescription(id)
+		if err != nil {
+			log.Logger.Errorf("error getting blob description on backup: %v", err)
+		}
+		// merge stgCI and bckCI
+		ri.Backup = bckDI
+		ri.Healthy = ri.Healthy && bckDI.Healthy
+		msg := bckDI.Message
+		if ri.Message != "" && msg != "" {
+			msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+		}
+		if msg != "" {
+			ri.Message = msg
+		}
+
+		// checking if both hashes are equal
+		if bd.Hash != bckBd.Hash {
+			ri.Healthy = false
+			msg := "hashes are not equal"
+			if ri.Message != "" {
+				msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+			}
+			ri.Message = msg
+		}
+		bckBd.Check = &ri
+		m.BckDao.UpdateBlobDescription(id, bckBd)
+	}
+	bd.Check = &ri
+	m.StgDao.UpdateBlobDescription(id, bd)
+	return stgCI, nil
 }
 
 //GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returnong a false
