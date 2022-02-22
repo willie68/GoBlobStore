@@ -34,7 +34,7 @@ type CheckInfo struct {
 	Message   string     `yaml:"message,omitempty" json:"message,omitempty"`
 }
 
-func (b BlobDescription) MarshalJSON() ([]byte, error) {
+func (b BlobDescription) Map() map[string]interface{} {
 	mymap := make(map[string]interface{})
 	mymap["storeid"] = b.StoreID
 	mymap["contentLength"] = b.ContentLength
@@ -53,7 +53,11 @@ func (b BlobDescription) MarshalJSON() ([]byte, error) {
 	for k, v := range b.Properties {
 		mymap[k] = v
 	}
-	return json.Marshal(mymap)
+	return mymap
+}
+
+func (b BlobDescription) MarshalJSON() ([]byte, error) {
+	return json.Marshal(b.Map())
 }
 
 func (b *BlobDescription) UnmarshalJSON(data []byte) error {

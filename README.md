@@ -150,3 +150,37 @@ auth:
 `strict` `true` means the call will fail, if not all needed parameters, (at the moment only the tenant) can be evaluated from the token. `false` will fall back to http headers
 
 `tenantClaim` will name the claim name of the tenant value. Defaults to Tenant (optional)
+
+## Index and Search
+
+For finding desired blobs you can configure an index engine. Possible options are
+
+- MongoDB
+
+(sorry, nothing more at this moment)
+
+### Mongo Index
+
+For the mongo index option you have to provide the following information
+
+```yaml
+engine:
+...
+ index:
+  storageclass: MongoDB
+  properties:
+   hosts: 
+	- 127.0.0.1:27017
+   username:
+   password:
+   authdatabase: blobstore
+   database: blobstore
+```
+
+`username` and `password` can be provided via secret.yaml.
+
+Every tenant will create a collection in the database. For this collection the service will automatically create an index based on the blodid. For direct searching in mongo db simply add an # to the json coded mongo query syntax.
+
+## Tenant
+
+The tenant is the main part to split up the data. Every tenant is based on the tenant name or id. This id should be case insensitive and should only consist of chars which are valid for filenames.

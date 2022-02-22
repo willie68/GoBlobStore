@@ -7,8 +7,8 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/business"
+	"github.com/willie68/GoBlobStore/internal/dao/mongo"
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
-	"github.com/willie68/GoBlobStore/internal/dao/index"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
@@ -107,8 +107,8 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 		s := stg.Storageclass
 		s = strings.ToLower(s)
 		switch s {
-		case index.MONGO_INDEX:
-			dao = &index.MongoIndex{
+		case mongo.MONGO_INDEX:
+			dao = &mongo.Index{
 				Tenant: tenant,
 			}
 		}
@@ -233,8 +233,8 @@ func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
 	s := cnfg.Storageclass
 	s = strings.ToLower(s)
 	switch s {
-	case index.MONGO_INDEX:
-		index.InitMongoDB(cnfg.Properties)
+	case mongo.MONGO_INDEX:
+		mongo.InitMongoDB(cnfg.Properties)
 	}
 	return nil
 }
