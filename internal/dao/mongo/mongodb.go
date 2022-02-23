@@ -128,6 +128,44 @@ func (m *Index) Init() error {
 }
 
 func (m *Index) Search(query string, callback func(id string) bool) error {
+	if strings.HasPrefix(query, "#") {
+		query = strings.TrimPrefix(query, "#")
+		query = strings.TrimSpace(query)
+		var bd bson.M
+		err := bson.UnmarshalExtJSON([]byte(query), true, &bd)
+		if err != nil {
+			return err
+		}
+		cur, err := m.col.Find(context.TODO(), bd, options.Find())
+		if err != nil {
+			return err
+		}
+		defer cur.Close(context.TODO())
+		//Finding multiple documents returns a cursor
+		//Iterate through the cursor allows us to decode documents one at a time
+		for cur.Next(context.TODO()) {
+			//Create a value into which the single document can be decoded
+			elem := struct {
+				BlobId string `bson:"blobid"`
+			}{}
+			err := cur.Decode(&elem)
+			if err != nil {
+				return err
+			}
+			ok := callback(elem.BlobId)
+			if !ok {
+				break
+			}
+		}
+
+		if err := cur.Err(); err != nil {
+			return err
+		}
+
+		//Close the cursor once finished
+		return nil
+	}
+
 	return errors.New("not implemented yet")
 }
 
