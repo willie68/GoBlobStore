@@ -180,6 +180,13 @@ engine:
 `username` and `password` can be provided via secret.yaml.
 
 Every tenant will create a collection in the database. For this collection the service will automatically create an index based on the blodID. For direct searching in mongo db simply add an # to the json coded mongo query syntax.
+**Attention:** all headers are converted to lower case.
+
+As an example: 
+
+```
+#{"$and": [{"x-tenant": "MCS"}, {"x-user": "Willie"} ]}
+```
 
 ## Tenant
 

@@ -22,7 +22,7 @@ const (
 
 type Node struct {
 	Operator   NodeOperator
-	Conditions []Condition
+	Conditions []interface{} // could be a node or a condition
 }
 
 type FieldOperator string

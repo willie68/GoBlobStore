@@ -198,6 +198,23 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		return err
 	} else {
 		// update with new description
+		var bd bson.D
+		bd = append(bd, bson.E{"blobid", id})
+		for k, v := range b.Map() {
+			bd = append(bd, bson.E{strings.ToLower(k), v})
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		res, err := m.col.ReplaceOne(ctx, bson.M{"blobid": id}, bd)
+		if err != nil {
+			return err
+		}
+		mid := res.ModifiedCount
+		log.Logger.Infof("mod count: %vd", mid)
+		return nil
+
 	}
 	return errors.New("blob already exists")
 }
