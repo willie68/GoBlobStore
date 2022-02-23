@@ -44,7 +44,7 @@ func BlobRoutes() (string, *chi.Mux) {
 
 func SearchRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.Get("/", SearchBlobs)
+	router.Post("/", SearchBlobs)
 	return BaseURL + searchSubpath, router
 }
 
@@ -514,10 +514,12 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 	if values["limit"] != nil {
 		limit, _ = strconv.Atoi(values["limit"][0])
 	}
-	var query string
-	if values["q"] != nil {
-		query = values["q"][0]
+	b, err := io.ReadAll(request.Body)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
 	}
+	query := string(b)
 	if query != "" {
 		log.Logger.Debugf("search for blobs with: %s", query)
 	}

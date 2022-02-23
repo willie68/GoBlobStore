@@ -3,10 +3,10 @@ package model
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // examples
-
 type Query struct {
 	Sorting   []string // sorting the result of the query
 	Condition Node     // the condition as a Node
@@ -28,6 +28,7 @@ type Node struct {
 type FieldOperator string
 
 const (
+	NO FieldOperator = ""   // equal
 	EQ FieldOperator = "="  // equals
 	LT FieldOperator = "<"  // lesser than
 	GT FieldOperator = ">"  // greater than
@@ -40,6 +41,34 @@ type Condition struct {
 	Field    string
 	Operator FieldOperator
 	Value    interface{}
+}
+
+func (n *Node) String() string {
+	var b strings.Builder
+	fmt.Printf("len: %d", len(n.Conditions))
+	cl := len(n.Conditions)
+	if cl > 1 {
+		b.WriteString("(")
+	}
+	f := true
+	for _, c := range n.Conditions {
+		if !f {
+			b.WriteString(" ")
+			b.WriteString(string(n.Operator))
+			b.WriteString(" ")
+		}
+		switch v := c.(type) {
+		case Condition:
+			b.WriteString(v.String())
+		case Node:
+			b.WriteString(v.String())
+		}
+		f = false
+	}
+	if cl > 1 {
+		b.WriteString(")")
+	}
+	return b.String()
 }
 
 func (c *Condition) String() string {

@@ -15,8 +15,8 @@ func TestJson(t *testing.T) {
 		Sorting: []string{"field_1"},
 		Condition: Node{
 			Operator: NOOP,
-			Conditions: []Condition{
-				{
+			Conditions: []interface{}{
+				Condition{
 					Field:    "field_1",
 					Operator: EQ,
 					Value:    "Willie",
@@ -28,6 +28,49 @@ func TestJson(t *testing.T) {
 	jss, _ := json.MarshalIndent(q, "", "  ")
 	ast.NotEmpty(jss)
 	fmt.Println(string(jss))
+}
+
+func TestSearching(t *testing.T) {
+	ast := assert.New(t)
+	str := `((field1:"Willie" AND field2:>100) OR (field1:"Max" AND field2:<=100))`
+
+	n := Node{
+		Operator: OROP,
+		Conditions: []interface{}{
+			Node{
+				Operator: ANDOP,
+				Conditions: []interface{}{
+					Condition{
+						Field:    "field1",
+						Operator: NO,
+						Value:    "Willie",
+					},
+					Condition{
+						Field:    "field2",
+						Operator: GT,
+						Value:    100,
+					},
+				},
+			},
+			Node{
+				Operator: ANDOP,
+				Conditions: []interface{}{
+					Condition{
+						Field:    "field1",
+						Operator: NO,
+						Value:    "Max",
+					},
+					Condition{
+						Field:    "field2",
+						Operator: LE,
+						Value:    100,
+					},
+				},
+			},
+		},
+	}
+
+	ast.Equal(str, n.String())
 }
 
 type TCondition struct {
