@@ -326,9 +326,12 @@ func TestQParsing(t *testing.T) {
 
 func TestQParse(t *testing.T) {
 	ast := assert.New(t)
-	s := `field1:="Willie"`
-
+	s := `field:"Willie"`
+	//s := `event:"sent" AND subject:"A special offer just for you!"`
 	res, err := Parse("query", []byte(s))
 	t.Log(res)
+	if err != nil {
+		t.Logf("Error: %v", err)
+	}
 	ast.Nil(err)
 }

@@ -2,14 +2,18 @@
 // part of the initializer code block omitted for brevity
 }
 
-Input <- expr:Expr EOF {
-    return expr, nil
-}
+Input <- Term !.
 
-Expr "Expression" <- _ .+ _ {
-    return fmt.Sprintf(`%s`,c.text), nil
-}
+Term <- Variable AndVar*
+
+AndVar <- _ "AND" _ Term
+
+Variable <- FieldChars+ _ ":" _ Value
+
+Value <- '"' ValueChars '"'
+
+FieldChars <- [a-z]
+
+ValueChars <- [a-zA-Z0-9 !]
 
 _ "whitespace" <- [ \n\t\r]*
-
-EOF <- !.
