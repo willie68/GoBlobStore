@@ -1,0 +1,1 @@
+pigeon -o pkg/model/query/parser.go build/pigeon/parser.peg

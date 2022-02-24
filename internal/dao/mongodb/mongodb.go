@@ -1,4 +1,4 @@
-package mongo
+package mongodb
 
 import (
 	"context"
@@ -16,7 +16,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	driver "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -112,7 +111,7 @@ func (m *Index) Init() error {
 	}
 	if !found {
 		log.Logger.Info("no index found, creating one")
-		mod := mongo.IndexModel{
+		mod := driver.IndexModel{
 			Keys: bson.M{
 				"blobid": 1, // index in ascending order
 			},
@@ -176,7 +175,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 	var result bson.M
 	err := m.col.FindOne(ctx, bson.M{"blobid": id}).Decode(&result)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if err == driver.ErrNoDocuments {
 			// dosen't exists, create
 			var bd bson.D
 			bd = append(bd, bson.E{"blobid", id})
@@ -217,4 +216,78 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 
 	}
 	return errors.New("blob already exists")
+}
+
+func ToMongoQuery(q model.Query) string {
+	var b strings.Builder
+	b.WriteString("#")
+	c := q.Condition
+	b.WriteString(xToMdb(c))
+	return b.String()
+}
+
+//cToMdb converting a condition into a mongo query string
+func cToMdb(c model.Condition) string {
+	var b strings.Builder
+	f := c.Field
+	cv := oToMdb(c)
+	if c.Invert {
+		cv = fmt.Sprintf(`{"$not": %s}`, cv)
+	}
+	b.WriteString(fmt.Sprintf(`{"%s": %s}`, f, cv))
+	return b.String()
+}
+
+//oToMdb converting the operator part of a condition into a mongo query string
+func oToMdb(c model.Condition) string {
+	v := c.VtoS()
+	switch c.Operator {
+	case model.NO:
+		return v
+	case model.EQ:
+		return fmt.Sprintf(`{"$eq": %s}`, v)
+	case model.LT:
+		return fmt.Sprintf(`{"$lt": %s}`, v)
+	case model.LE:
+		return fmt.Sprintf(`{"$lte": %s}`, v)
+	case model.GT:
+		return fmt.Sprintf(`{"$gt": %s}`, v)
+	case model.GE:
+		return fmt.Sprintf(`{"$gte": %s}`, v)
+	case model.NE:
+		return fmt.Sprintf(`{"$ne": %s}`, v)
+	}
+	return ""
+}
+
+//oToMdb converting a node into a mongo query string
+func nToMdb(n model.Node) string {
+	var b strings.Builder
+	op := fmt.Sprintf("$%s", strings.ToLower(string(n.Operator)))
+	wh := xsToMdb(n.Conditions)
+	b.WriteString(fmt.Sprintf(`{"%s": [%s]}`, op, wh))
+	return b.String()
+}
+
+//xsToMdb converting an array of nodes/conditions to a mongo json string
+func xsToMdb(xs []interface{}) string {
+	var b strings.Builder
+	for i, x := range xs {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(xToMdb(x))
+	}
+	return b.String()
+}
+
+//xToMdb converting a node/condition to a mongo json string
+func xToMdb(x interface{}) string {
+	switch v := x.(type) {
+	case model.Condition:
+		return cToMdb(v)
+	case model.Node:
+		return nToMdb(v)
+	}
+	return ""
 }

@@ -1,6 +1,7 @@
-package model
+package query
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,8 +9,8 @@ import (
 
 // examples
 type Query struct {
-	Sorting   []string // sorting the result of the query
-	Condition Node     // the condition as a Node
+	Sorting   []string    // sorting the result of the query
+	Condition interface{} // the condition or a Node
 }
 
 type NodeOperator string
@@ -41,11 +42,11 @@ type Condition struct {
 	Field    string
 	Operator FieldOperator
 	Value    interface{}
+	Invert   bool
 }
 
 func (n *Node) String() string {
 	var b strings.Builder
-	fmt.Printf("len: %d", len(n.Conditions))
 	cl := len(n.Conditions)
 	if cl > 1 {
 		b.WriteString("(")
@@ -62,6 +63,8 @@ func (n *Node) String() string {
 			b.WriteString(v.String())
 		case Node:
 			b.WriteString(v.String())
+		default:
+
 		}
 		f = false
 	}
@@ -72,17 +75,39 @@ func (n *Node) String() string {
 }
 
 func (c *Condition) String() string {
+	op := string(c.Operator)
+	v := c.VtoS()
+	lc := fmt.Sprintf("%s:%s%s", c.Field, op, v)
+	if c.Invert {
+		lc = fmt.Sprintf(`!(%s)`, lc)
+	}
+	return lc
+}
+
+//VtoS return a formatted string from the different values
+func (c *Condition) VtoS() string {
 	switch v := c.Value.(type) {
 	case string:
-		return fmt.Sprintf("%s:%s\"%s\"", c.Field, c.Operator, v)
+		return fmt.Sprintf(`"%s"`, v)
 	case int, int64:
-		return fmt.Sprintf("%s:%s%d", c.Field, c.Operator, v)
+		return fmt.Sprintf("%d", v)
 	case float32:
-		s := strconv.FormatFloat(float64(v), 'f', 8, 32)
-		return fmt.Sprintf("%s:%s%s", c.Field, c.Operator, s)
+		return strconv.FormatFloat(float64(v), 'f', 8, 32)
 	case float64:
-		s := strconv.FormatFloat(float64(v), 'f', 8, 64)
-		return fmt.Sprintf("%s:%s%s", c.Field, c.Operator, s)
+		return strconv.FormatFloat(float64(v), 'f', 8, 64)
 	}
 	return ""
+}
+
+func ParseMe(s string) (*Query, error) {
+	res, err := Parse("query", []byte(s))
+	fmt.Printf("%v", res)
+	if err != nil {
+		return nil, err
+	}
+	q, ok := res.(Query)
+	if ok {
+		return &q, nil
+	}
+	return nil, errors.New("error on parsing")
 }

@@ -1,7 +1,8 @@
-package mongo
+package mongodb
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -69,4 +70,67 @@ func TestMongoConnect(t *testing.T) {
 	})
 	ast.Nil(err)
 	ast.Equal(1, len(rets))
+}
+
+func TestQueryConvertion(t *testing.T) {
+	ast := assert.New(t)
+
+	str := `#{"$or": [{"$and": [{"field1": "Willie"}, {"field2": {"$gt": 100}}, {"field3": {"$not": {"$eq": "murks"}}}]}, {"$and": [{"field1": "Max"}, {"field2": {"$lte": 100}}, {"field3": {"$ne": "murks"}}]}]}`
+	//#{"$or": [ {"$and": [ {"field1":"Willie"},{field2:>100}) OR (field1:"Max" AND field2:<=100))`
+
+	q := model.Query{
+		Condition: model.Node{
+			Operator: model.OROP,
+			Conditions: []interface{}{
+				model.Node{
+					Operator: model.ANDOP,
+					Conditions: []interface{}{
+						model.Condition{
+							Field:    "field1",
+							Operator: model.NO,
+							Value:    "Willie",
+						},
+						model.Condition{
+							Field:    "field2",
+							Operator: model.GT,
+							Value:    100,
+						},
+						model.Condition{
+							Field:    "field3",
+							Operator: model.EQ,
+							Invert:   true,
+							Value:    "murks",
+						},
+					},
+				},
+				model.Node{
+					Operator: model.ANDOP,
+					Conditions: []interface{}{
+						model.Condition{
+							Field:    "field1",
+							Operator: model.NO,
+							Value:    "Max",
+						},
+						model.Condition{
+							Field:    "field2",
+							Operator: model.LE,
+							Value:    100,
+						},
+						model.Condition{
+							Field:    "field3",
+							Operator: model.NE,
+							Value:    "murks",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ast.NotNil(q)
+
+	s := ToMongoQuery(q)
+	fmt.Println(str)
+	fmt.Println(s)
+	ast.Equal(str, s)
 }
