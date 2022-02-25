@@ -326,12 +326,25 @@ func TestQParsing(t *testing.T) {
 
 func TestQParse(t *testing.T) {
 	ast := assert.New(t)
-	s := `field:"Willie"`
-	//s := `event:"sent" AND subject:"A special offer just for you!"`
-	res, err := Parse("query", []byte(s))
-	t.Log(res)
-	if err != nil {
-		t.Logf("Error: %v", err)
+
+	ss := []string{
+		`field:"Willie"`,
+		`field1:=123.456`,
+		`field1:<=123.456`,
+		`(field1:=123)`,
+		`!(field1:!="Hurz")`,
+		`field1:"Willie" AND !(field2:>100)`,
+		`field1:"Willie" AND !(field2:>100) AND field3:"muck"`,
+		`(field1:"Willie" AND !(field2:>100)) OR field3:"muck"`,
 	}
-	ast.Nil(err)
+	//s := `event:"sent" AND subject:"A special offer just for you!"`
+	for _, s := range ss {
+
+		res, err := Parse("query", []byte(s))
+		t.Logf("%s -> %s", s, res)
+		if err != nil {
+			t.Logf("Error: %v", err)
+		}
+		ast.Nil(err)
+	}
 }
