@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
+	"github.com/willie68/GoBlobStore/pkg/model/query"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -29,6 +31,7 @@ var MongoCnfg config.Storage
 type Index struct {
 	Tenant string
 	col    driver.Collection
+	qsync  sync.Mutex
 }
 
 type Config struct {
@@ -127,14 +130,26 @@ func (m *Index) Init() error {
 }
 
 func (m *Index) Search(query string, callback func(id string) bool) error {
-	if strings.HasPrefix(query, "#") {
-		query = strings.TrimPrefix(query, "#")
-		query = strings.TrimSpace(query)
-		var bd bson.M
-		err := bson.UnmarshalExtJSON([]byte(query), true, &bd)
+	var bd bson.M
+
+	if !strings.HasPrefix(query, "#") {
+		// parse query string to Mongo query
+		q, err := m.buildAST(query)
 		if err != nil {
 			return err
 		}
+		query = ToMongoQuery(*q)
+	}
+
+	query = strings.TrimPrefix(query, "#")
+	query = strings.TrimSpace(query)
+	err := bson.UnmarshalExtJSON([]byte(query), true, &bd)
+	if err != nil {
+		return err
+	}
+
+	if bd != nil {
+
 		cur, err := m.col.Find(context.TODO(), bd, options.Find())
 		if err != nil {
 			return err
@@ -164,8 +179,22 @@ func (m *Index) Search(query string, callback func(id string) bool) error {
 		//Close the cursor once finished
 		return nil
 	}
+	return errors.New("no filter defined!")
+}
 
-	return errors.New("not implemented yet")
+func (m *Index) buildAST(q string) (*query.Query, error) {
+	m.qsync.Lock()
+	defer m.qsync.Unlock()
+	query.N.Reset()
+	res, err := query.Parse("query", []byte(q))
+	if err != nil {
+		return nil, err
+	}
+	qu, ok := res.(query.Query)
+	if !ok {
+		return nil, errors.New("unknown result")
+	}
+	return &qu, nil
 }
 
 func (m *Index) Index(id string, b model.BlobDescription) error {
@@ -218,7 +247,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 	return errors.New("blob already exists")
 }
 
-func ToMongoQuery(q model.Query) string {
+func ToMongoQuery(q query.Query) string {
 	var b strings.Builder
 	b.WriteString("#")
 	c := q.Condition
@@ -227,7 +256,7 @@ func ToMongoQuery(q model.Query) string {
 }
 
 //cToMdb converting a condition into a mongo query string
-func cToMdb(c model.Condition) string {
+func cToMdb(c query.Condition) string {
 	var b strings.Builder
 	f := c.Field
 	cv := oToMdb(c)
@@ -239,29 +268,29 @@ func cToMdb(c model.Condition) string {
 }
 
 //oToMdb converting the operator part of a condition into a mongo query string
-func oToMdb(c model.Condition) string {
+func oToMdb(c query.Condition) string {
 	v := c.VtoS()
 	switch c.Operator {
-	case model.NO:
+	case query.NO:
 		return v
-	case model.EQ:
+	case query.EQ:
 		return fmt.Sprintf(`{"$eq": %s}`, v)
-	case model.LT:
+	case query.LT:
 		return fmt.Sprintf(`{"$lt": %s}`, v)
-	case model.LE:
+	case query.LE:
 		return fmt.Sprintf(`{"$lte": %s}`, v)
-	case model.GT:
+	case query.GT:
 		return fmt.Sprintf(`{"$gt": %s}`, v)
-	case model.GE:
+	case query.GE:
 		return fmt.Sprintf(`{"$gte": %s}`, v)
-	case model.NE:
+	case query.NE:
 		return fmt.Sprintf(`{"$ne": %s}`, v)
 	}
 	return ""
 }
 
 //oToMdb converting a node into a mongo query string
-func nToMdb(n model.Node) string {
+func nToMdb(n query.Node) string {
 	var b strings.Builder
 	op := fmt.Sprintf("$%s", strings.ToLower(string(n.Operator)))
 	wh := xsToMdb(n.Conditions)
@@ -284,10 +313,14 @@ func xsToMdb(xs []interface{}) string {
 //xToMdb converting a node/condition to a mongo json string
 func xToMdb(x interface{}) string {
 	switch v := x.(type) {
-	case model.Condition:
+	case query.Condition:
 		return cToMdb(v)
-	case model.Node:
+	case *query.Condition:
+		return cToMdb(*v)
+	case query.Node:
 		return nToMdb(v)
+	case *query.Node:
+		return nToMdb(*v)
 	}
 	return ""
 }

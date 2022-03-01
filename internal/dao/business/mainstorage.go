@@ -304,6 +304,7 @@ func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) er
 	if !m.hasIdx {
 		return errors.New("index not configured")
 	}
+	
 	err := m.IdxDao.Search(q, callback)
 	if err != nil {
 		return err

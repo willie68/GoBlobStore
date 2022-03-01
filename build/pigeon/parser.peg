@@ -83,7 +83,7 @@ KeyValue      <- k:Key COLON v:Value {
     return cd, nil
 }
 SingleValue   <- Phrase / DateTime / Number / Word
-Key           <- [A-Za-z_0-9]+ { return string(c.text), nil }
+Key           <- [A-Za-z0-9_-]+ { return string(c.text), nil }
 Value         <- Window / OpValue / Phrase / DateTime / Number / w:Word {return w, nil}
 
 // value with operator in front like "="Muck""

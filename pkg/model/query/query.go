@@ -102,7 +102,13 @@ func (c *Condition) String() string {
 func (c *Condition) VtoS() string {
 	switch v := c.Value.(type) {
 	case string:
-		return fmt.Sprintf(`"%s"`, v)
+		if !strings.HasPrefix(v, `"`) {
+			v = `"` + v
+		}
+		if !strings.HasSuffix(v, `"`) {
+			v = v + `"`
+		}
+		return v
 	case int, int64:
 		return fmt.Sprintf("%d", v)
 	case float32:
