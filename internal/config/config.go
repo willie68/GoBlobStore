@@ -53,6 +53,7 @@ type Engine struct {
 	Storage          Storage `yaml:"storage"`
 	Backup           Storage `yaml:"backup"`
 	Cache            Storage `yaml:"cache"`
+	Index            Storage `yaml:"index"`
 }
 
 type Storage struct {

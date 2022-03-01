@@ -1,0 +1,141 @@
+{package query
+// part of the initializer code block omitted for brevity
+import (
+    "strings"
+    "strconv"
+)
+
+func toString(label interface{}) string {
+    var sb strings.Builder
+    value, ok := label.([]interface{})
+    if ok {
+        for _, i := range(value) {
+            if i == nil {
+                continue
+            }
+            switch b := i.(type) {
+            case []byte:        
+                sb.WriteByte(b[0])
+            case []interface{}:
+                s := toString(i)
+                sb.WriteString(s)
+            default:
+                fmt.Printf("error: %T %+v\n", i, i)
+            }
+        }
+    }
+    intVs, ok := label.([]uint8)
+    if ok {
+        for _, i := range(intVs) {
+            sb.WriteString(string(i))        
+        }
+    }
+    return sb.String()
+}
+
+func toPrimitive(label interface{}) interface{} {
+    s := toString(label)
+    f, err := strconv.ParseFloat(s, 64)
+    if err == nil {
+        return f
+    }
+    i, err := strconv.Atoi(s)
+    if err == nil {
+        return i        
+    }
+    return s
+}
+
+var (
+    sorting []string = make([]string, 0)
+) 
+
+}
+
+// Rules
+
+Input      <- _? Query _? !. {
+    return N.Query(), nil
+}
+
+Query      <- Exprs
+Exprs      <- Expr (_ Operator _ Expr)*
+Operator   <- OR  { N.NewCondition(); if N.CurrentNode().Operator == ANDOP { return nil, errors.New("you cant mix AND and OR operator") }; N.CurrentNode().Operator = OROP; return N.CurrentNode(), nil } / AND { N.NewCondition(); if N.CurrentNode().Operator == OROP { return nil, errors.New("you cant mix AND and OR operator") }; N.CurrentNode().Operator = ANDOP; return N.CurrentNode(), nil }
+Expr       <- GroupOrNot / Term
+
+Term       <- NotCheck? (KeyValue / SingleValue)
+NotCheck   <- NOT _? {
+    N.CurrentCondition().Invert = true;
+    return nil, nil
+}
+
+GroupOrNot    <- GroupPrefix GroupSuffix
+GroupPrefix   <- NotGroupStart / GroupStart
+GroupStart    <- !Not OPENPAREN  { n := N.NewNode(); return n, nil }
+NotGroupStart <- Not OPENPAREN   { return N.CurrentNode(), nil }
+GroupSuffix   <- _? Query _? CLOSEPAREN
+Not           <- NOT _?
+
+KeyValue      <- k:Key COLON v:Value {
+    cd := N.CurrentCondition()
+    cd.Field = k.(string)
+    cd.Value = v
+    return cd, nil
+}
+SingleValue   <- Phrase / DateTime / Number / Word
+Key           <- [A-Za-z0-9_-]+ { return string(c.text), nil }
+Value         <- Window / OpValue / Phrase / DateTime / Number / w:Word {return w, nil}
+
+// value with operator in front like "="Muck""
+OpValue      <- FIELDOP d:DateTime {return d, nil} / FIELDOP n:Number {return n, nil} / FIELDOP p:Phrase { return p, nil} / FIELDOP w:Word {return w, nil} 
+DateTime     <- Date TEE Time ZEE {  return string(c.text), nil }
+
+// a phrase always start and end Double Quote like  "Muck"
+Phrase       <- DQ [^"]+ DQ       {  return string(c.text), nil }
+
+// Window search is something like [123..145] for numbers and dates
+Window       <- OPENBRACKET _? WindowRange _? CLOSEBRACKET {  return string(c.text), nil }
+WindowRange  <- DateWindow / NumberWindow
+DateWindow   <- WinDateTime TILDA WinDateTime
+WinDateTime  <- Date TEE Time ZEE
+NumberWindow <- WinNumber TILDA DASH? WinNumber
+WinNumber    <- (DIGIT / DOT/ DASH) (DIGIT / DASH / EEE / DOT)*
+
+// Token Matchers
+
+Date    <- Digits4 DASH Digits2 DASH Digits2
+Time    <- Digits2 COLON Digits2 COLON Digits2
+Word    <- [a-zA-Z_] [a-zA-Z0-9_]*                         { return string(c.text), nil }
+Number  <- (DIGIT / DOT/ DASH) (DIGIT / DASH / EEE / DOT)* { return string(c.text), nil }
+Digits2 <- DIGIT DIGIT
+Digits4 <- Digits2 Digits2
+
+OPENPAREN    <- '('
+CLOSEPAREN   <- ')'
+OPENBRACKET  <- '['
+CLOSEBRACKET <- ']'
+
+DIGIT   <- [0-9]
+DASH    <- '-'
+COLON   <- ':'
+TILDA   <- '~'
+DQ      <- '"'
+TEE     <- 'T'
+ZEE     <- 'Z'
+EEE     <- [eE]
+DOT     <- '.'
+
+NOT     <- "NOT" / "!"
+
+AND     <- "AND" / "&"
+OR      <- "OR" / "|"
+
+FIELDOP <- GTE / LTE / GT / LT / NE / EQ
+GTE     <- ">=" { N.CurrentCondition().Operator = GE; return N.CurrentCondition(), nil }
+LTE     <- "<=" { N.CurrentCondition().Operator = LE; return N.CurrentCondition(), nil }
+GT      <- ">"  { N.CurrentCondition().Operator = GT; return N.CurrentCondition(), nil }
+LT      <- "<"  { N.CurrentCondition().Operator = LT; return N.CurrentCondition(), nil }
+NE      <- "!=" { N.CurrentCondition().Operator = NE; return N.CurrentCondition(), nil }
+EQ      <- "="  { N.CurrentCondition().Operator = EQ; return N.CurrentCondition(), nil }
+
+_ "whitespace" <- [ \n\t\r]+

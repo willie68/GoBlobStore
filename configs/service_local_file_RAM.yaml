@@ -1,6 +1,7 @@
 port: 8000
 sslport: 8443
 serviceURL: https://127.0.0.1:8443
+secretfile: "configs/secret.yaml"
 apikey: false
 healthcheck:
   period: 30
@@ -23,6 +24,15 @@ engine:
       rootpath: R:/blbcache
       maxcount: 100000
       maxramusage: 1024000000
+  index:
+    storageclass: MongoDB
+    properties:
+      hosts: 
+        - 127.0.0.1:27017
+      username:
+      password:
+      authdatabase: blobstore
+      database: blobstore
 headermapping:
   headerprefix: x-
   retention:

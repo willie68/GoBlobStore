@@ -5,6 +5,7 @@ This type doing all the business logic of storing blobs of the service.
 Managing backup and cache requests, managing the Retentions
 */
 import (
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -22,14 +23,17 @@ type MainStorageDao struct {
 	StgDao      interfaces.BlobStorageDao
 	BckDao      interfaces.BlobStorageDao
 	CchDao      interfaces.BlobStorageDao
+	IdxDao      interfaces.Index
 	Bcksyncmode bool
 	Tenant      string
+	hasIdx      bool
 }
 
 // Init initialise this dao
 func (m *MainStorageDao) Init() error {
 	// all storages should be initialised before adding to this business class
 	// there for only specifig initialisation for this class is required
+	m.hasIdx = m.IdxDao != nil
 	return nil
 }
 
@@ -50,6 +54,12 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 		return "", err
 	}
 	b.BlobID = id
+	if m.hasIdx {
+		err = m.IdxDao.Index(id, *b)
+		if err != nil {
+			return "", err
+		}
+	}
 	if err == nil && m.RtnMng != nil {
 		r := model.RetentionEntryFromBlobDescription(*b)
 		err = m.RtnMng.AddRetention(m.Tenant, &r)
@@ -72,6 +82,12 @@ func (m *MainStorageDao) UpdateBlobDescription(id string, b *model.BlobDescripti
 	err := m.StgDao.UpdateBlobDescription(id, b)
 	if err != nil {
 		return err
+	}
+	if m.hasIdx {
+		err = m.IdxDao.Index(id, *b)
+		if err != nil {
+			return err
+		}
 	}
 	if m.BckDao != nil {
 		if m.Bcksyncmode {
@@ -280,6 +296,18 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 		if err = m.CchDao.DeleteBlob(id); err != nil {
 			log.Logger.Errorf("error deleting blob on cache: %v", err)
 		}
+	}
+	return nil
+}
+
+func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) error {
+	if !m.hasIdx {
+		return errors.New("index not configured")
+	}
+	
+	err := m.IdxDao.Search(q, callback)
+	if err != nil {
+		return err
 	}
 	return nil
 }

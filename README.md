@@ -9,8 +9,7 @@ features
 - simple http interface
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based access control
-- automatic config enviroment substitution
-- secrets can be stored into an extra file
+- automatic config substitutio
 
 Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase.
 
@@ -36,24 +35,6 @@ The configuration file service.yaml will be loaded from `/data/config/service.ya
 
 You can simply mount this to another file system and create a new service.yaml with your own configuration. (the defaults as set in the default service.yaml will be used, if the option is not set)
 
-For storing secrets there is another config file called secret file. You can put in there all your secrets like passwords access keys... The structure should be the same as in the config file. On starting the service the secret file will be loaded and automatically merged into the config. An example is in the S3 Storage chapter.
-
-## SimpleFileStorage
-
-The SimpleFileStorage provider can be used as any provider, Cache, Storage and Backup. It will store the data into the file system in a simple structure. This file system can be a local file system or a mounted shared file system. 
-
-```yaml
-engine:
- storage:
-  storageclass: SimpleFile
-  properties:
-   rootpath: /opt/data/storage
-```
-
-#### Disc layout
-
-For every tenant there will be a sub folder. Every blob will than be stored into a double hierarchical sub folder, first 2 chars of the id for the first level, and the next 2 chars for the second level. Every blob consist of 2 files, the bin file with the binary data and the json file with the properties. If a file has a retention time, the json file will be additionally placed into the subfolder retention for the retention management.  
-
 ## S3 Storage
 
 The S3 storage provider can be used as main storage or backup storage with the same parameters.
@@ -62,6 +43,9 @@ Simply change in engine/storage/ the storage class to S3Storage and add the conf
 
 ```yaml
 engine:
+ retentionManager: SingleRetention
+ tenantautoadd: true
+ backupsyncmode: false
  storage:
   storageclass: S3Storage
   properties:
@@ -77,6 +61,9 @@ you can use the same for the backup storage:
 
 ```yaml
 engine:
+ retentionManager: SingleRetention
+ tenantautoadd: true
+ backupsyncmode: false
  storage:
   storageclass: SimpleFile
   properties:
@@ -92,35 +79,6 @@ engine:
    insecure: false
 ```
 
-`accessKey`, `secretKey` and `password` should be saved in the `secretfile`. `accessKey` and `secretKey` are given from the S3 Operator, `password` is an extra salt for creating the cryptic keys for the encryption of the storage files. The structure of the secret file should be the same as for the config file itself. So if you are using both, the config file should be like this:
-
-```yaml
-secretfile: "configs/secret.yaml"
-engine:
- storage:
-  storageclass: S3Storage
-  properties:
-   endpoint: "https://192.168.178.45:9002"
-   bucket: "goblobstore"
-   accessKey:
-   secretKey:
-   password: 
-   insecure: false
-```
-
-and the secret file:
-
-```yaml
-engine:
- storage:
-  properties:
-   accessKey: D9Q2D6JQGW1MVCC98LQL
-   secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
-   password: 4jsfhdjHsd?
-```
-
-
-
 ## Fastcache
 
 Fastcache is a specialised storage engine only to be used for a cache storage.
@@ -129,6 +87,9 @@ You can combine this with any other storage engine, even with a optional backup 
 
 ```yaml
 engine:
+ retentionManager: SingleRetention
+ tenantautoadd: true
+ backupsyncmode: false
  storage:
   storageclass: S3Storage
   properties:
@@ -141,7 +102,7 @@ engine:
  cache:
   storageclass: FastCache
   properties:
-   rootpath: /opt/data/blobcache
+   rootpath: /data/blobcache
    maxcount: 100000
    maxramusage: 1024000000
 ```
@@ -189,3 +150,86 @@ auth:
 `strict` `true` means the call will fail, if not all needed parameters, (at the moment only the tenant) can be evaluated from the token. `false` will fall back to http headers
 
 `tenantClaim` will name the claim name of the tenant value. Defaults to Tenant (optional)
+
+## Index and Search
+
+For finding desired blobs you can configure an index engine. Possible options are
+
+- MongoDB
+
+(sorry, nothing more at this moment)
+
+### Query Language
+
+A separate search language is supported for a search independent of the underlying index engine. This offers a simple syntax for searching.
+
+Some value element examples:
+
+`foo` ~ search the default field for value "foo" in a match or term query
+
+`35` ~ search the default field for the number 35, as an integer in a match or term query
+
+`name:Joe` ~ search the `name` field for the value "Joe" as a match or term query
+
+`count:2` ~ search the `count` field for the numerical value 2 as a match or term query
+
+`msg:"foo bar baz"` ~ search the `msg` field using a match-phrase query
+
+`amount:>=40` ~ search the `amount` field using a range query for documents where the field's value is greater than or equal to 40
+
+`created_at:<2017-10-31T00:00:00Z` ~ search the `created_at` field for dates before Halloween of 2017 (*all datetimes are in RF3339 format, UTC timezone*)
+
+`cash:[50~200]` ~ returns all docs where `cash` field's value is within a range greater than or equal to 50, and less than 200.
+
+`updated_at:[2017-04-22T09:45:00Z~2017-05-03T10:20:00Z]` ~ window ranges can also include RFC3339 UTC datetimes
+
+Any field or parenthesized grouping can be negated with the `NOT` or `!` operator:
+
+`NOT foo` ~ search for documents where default field doesn't contain the token `foo`
+
+`!c:[2017-10-29T00:00:00Z~2017-10-30T00:00:00Z]` ~ returns docs where field `c`'s date value is *not* within the range of October 29-31, 2017 (UTC)
+
+!count:>100` ~ search for documents where `count` field has a value that's *not* greater than 100
+
+`NOT (x OR y)` ~ search the default field for documents that don't contain terms "x" or "y"
+
+Parentheses for grouping of subqueries is not supported:
+
+`NOT foo:bar AND baz:99` ~ return blobs where field `foo`'s value is not "bar" and where field `baz`'s value is 99.
+
+Operators have aliases: `AND` -> `&` and `OR` -> `|`:
+
+### Mongo Index
+
+For the mongo index option you have to provide the following information
+
+```yaml
+engine:
+...
+ index:
+  storageclass: MongoDB
+  properties:
+   hosts: 
+	- 127.0.0.1:27017
+   username:
+   password:
+   authdatabase: blobstore
+   database: blobstore
+```
+
+`username` and `password` can be provided via secret.yaml.
+
+Every tenant will create a collection in the database. For this collection the service will automatically create an index based on the blodID. For direct searching in mongo db simply add an # to the json coded mongo query syntax.
+**Attention:** all headers are converted to lower case.
+
+As an example: 
+
+```
+#{"$and": [{"x-tenant": "MCS"}, {"x-user": "Willie"} ]}
+```
+
+### 
+
+## Tenant
+
+The tenant is the main part to split up the data. Every tenant is based on the tenant name or id. This id should be case insensitive and should only consist of chars which are valid for filenames.

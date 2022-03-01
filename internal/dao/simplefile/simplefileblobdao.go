@@ -113,6 +113,10 @@ func (s *SimpleFileBlobStorageDao) CheckBlob(id string) (*model.CheckInfo, error
 	return utils.CheckBlob(id, s)
 }
 
+func (s *SimpleFileBlobStorageDao) SearchBlobs(q string, callback func(id string) bool) error {
+	return errors.New("not implemented yet")
+}
+
 //GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	retCbk := func(path string, file os.FileInfo, err error) error {

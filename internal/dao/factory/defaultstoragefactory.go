@@ -3,11 +3,13 @@ package factory
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	"github.com/willie68/GoBlobStore/internal/dao/mongodb"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	log "github.com/willie68/GoBlobStore/internal/logging"
@@ -32,6 +34,9 @@ func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.Rete
 	d.tenantStores = make(map[string]*interfaces.BlobStorageDao)
 	d.cnfg = storage
 	d.RtnMgr = rtnm
+	if d.cnfg.Index.Storageclass != "" {
+		d.initIndex(d.cnfg.Index)
+	}
 	return nil
 }
 
@@ -74,14 +79,48 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		return nil, err
 	}
 
-	return &business.MainStorageDao{
+	idxdao, err := d.getImplIdxDao(d.cnfg.Index, tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	mdao := &business.MainStorageDao{
 		Bcksyncmode: d.cnfg.BackupSyncmode,
 		RtnMng:      d.RtnMgr,
 		StgDao:      dao,
 		BckDao:      bckdao,
 		CchDao:      cchdao,
+		IdxDao:      idxdao,
 		Tenant:      tenant,
-	}, nil
+	}
+	err = mdao.Init()
+	if err != nil {
+		return nil, err
+	}
+	return mdao, nil
+}
+
+func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string) (interfaces.Index, error) {
+	var dao interfaces.Index
+
+	if stg.Storageclass != "" {
+		s := stg.Storageclass
+		s = strings.ToLower(s)
+		switch s {
+		case mongodb.MONGO_INDEX:
+			dao = &mongodb.Index{
+				Tenant: tenant,
+			}
+			err := dao.Init()
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	if dao == nil {
+		return nil, fmt.Errorf("no searcher indexer class implementation for \"%s\" found. %w", stg.Storageclass, NO_STG_ERROR)
+	}
+	return dao, nil
 }
 
 func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
@@ -191,6 +230,17 @@ func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) 
 		}
 	}
 	return d.CchDao, nil
+}
+
+func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
+	//TODO initialise the index storage
+	s := cnfg.Storageclass
+	s = strings.ToLower(s)
+	switch s {
+	case mongodb.MONGO_INDEX:
+		mongodb.InitMongoDB(cnfg.Properties)
+	}
+	return nil
 }
 
 func (d *DefaultStorageFactory) Close() error {

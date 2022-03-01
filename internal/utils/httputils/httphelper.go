@@ -1,9 +1,9 @@
 package httputils
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -26,10 +26,10 @@ func TenantID(r *http.Request) (string, error) {
 	if claims != nil {
 		tenant, ok := claims[TenantClaim].(string)
 		if ok {
-			return tenant, nil
+			return strings.ToLower(tenant), nil
 		} else {
 			if Strict {
-				return "", errors.New("no tenant claim in jwt token")
+				return "", serror.BadRequest(nil, "missing-tenant", "no tenant claim in jwt token")
 			}
 		}
 	}
@@ -41,7 +41,7 @@ func TenantID(r *http.Request) (string, error) {
 		msg := fmt.Sprintf("tenant header %s missing", tenantHeader)
 		return "", serror.BadRequest(nil, "missing-tenant", msg)
 	}
-	return id, nil
+	return strings.ToLower(id), nil
 }
 
 // Decode decodes and validates an object

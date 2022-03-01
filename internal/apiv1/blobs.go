@@ -23,6 +23,7 @@ import (
 )
 
 const blobsSubpath = "/blobs"
+const searchSubpath = "/search"
 
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
@@ -39,6 +40,12 @@ func BlobRoutes() (string, *chi.Mux) {
 	router.Get("/{id}/check", GetBlobCheck)
 	router.Post("/{id}/check", PostBlobCheck)
 	return BaseURL + blobsSubpath, router
+}
+
+func SearchRoutes() (string, *chi.Mux) {
+	router := chi.NewRouter()
+	router.Post("/", SearchBlobs)
+	return BaseURL + searchSubpath, router
 }
 
 func getBlobLocation(blobid string) string {
@@ -468,6 +475,71 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	render.JSON(response, request, idStr)
+}
+
+/*
+SearchBlobs search for blobs meeting the criteria
+query params
+offset: the offset to start from
+limit: max count of blobs
+q: query to use
+*/
+func SearchBlobs(response http.ResponseWriter, request *http.Request) {
+	tenant, err := httputils.TenantID(request)
+	if err != nil {
+		msg := fmt.Sprintf("tenant missing: %v", err)
+		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
+		return
+	}
+	url := request.URL
+	values := url.Query()
+
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	storage, err := stgf.GetStorageDao(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	offset := 0
+	if values["offset"] != nil {
+		offset, _ = strconv.Atoi(values["offset"][0])
+	}
+	limit := 1000
+	if values["limit"] != nil {
+		limit, _ = strconv.Atoi(values["limit"][0])
+	}
+	b, err := io.ReadAll(request.Body)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	query := string(b)
+	if query != "" {
+		log.Logger.Debugf("search for blobs with: %s", query)
+	}
+	blobs := make([]string, 0)
+	index := 0
+	err = storage.SearchBlobs(query, func(id string) bool {
+		if (index >= offset) && (index-offset < limit) {
+			blobs = append(blobs, id)
+		}
+		if index-offset > limit {
+			return false
+		}
+		index++
+		return true
+	})
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	render.JSON(response, request, blobs)
 }
 
 /*

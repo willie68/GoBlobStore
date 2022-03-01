@@ -36,11 +36,6 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-/*
-apVersion implementing api version for this service
-*/
-const apiVersion = "V1"
-
 var port int
 var sslport int
 var serviceURL string
@@ -82,7 +77,7 @@ func apiRoutes() (*chi.Mux, error) {
 		}),
 		httptracer.Tracer(Tracer, httptracer.Config{
 			ServiceName:    config.Servicename,
-			ServiceVersion: apiVersion,
+			ServiceVersion: "V" + apiv1.ApiVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
 				return false
@@ -143,6 +138,7 @@ func apiRoutes() (*chi.Mux, error) {
 	// building the routes
 	router.Route("/", func(r chi.Router) {
 		r.Mount(apiv1.BlobRoutes())
+		r.Mount(apiv1.SearchRoutes())
 		r.Mount(apiv1.ConfigRoutes())
 		r.Mount(apiv1.AdminRoutes())
 		r.Mount(apiv1.StoresRoutes())
@@ -164,7 +160,7 @@ func healthRoutes() *chi.Mux {
 		middleware.Recoverer,
 		httptracer.Tracer(Tracer, httptracer.Config{
 			ServiceName:    config.Servicename,
-			ServiceVersion: apiVersion,
+			ServiceVersion: "V" + apiv1.ApiVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
 				return false
