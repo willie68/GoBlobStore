@@ -81,3 +81,15 @@ In addition, a memory size is specified that specifies how much memory the files
 Why LRU? There is a corresponding note here: https://dropbox.tech/infrastructure/caching-in-theory-and-practice
 
 A bloom filter is also used to determine whether a file is in the cache. Thus, the CacheMiss case can be decided quickly in most cases (the setting is 0.1%).
+
+# Search/Index
+
+The first implemented index engine is mongodb. 
+
+For parsing the query string i use https://github.com/mna/pigeon and a PEG grammar.
+
+This is one of the moving targets. You will find the peg file in build/pigeon/parser.peg
+
+There is much more implemented in the parser file, but not everything is working. So i only documented the working parts in the readme. In addition, various automated tests are still missing. Here, above all, the evaluation of the results. The parser will be generated into pkg/model/query
+
+Be ware the parser itself is not thread safe, so a serialization is done in the API.
