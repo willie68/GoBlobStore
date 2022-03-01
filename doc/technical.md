@@ -86,7 +86,7 @@ A bloom filter is also used to determine whether a file is in the cache. Thus, t
 
 The first implemented index engine is mongodb. 
 
-For parsing the query string i use https://github.com/mna/pigeon and a PEG grammar.
+For parsing the query string i use https://github.com/mna/pigeon and a PEG grammar based on https://github.com/elireisman/go_es_query_parser
 
 This is one of the moving targets. You will find the peg file in build/pigeon/parser.peg
 
