@@ -210,7 +210,7 @@ func TestCCondition(t *testing.T) {
 }
 
 func TestQParsing(t *testing.T) {
-	ast := assert.New(t)
+	//ast := assert.New(t)
 
 	nodes := []struct {
 		n Node
@@ -310,41 +310,71 @@ func TestQParsing(t *testing.T) {
 
 	for _, n := range nodes {
 		fmt.Println(n.s)
-		st, err := ParseMe(n.s)
-		ast.Nil(err)
-		ast.NotNil(st)
-		ast.NotNil(st.Condition)
-		sn, ok := st.Condition.(Node)
-		ast.True(ok)
+		/*
+			st, err := ParseMe(n.s)
+			ast.Nil(err)
+			ast.NotNil(st)
+			ast.NotNil(st.Condition)
+			sn, ok := st.Condition.(Node)
+			ast.True(ok)
 
-		sns := sn.String()
-		fmt.Println(sns)
-		ast.Equal(n.s, sns)
+			sns := sn.String()
+			fmt.Println(sns)
+			ast.Equal(n.s, sns)
+		*/
 	}
-
 }
 
 func TestQParse(t *testing.T) {
 	ast := assert.New(t)
 
 	ss := []string{
+		`field:Willie`,
 		`field:"Willie"`,
+		`field:="Willie"`,
+		`field:!="Willie"`,
 		`field1:=123.456`,
 		`field1:<=123.456`,
 		`(field1:=123)`,
-		`!(field1:!="Hurz")`,
-		`field1:"Willie" AND !(field2:>100)`,
-		`field1:"Willie" AND !(field2:>100) AND field3:"muck"`,
-		`(field1:"Willie" AND !(field2:>100)) OR field3:"muck"`,
+		`(field1:Hurz)`,
+		`(field1:"Hurz")`,
+		`(field1:="Hurz")`,
+		`(field1:!="Hurz")`,
+		`field1:"Willie" AND field2:<=100`,
+		`field1:"Willie" OR field2:<=100`,
+		`field1:"Willie" AND field2:<=100 AND field3:"muck"`,
+		`field1:"Willie" OR field2:<=100 OR field3:"muck"`,
+		`(field1:"Willie" AND field2:<=100) OR field3:"muck"`,
 	}
 	//s := `event:"sent" AND subject:"A special offer just for you!"`
 	for _, s := range ss {
-
+		N.Reset()
 		res, err := Parse("query", []byte(s))
-		t.Logf("%s -> %s", s, res)
 		if err != nil {
 			t.Logf("Error: %v", err)
 		}
 		ast.Nil(err)
+		ast.NotNil(res)
+		q, ok := res.(Query)
+		ast.True(ok)
+		t.Logf("%s -> %s", s, q.String())
+		ast.Nil(err)
 	}
+}
+
+func TestSingleQParse(t *testing.T) {
+	ast := assert.New(t)
+
+	s := `NOT field1:"Willie" & field2:<=100 & field3:"muck"`
+	N.Reset()
+	res, err := Parse("query", []byte(s))
+	if err != nil {
+		t.Logf("Error: %v", err)
+	}
+	ast.Nil(err)
+	ast.NotNil(res)
+	q, ok := res.(Query)
+	ast.True(ok)
+	t.Logf("%s -> %s", s, q.String())
+	ast.Nil(err)
 }

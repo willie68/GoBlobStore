@@ -1,0 +1,140 @@
+{package query
+// part of the initializer code block omitted for brevity
+import (
+      "strings"
+      "strconv"
+)
+
+func toString(label interface{}) string {
+    var sb strings.Builder
+    value, ok := label.([]interface{})
+    if ok {
+        for _, i := range(value) {
+            if i == nil {
+                continue
+            }
+            switch b := i.(type) {
+            case []byte:
+                sb.WriteByte(b[0])
+            case []interface{}:
+                s := toString(i)
+                sb.WriteString(s)
+            default:
+                fmt.Printf("error: %T %+v\n", i, i)
+            }
+        }
+    }
+    intVs, ok := label.([]uint8)
+    if ok {
+        for _, i := range(intVs) {
+            sb.WriteString(string(i))
+        }
+    }
+    return sb.String()
+}
+
+func toPrimitive(label interface{}) interface{} {
+    s := toString(label)
+    f, err := strconv.ParseFloat(s, 64)
+    if err == nil {
+        return f
+    }
+    i, err := strconv.Atoi(s)
+    if err == nil {
+        return i
+    }
+    return s
+}
+
+}
+
+Input <- _ Terms _ !.
+
+Terms <- Term (_ Operator _ Term)*
+
+AndTerm <- "("? v:Variable (v2:AndVar)* ")"? {
+    andVars := v2.([]interface{})
+    variables := make([]interface{}, 0, len(andVars))
+    variables = append(variables, v.(Condition))
+    for _, r := range andVars {
+        variables = append(variables, r.(Node))
+    }
+    return Node{
+        Operator: ANDOP,
+        Conditions: variables,
+    }, nil
+}
+
+OrTerm <- "("? v:Variable (v2:OrVar)* ")"? {
+    andVars := v2.([]interface{})
+    variables := make([]interface{}, 0, len(andVars))
+    variables = append(variables, v.(Condition))
+    for _, r := range andVars {
+        variables = append(variables, r.(Node))
+    }
+    return Node{
+        Operator: OROP,
+        Conditions: variables,
+    }, nil
+}
+
+
+AndVar <- _ "AND" _ t:Term {
+    return t, nil
+}
+
+OrVar <- _ "OR" _ t:Term {
+    return t, nil
+}
+
+
+Variable <- n:"!("? f:FieldChars _ ":" _ o:Operator? _ v:Value ")"? {
+    fieldName := toString(f)
+    value := toPrimitive(v)
+    op, ok := o.(FieldOperator)
+    if !ok {
+        op = NO
+    }
+    return Condition{
+        Field: fieldName,
+        Operator: op,
+        Value: value,
+        Invert: n != nil,
+    }, nil
+}
+
+Value <- '"' ValueChars '"' / Numbers
+
+FieldChars <- [a-zA-Z0-9]+
+
+ValueChars <- [a-zA-Z0-9 !]*
+
+Numbers <- [0-9.]+
+
+Operator <- NE / LE / GE / LT / GT / EQ
+
+NE <- "!=" {
+    return NE, nil
+}
+
+LE <- "<=" {
+    return LE, nil
+}
+
+GE <- ">=" {
+    return GE, nil
+}
+
+LT <- "<" {
+    return LT, nil
+}
+
+GT <- ">" {
+    return GT, nil
+}
+
+EQ <- "=" {
+    return EQ, nil
+}
+
+_ "whitespace" <- [ \n\t\r]*

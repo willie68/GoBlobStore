@@ -159,6 +159,46 @@ For finding desired blobs you can configure an index engine. Possible options ar
 
 (sorry, nothing more at this moment)
 
+### Query Language
+
+A separate search language is supported for a search independent of the underlying index engine. This offers a simple syntax for searching.
+
+Some value element examples:
+
+`foo` ~ search the default field for value "foo" in a match or term query
+
+`35` ~ search the default field for the number 35, as an integer in a match or term query
+
+`name:Joe` ~ search the `name` field for the value "Joe" as a match or term query
+
+`count:2` ~ search the `count` field for the numerical value 2 as a match or term query
+
+`msg:"foo bar baz"` ~ search the `msg` field using a match-phrase query
+
+`amount:>=40` ~ search the `amount` field using a range query for documents where the field's value is greater than or equal to 40
+
+`created_at:<2017-10-31T00:00:00Z` ~ search the `created_at` field for dates before Halloween of 2017 (*all datetimes are in RF3339 format, UTC timezone*)
+
+`cash:[50~200]` ~ returns all docs where `cash` field's value is within a range greater than or equal to 50, and less than 200.
+
+`updated_at:[2017-04-22T09:45:00Z~2017-05-03T10:20:00Z]` ~ window ranges can also include RFC3339 UTC datetimes
+
+Any field or parenthesized grouping can be negated with the `NOT` or `!` operator:
+
+`NOT foo` ~ search for documents where default field doesn't contain the token `foo`
+
+`!c:[2017-10-29T00:00:00Z~2017-10-30T00:00:00Z]` ~ returns docs where field `c`'s date value is *not* within the range of October 29-31, 2017 (UTC)
+
+!count:>100` ~ search for documents where `count` field has a value that's *not* greater than 100
+
+`NOT (x OR y)` ~ search the default field for documents that don't contain terms "x" or "y"
+
+Parentheses for grouping of subqueries is not supported:
+
+`NOT foo:bar AND baz:99` ~ return blobs where field `foo`'s value is not "bar" and where field `baz`'s value is 99.
+
+Operators have aliases: `AND` -> `&` and `OR` -> `|`:
+
 ### Mongo Index
 
 For the mongo index option you have to provide the following information
@@ -187,6 +227,8 @@ As an example:
 ```
 #{"$and": [{"x-tenant": "MCS"}, {"x-user": "Willie"} ]}
 ```
+
+### 
 
 ## Tenant
 

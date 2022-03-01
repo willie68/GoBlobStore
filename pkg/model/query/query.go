@@ -1,7 +1,6 @@
 package query
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -45,6 +44,17 @@ type Condition struct {
 	Invert   bool
 }
 
+func (q *Query) String() string {
+	var c string
+	switch v := q.Condition.(type) {
+	case *Condition:
+		c = v.String()
+	case *Node:
+		c = v.String()
+	}
+	return fmt.Sprintf("query: %s, sort %s", c, strings.Join(q.Sorting, ","))
+}
+
 func (n *Node) String() string {
 	var b strings.Builder
 	cl := len(n.Conditions)
@@ -61,7 +71,11 @@ func (n *Node) String() string {
 		switch v := c.(type) {
 		case Condition:
 			b.WriteString(v.String())
+		case *Condition:
+			b.WriteString(v.String())
 		case Node:
+			b.WriteString(v.String())
+		case *Node:
 			b.WriteString(v.String())
 		default:
 
@@ -99,6 +113,7 @@ func (c *Condition) VtoS() string {
 	return ""
 }
 
+/*
 func ParseMe(s string) (*Query, error) {
 	res, err := Parse("query", []byte(s))
 	fmt.Printf("%v", res)
@@ -111,3 +126,4 @@ func ParseMe(s string) (*Query, error) {
 	}
 	return nil, errors.New("error on parsing")
 }
+*/
