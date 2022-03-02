@@ -84,7 +84,7 @@ A bloom filter is also used to determine whether a file is in the cache. Thus, t
 
 # Search/Index
 
-The first implemented index engine is mongodb. 
+The first implemented index engine is mongodb.
 
 For parsing the query string i use https://github.com/mna/pigeon and a PEG grammar based on https://github.com/elireisman/go_es_query_parser
 

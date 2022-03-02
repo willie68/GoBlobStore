@@ -126,6 +126,9 @@ func apiRoutes() (*chi.Mux, error) {
 			return router, err
 		}
 		log.Logger.Infof("jwt config: %v", jwtConfig)
+
+		auth.InitJWT(jwtConfig)
+
 		jwtAuth := auth.JWTAuth{
 			Config: jwtConfig,
 		}
@@ -133,6 +136,9 @@ func apiRoutes() (*chi.Mux, error) {
 			auth.Verifier(&jwtAuth),
 			auth.Authenticator,
 		)
+		api.RoleCheckerImpl = &auth.JWTRoleChecker{
+			Config: jwtConfig,
+		}
 	}
 
 	// building the routes

@@ -9,9 +9,7 @@ features
 - simple http interface
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based access control
-- automatic config substitutio
-
-Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase.
+- user defined retention per blob
 
 # Installation
 
@@ -27,13 +25,31 @@ For other options see the configuration file.
 
 # Configuration
 
-beside the simple default configuration there are some options you might want to change in your environment.
+beside the simple default configuration there are some options you might want to change in your environment. 
 
 ## Configuration file
 
 The configuration file service.yaml will be loaded from `/data/config/service.yaml`.
 
 You can simply mount this to another file system and create a new service.yaml with your own configuration. (the defaults as set in the default service.yaml will be used, if the option is not set)
+
+Every entry of the configuration can be set with a ${} macro for using environment variables for the configuration.
+
+## Storagesystem
+
+The configuration of the storage system consists of several providers. First the primary provider called `storage`
+
+The data is stored here first and forms the basis and reference for the entire storage.
+
+Second, the `backup`: each blob is stored in the backup after successful storage in the primary storage (synchronous or asynchronous). If a failure occurs in the primary storage, then the blob can be restored from the backup, automatically or manually.
+
+a `cache` can be configured as a third component. This is also operated automatically. An adjustable (number or size) amount of blobs can be kept in the cache for quick access.
+
+The storage providers in turn can be used for all 3 parts. Exceptions are, of course, specialized providers such as FastCache.
+
+Another unit is the retention system. This works independently of the Storgae providers.
+
+The `index` is the fifth element. This is used to search for specific blobs via properties, be they system or custom properties.
 
 ## S3 Storage
 
@@ -227,8 +243,6 @@ As an example:
 ```
 #{"$and": [{"x-tenant": "MCS"}, {"x-user": "Willie"} ]}
 ```
-
-### 
 
 ## Tenant
 
