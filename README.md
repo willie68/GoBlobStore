@@ -148,9 +148,9 @@ headermapping:
  apikey: X-mcs-apikey
 ```
 
-## JWT Tenant discovery and Authorisation
+## JWT Tenant discovery and Authorization
 
-Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Headermapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim on the jwt. Simply activate jwt authentication with 
+Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Header mapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim on the jwt. Simply activate jwt authentication with 
 
 ```yaml
 auth:
@@ -159,6 +159,13 @@ auth:
   validate: false
   strict: true
   tenantClaim: Tenant
+  roleClaim: 
+  rolemapping: 
+   object-reader: 
+   object-creator:
+   object-admin:
+   tenant-admin:
+   admin:
 ```
 
 `validate` `false` means, the token is not validated against the issuer. (this is normally ok, when the token is already checked by an api gateway or other serving services) (At the moment this is the only option. JWT Token validation is not implemented.)
@@ -166,6 +173,38 @@ auth:
 `strict` `true` means the call will fail, if not all needed parameters, (at the moment only the tenant) can be evaluated from the token. `false` will fall back to http headers
 
 `tenantClaim` will name the claim name of the tenant value. Defaults to Tenant (optional)
+
+### Authorization Roles
+
+In the blob storage system there are some small roles for the different parts of the blob storage service. Roles can only be used with JWT and role mapping activated. You can deactivate the role checking, if you left the roleClaim property empty.
+
+| Role name      | What the user with this role can do.                         |
+| -------------- | ------------------------------------------------------------ |
+| object-reader  | A user with this role can only read the data from his tenant. <br />And can do a search and list objects. |
+| object-creator | A user with this role can create new blobs. And only this. <br />No view or list permissions are granted |
+| object-admin   | A user with this role can view, create and delete objects. <br />And he can set/modify object properties, like metadata and retention. |
+| tenant-admin   | A user with this role can manage the tenant properties<br />(at the moment not implemented), <br />do check and restore for the whole storage |
+| admin          | A user with this role can manage the service itself, as <br />adding/deleting new tenants to the service. <br />With this role only, you can't write, read objects from any tenant. |
+
+Example with full role mapping:
+
+```yaml
+auth:
+ type: jwt
+ properties: 
+  validate: true
+  strict: true
+  tenantClaim: Tenant
+  roleClaim: Roles
+  rolemapping: 
+   object-reader: Reader
+   object-creator: Writer
+   object-admin: ObAdmin
+   tenant-admin: TnAdmin
+   admin: Admin
+```
+
+
 
 ## Index and Search
 

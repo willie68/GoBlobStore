@@ -12,7 +12,7 @@ type JWTRoleChecker struct {
 }
 
 func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) bool {
-	if !j.Config.Active {
+	if !j.Config.Active || !j.Config.RoleActive {
 		return true
 	}
 	_, claims, _ := FromContext(ctx)

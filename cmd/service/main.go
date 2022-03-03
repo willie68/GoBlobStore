@@ -274,7 +274,9 @@ func main() {
 
 	router, err := apiRoutes()
 	if err != nil {
-		log.Logger.Alertf("could not create api routes. %s", err.Error())
+		errstr := fmt.Sprintf("could not create api routes. %s", err.Error())
+		log.Logger.Alertf(errstr)
+		panic(errstr)
 	}
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		log.Logger.Infof("%s %s", method, route)

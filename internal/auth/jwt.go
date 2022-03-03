@@ -16,6 +16,7 @@ type JWTAuthConfig struct {
 	Validate    bool
 	TenantClaim string
 	Strict      bool
+	RoleActive  bool
 	RoleClaim   string
 	RoleMapping map[string]string
 }
@@ -65,6 +66,7 @@ func ParseJWTConfig(cfg config.Authentication) (JWTAuthConfig, error) {
 	if err != nil {
 		return jwtcfg, err
 	}
+	jwtcfg.RoleActive = jwtcfg.RoleClaim != ""
 	jwtcfg.RoleMapping = make(map[string]string)
 	jwtcfg.RoleMapping[string(api.R_OBJECT_READER)] = "object-reader"
 	jwtcfg.RoleMapping[string(api.R_OBJECT_CREATOR)] = "object-creator"

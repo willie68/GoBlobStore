@@ -8,6 +8,9 @@ func GetConfigValueAsString(properties map[string]interface{}, key string) (stri
 	if _, ok := properties[key]; !ok {
 		return "", fmt.Errorf("missing config value for %s", key)
 	}
+	if properties[key] == nil {
+		return "", nil
+	}
 	value, ok := properties[key].(string)
 	if !ok {
 		return "", fmt.Errorf("config value for %s is not a string", key)
@@ -19,6 +22,9 @@ func GetConfigValueAsBool(properties map[string]interface{}, key string) (bool, 
 	if _, ok := properties[key]; !ok {
 		return false, fmt.Errorf("missing config value for %s", key)
 	}
+	if properties[key] == nil {
+		return false, nil
+	}
 	value, ok := properties[key].(bool)
 	if !ok {
 		return false, fmt.Errorf("config value for %s is not a string", key)
@@ -29,6 +35,9 @@ func GetConfigValueAsBool(properties map[string]interface{}, key string) (bool, 
 func GetConfigValueAsInt(properties map[string]interface{}, key string) (int64, error) {
 	if _, ok := properties[key]; !ok {
 		return 0, fmt.Errorf("missing config value for %s", key)
+	}
+	if properties[key] == nil {
+		return 0, nil
 	}
 	var value int64
 	switch v := properties[key].(type) {

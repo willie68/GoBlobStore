@@ -45,7 +45,7 @@ auth:
     validate: true
     strict: true
     tenantClaim: Tenant
-    roleClaim: Role
+    roleClaim: 
     rolemapping: 
         object-reader: Reader
         object-creator: Creator
