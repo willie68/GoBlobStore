@@ -7,12 +7,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
 )
 
 type JWTAuthConfig struct {
-	Validate  bool
-	TenantKey string
+	Active      bool
+	Validate    bool
+	TenantClaim string
+	Strict      bool
+	RoleActive  bool
+	RoleClaim   string
+	RoleMapping map[string]string
 }
 
 type JWT struct {
@@ -27,17 +33,70 @@ type JWTAuth struct {
 	Config JWTAuthConfig
 }
 
-func ParseJWTConfig(cfg config.Authentcation) (JWTAuthConfig, error) {
-	jwtcfg := JWTAuthConfig{}
+// JWT config for the service
+var JWTConfig JWTAuthConfig = JWTAuthConfig{
+	Active: false,
+}
+
+func InitJWT(cnfg JWTAuthConfig) JWTAuth {
+	JWTConfig = cnfg
+	return JWTAuth{
+		Config: cnfg,
+	}
+}
+
+func ParseJWTConfig(cfg config.Authentication) (JWTAuthConfig, error) {
+	jwtcfg := JWTAuthConfig{
+		Active: true,
+	}
 	var err error
 	jwtcfg.Validate, err = config.GetConfigValueAsBool(cfg.Properties, "validate")
 	if err != nil {
 		return jwtcfg, err
 	}
-	//	jwtcfg.TenantKey, err = config.GetConfigValueAsString(cfg.Properties, "tenantKey")
-	//	if err != nil {
-	//		return jwtcfg, err
-	//	}
+	jwtcfg.Strict, err = config.GetConfigValueAsBool(cfg.Properties, "strict")
+	if err != nil {
+		return jwtcfg, err
+	}
+	jwtcfg.TenantClaim, err = config.GetConfigValueAsString(cfg.Properties, "tenantClaim")
+	if err != nil {
+		return jwtcfg, err
+	}
+	jwtcfg.RoleClaim, err = config.GetConfigValueAsString(cfg.Properties, "roleClaim")
+	if err != nil {
+		return jwtcfg, err
+	}
+	jwtcfg.RoleActive = jwtcfg.RoleClaim != ""
+	jwtcfg.RoleMapping = make(map[string]string)
+	jwtcfg.RoleMapping[string(api.R_OBJECT_READER)] = "object-reader"
+	jwtcfg.RoleMapping[string(api.R_OBJECT_CREATOR)] = "object-creator"
+	jwtcfg.RoleMapping[string(api.R_OBJECT_ADMIN)] = "object-admin"
+	jwtcfg.RoleMapping[string(api.R_TENANT_ADMIN)] = "tenant-admin"
+	jwtcfg.RoleMapping[string(api.R_ADMIN)] = "admin"
+
+	vm, ok := cfg.Properties["rolemapping"].(map[string]interface{})
+	if ok {
+		v, err := config.GetConfigValueAsString(vm, "object-reader")
+		if err == nil && v != "" {
+			jwtcfg.RoleMapping[string(api.R_OBJECT_READER)] = v
+		}
+		v, err = config.GetConfigValueAsString(vm, "object-creator")
+		if err == nil && v != "" {
+			jwtcfg.RoleMapping[string(api.R_OBJECT_CREATOR)] = v
+		}
+		v, err = config.GetConfigValueAsString(vm, "object-admin")
+		if err == nil && v != "" {
+			jwtcfg.RoleMapping[string(api.R_OBJECT_ADMIN)] = v
+		}
+		v, err = config.GetConfigValueAsString(vm, "tenant-admin")
+		if err == nil && v != "" {
+			jwtcfg.RoleMapping[string(api.R_TENANT_ADMIN)] = v
+		}
+		v, err = config.GetConfigValueAsString(vm, "admin")
+		if err == nil && v != "" {
+			jwtcfg.RoleMapping[string(api.R_ADMIN)] = v
+		}
+	}
 	return jwtcfg, nil
 }
 

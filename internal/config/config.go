@@ -30,7 +30,7 @@ type Config struct {
 
 	HealthCheck HealthCheck `yaml:"healthcheck"`
 
-	Auth Authentcation `yaml:"auth"`
+	Auth Authentication `yaml:"auth"`
 
 	Engine Engine `yaml:"engine"`
 
@@ -41,7 +41,7 @@ type Config struct {
 	Metrics Metrics `yaml:"metrics"`
 }
 
-type Authentcation struct {
+type Authentication struct {
 	Type       string                 `yaml:"type"`
 	Properties map[string]interface{} `yaml:"properties"`
 }

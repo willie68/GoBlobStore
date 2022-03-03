@@ -45,3 +45,10 @@ auth:
     validate: true
     strict: true
     tenantClaim: Tenant
+    roleClaim: 
+    rolemapping: 
+        object-reader: Reader
+        object-creator: Creator
+        object-admin: ObAdmin
+        tenant-admin: TnAdmin
+        admin: Admin

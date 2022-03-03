@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/willie68/GoBlobStore/internal/api"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 
 	"github.com/go-chi/chi/v5"
@@ -20,10 +21,10 @@ AdminRoutes getting all routes for the admin endpoint
 */
 func AdminRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.Get("/check", GetCheck)
-	router.Post("/check", PostCheck)
-	router.Get("/restore", GetRestore)
-	router.Post("/restore", PostRestore)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/check", GetCheck)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Post("/check", PostCheck)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/restore", GetRestore)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Post("/restore", PostRestore)
 	return BaseURL + adminSubpath, router
 }
 

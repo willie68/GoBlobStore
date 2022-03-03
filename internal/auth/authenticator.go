@@ -52,7 +52,6 @@ func Authenticator(next http.Handler) http.Handler {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-
 		// Token is authenticated, pass it through
 		next.ServeHTTP(w, r)
 	})

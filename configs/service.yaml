@@ -30,6 +30,15 @@ engine:
       rootpath: /data/cache
       maxcount: 100000
       maxramusage: 1024000000
+  backup:
+    storageclass: #S3Storage
+    properties:
+      endpoint: #"http://127.0.0.1:9002"
+      bucket: #"goblobstore"
+      accessKey: 
+      secretKey: 
+      password: 
+      insecure: true
 headermapping:
   headerprefix: x-
   retention:
@@ -37,4 +46,15 @@ headermapping:
   apikey: 
   filename:
 auth:
-  type: none
+  type: jwt
+  properties: 
+    validate: true
+    strict: true
+    tenantClaim: Tenant
+    roleClaim: Roles
+    rolemapping: 
+        object-reader:
+        object-creator:
+        object-admin:
+        tenant-admin:
+        admin:

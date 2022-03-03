@@ -9,9 +9,7 @@ features
 - simple http interface
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based access control
-- automatic config substitutio
-
-Retention is given in minutes from CreationDate or, if a reset retention is called, from RetentionBase.
+- user defined retention per blob
 
 # Installation
 
@@ -27,13 +25,31 @@ For other options see the configuration file.
 
 # Configuration
 
-beside the simple default configuration there are some options you might want to change in your environment.
+beside the simple default configuration there are some options you might want to change in your environment. 
 
 ## Configuration file
 
 The configuration file service.yaml will be loaded from `/data/config/service.yaml`.
 
 You can simply mount this to another file system and create a new service.yaml with your own configuration. (the defaults as set in the default service.yaml will be used, if the option is not set)
+
+Every entry of the configuration can be set with a ${} macro for using environment variables for the configuration.
+
+## Storagesystem
+
+The configuration of the storage system consists of several providers. First the primary provider called `storage`
+
+The data is stored here first and forms the basis and reference for the entire storage.
+
+Second, the `backup`: each blob is stored in the backup after successful storage in the primary storage (synchronous or asynchronous). If a failure occurs in the primary storage, then the blob can be restored from the backup, automatically or manually.
+
+a `cache` can be configured as a third component. This is also operated automatically. An adjustable (number or size) amount of blobs can be kept in the cache for quick access.
+
+The storage providers in turn can be used for all 3 parts. Exceptions are, of course, specialized providers such as FastCache.
+
+Another unit is the retention system. This works independently of the Storgae providers.
+
+The `index` is the fifth element. This is used to search for specific blobs via properties, be they system or custom properties.
 
 ## S3 Storage
 
@@ -132,9 +148,9 @@ headermapping:
  apikey: X-mcs-apikey
 ```
 
-## JWT Tenant discovery and Authorisation
+## JWT Tenant discovery and Authorization
 
-Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Headermapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim on the jwt. Simply activate jwt authentication with 
+Normally the tenant for the blob storage is discovered by a seperate header. (As you can read in the chapter Header mapping). If you are using JWT for authentication/authorization, the Tenant can be discovered by an extra claim on the jwt. Simply activate jwt authentication with 
 
 ```yaml
 auth:
@@ -143,6 +159,13 @@ auth:
   validate: false
   strict: true
   tenantClaim: Tenant
+  roleClaim: 
+  rolemapping: 
+   object-reader: 
+   object-creator:
+   object-admin:
+   tenant-admin:
+   admin:
 ```
 
 `validate` `false` means, the token is not validated against the issuer. (this is normally ok, when the token is already checked by an api gateway or other serving services) (At the moment this is the only option. JWT Token validation is not implemented.)
@@ -150,6 +173,38 @@ auth:
 `strict` `true` means the call will fail, if not all needed parameters, (at the moment only the tenant) can be evaluated from the token. `false` will fall back to http headers
 
 `tenantClaim` will name the claim name of the tenant value. Defaults to Tenant (optional)
+
+### Authorization Roles
+
+In the blob storage system there are some small roles for the different parts of the blob storage service. Roles can only be used with JWT and role mapping activated. You can deactivate the role checking, if you left the roleClaim property empty.
+
+| Role name      | What the user with this role can do.                         |
+| -------------- | ------------------------------------------------------------ |
+| object-reader  | A user with this role can only read the data from his tenant. <br />And can do a search and list objects. |
+| object-creator | A user with this role can create new blobs. And only this. <br />No view or list permissions are granted |
+| object-admin   | A user with this role can view, create and delete objects. <br />And he can set/modify object properties, like metadata and retention. |
+| tenant-admin   | A user with this role can manage the tenant properties<br />(at the moment not implemented), <br />do check and restore for the whole storage |
+| admin          | A user with this role can manage the service itself, as <br />adding/deleting new tenants to the service. <br />With this role only, you can't write, read objects from any tenant. |
+
+Example with full role mapping:
+
+```yaml
+auth:
+ type: jwt
+ properties: 
+  validate: true
+  strict: true
+  tenantClaim: Tenant
+  roleClaim: Roles
+  rolemapping: 
+   object-reader: Reader
+   object-creator: Writer
+   object-admin: ObAdmin
+   tenant-admin: TnAdmin
+   admin: Admin
+```
+
+
 
 ## Index and Search
 
@@ -227,8 +282,6 @@ As an example:
 ```
 #{"$and": [{"x-tenant": "MCS"}, {"x-user": "Willie"} ]}
 ```
-
-### 
 
 ## Tenant
 

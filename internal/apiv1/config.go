@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/dao"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
@@ -20,10 +21,10 @@ ConfigRoutes getting all routes for the config endpoint
 */
 func ConfigRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.Post("/", PostConfig)
-	router.Get("/", GetConfig)
-	router.Delete("/", DeleteConfig)
-	router.Get("/size", GetConfigSize)
+	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Post("/", PostCreateTenant)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/", GetTenantConfig)
+	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Delete("/", DeleteTenant)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/size", GetTenantSize)
 	return BaseURL + configSubpath, router
 }
 
@@ -32,18 +33,18 @@ StoresRoutes getting all routes for the stores endpoint, this is part of the new
 */
 func StoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.Post("/", PostConfig)
-	router.Get("/", GetConfig)
-	router.Delete("/", DeleteConfig)
-	router.Get("/size", GetConfigSize)
+	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Post("/", PostCreateTenant)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/", GetTenantConfig)
+	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Delete("/", DeleteTenant)
+	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/size", GetTenantSize)
 	return BaseURL + storesSubpath, router
 }
 
 /*
-GetConfig
+GetTenantConfig
 because of the automatic store creation, the value is more likely that data is stored for this tenant
 */
-// GetConfig getting if a store for a tenant is initialised
+// GetTenantConfig getting if a store for a tenant is initialised
 // @Summary getting if a store for a tenant is initialised, because of the automatic store creation, the value is more likely that data is stored for this tenant
 // @Tags configs
 // @Accept  json
@@ -54,7 +55,7 @@ because of the automatic store creation, the value is more likely that data is s
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
 // @Router /config [get]
-func GetConfig(response http.ResponseWriter, request *http.Request) {
+func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -73,7 +74,7 @@ func GetConfig(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, rsp)
 }
 
-// PostConfig create a new store for a tenant because of the automatic store creation, this method will always return 201
+// PostCreateTenant create a new store for a tenant because of the automatic store creation, this method will always return 201
 // @Summary create a new store for a tenant because of the automatic store creation, this method will always return 201
 // @Tags configs
 // @Accept  json
@@ -84,7 +85,7 @@ func GetConfig(response http.ResponseWriter, request *http.Request) {
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
 // @Router /config [post]
-func PostConfig(response http.ResponseWriter, request *http.Request) {
+func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -111,7 +112,7 @@ func PostConfig(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, rsp)
 }
 
-// DeleteConfig deleting the store for a tenant, this will automatically delete all data in the store async
+// DeleteTenant deleting the store for a tenant, this will automatically delete all data in the store async
 // @Summary deleting the store for a tenant, this will automatically delete all data in the store. On sync you will get an empty string as process, for async operations you will get an id of the deletion process
 // @Tags configs
 // @Accept  json
@@ -122,7 +123,7 @@ func PostConfig(response http.ResponseWriter, request *http.Request) {
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
 // @Router /config [delete]
-func DeleteConfig(response http.ResponseWriter, request *http.Request) {
+func DeleteTenant(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"
@@ -150,7 +151,7 @@ func DeleteConfig(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, rsp)
 }
 
-// GetConfigSize size of the store for a tenant
+// GetTenantSize size of the store for a tenant
 // @Summary Get the size of the store for a tenant
 // @Tags configs
 // @Accept  json
@@ -161,7 +162,7 @@ func DeleteConfig(response http.ResponseWriter, request *http.Request) {
 // @Failure 400 {object} serror.Serr "client error information as json"
 // @Failure 500 {object} serror.Serr "server error information as json"
 // @Router /config/size [get]
-func GetConfigSize(response http.ResponseWriter, request *http.Request) {
+func GetTenantSize(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
 		msg := "tenant header missing"

@@ -30,21 +30,21 @@ var BlobStore interfaces.BlobStorageDao
 
 func BlobRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.Post("/", PostBlob)
-	router.Get("/", GetBlobs)
-	router.Get("/{id}", GetBlob)
-	router.Get("/{id}/info", GetBlobInfo)
-	router.Put("/{id}/info", PutBlobInfo)
-	router.Delete("/{id}", DeleteBlob)
-	router.Get("/{id}/resetretention", GetBlobResetRetention)
-	router.Get("/{id}/check", GetBlobCheck)
-	router.Post("/{id}/check", PostBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_CREATOR})).Post("/", PostBlob)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/", GetBlobs)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/{id}", GetBlob)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/{id}/info", GetBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Put("/{id}/info", PutBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Delete("/{id}", DeleteBlob)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Get("/{id}/resetretention", GetBlobResetRetention)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Get("/{id}/check", GetBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Post("/{id}/check", PostBlobCheck)
 	return BaseURL + blobsSubpath, router
 }
 
 func SearchRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.Post("/", SearchBlobs)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Post("/", SearchBlobs)
 	return BaseURL + searchSubpath, router
 }
 
