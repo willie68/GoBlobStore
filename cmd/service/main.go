@@ -139,6 +139,9 @@ func apiRoutes() (*chi.Mux, error) {
 		api.RoleCheckerImpl = &auth.JWTRoleChecker{
 			Config: jwtConfig,
 		}
+		api.TntCheckerImpl = &auth.JWTTntChecker{
+			Config: jwtConfig,
+		}
 	}
 
 	// building the routes
@@ -148,6 +151,7 @@ func apiRoutes() (*chi.Mux, error) {
 		r.Mount(apiv1.ConfigRoutes())
 		r.Mount(apiv1.AdminRoutes())
 		r.Mount(apiv1.StoresRoutes())
+		r.Mount(apiv1.TenantStoresRoutes())
 		r.Mount("/", health.Routes())
 		if serviceConfig.Metrics.Enable {
 			r.Mount("/metrics", promhttp.Handler())

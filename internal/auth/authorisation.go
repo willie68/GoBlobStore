@@ -11,6 +11,10 @@ type JWTRoleChecker struct {
 	Config JWTAuthConfig
 }
 
+type JWTTntChecker struct {
+	Config JWTAuthConfig
+}
+
 func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) bool {
 	if !j.Config.Active || !j.Config.RoleActive {
 		return true
@@ -28,6 +32,27 @@ func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) 
 				if strings.EqualFold(ur, string(r)) {
 					return true
 				}
+			}
+		}
+	}
+	return false
+}
+
+func (j JWTTntChecker) CheckTenant(ctx context.Context, tenant string) bool {
+	if !j.Config.Active {
+		return true
+	}
+	if j.Config.TenantClaim == "" {
+		return true
+	}
+	_, claims, _ := FromContext(ctx)
+	if claims != nil {
+		jwtTenant, ok := claims[j.Config.TenantClaim].(string)
+		if ok {
+			return strings.EqualFold(tenant, jwtTenant)
+		} else {
+			if j.Config.Strict {
+				return false
 			}
 		}
 	}

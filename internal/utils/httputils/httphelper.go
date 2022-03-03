@@ -21,6 +21,10 @@ var Strict bool
 
 // TenantID gets the tenant-id of the given request
 func TenantID(r *http.Request) (string, error) {
+	tntID := chi.URLParam(r, api.URL_PARAM_TENANT_ID)
+	if tntID != "" {
+		return strings.ToLower(tntID), nil
+	}
 	var id string
 	_, claims, _ := auth.FromContext(r.Context())
 	if claims != nil {

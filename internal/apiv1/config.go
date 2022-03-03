@@ -13,9 +13,6 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const configSubpath = "/config"
-const storesSubpath = "/stores"
-
 /*
 ConfigRoutes getting all routes for the config endpoint
 */
@@ -37,7 +34,7 @@ func StoresRoutes() (string, *chi.Mux) {
 	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/", GetTenantConfig)
 	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Delete("/", DeleteTenant)
 	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/size", GetTenantSize)
-	return BaseURL + storesSubpath, router
+	return BaseURL + configSubpath + storesSubpath, router
 }
 
 /*
