@@ -286,3 +286,24 @@ As an example:
 ## Tenant
 
 The tenant is the main part to split up the data. Every tenant is based on the tenant name or id. This id should be case insensitive and should only consist of chars which are valid for filenames.
+
+The tenant can be given in different ways.
+
+First via subpath:
+the main routes are:
+`/api/v1/stores/{tntid}/blobs/` 
+
+`/api/v1/stores/{tntid}/search/`
+
+where tntid id is the id of the tenant. 
+
+Second via jwt: you can have a configurable claim for the tenant, which is used in every tenant based call. So than you can use the following routes. The config and admin routes are intentionally only avaible without tenant subfolder.
+
+`/api/v1/blobs/`
+`/api/v1/search/`
+`/api/v1/config/`
+`/api/v1/config/stores/`
+`/api/v1/admin/check`
+`/api/v1/admin/restore`
+
+The third option is a configurable http header. This order is also the order for evaluating. With one exclusion, if you try to select the tenant via route and jwt tenant evaluation is active, than both tenants will be checked to be equal. Otherwise no access is given.

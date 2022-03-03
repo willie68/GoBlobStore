@@ -14,3 +14,5 @@ const FilenameKey = "filename"
 
 // all headers with this prefix will be saved, too
 const HeaderPrefixKey = "headerprefix"
+
+const URL_PARAM_TENANT_ID = "tntid"

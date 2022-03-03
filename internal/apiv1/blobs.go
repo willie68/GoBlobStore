@@ -22,9 +22,6 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const blobsSubpath = "/blobs"
-const searchSubpath = "/search"
-
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
 
@@ -46,6 +43,28 @@ func SearchRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Post("/", SearchBlobs)
 	return BaseURL + searchSubpath, router
+}
+
+/*
+StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
+*/
+func TenantStoresRoutes() (string, *chi.Mux) {
+	router := chi.NewRouter()
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_CREATOR}), api.TenantCheck()).Post(tenantURL("/"), PostBlob)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/"), GetBlobs)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/{id}"), GetBlob)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/{id}/info"), GetBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Put(tenantURL("/{id}/info"), PutBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Delete(tenantURL("/{id}"), DeleteBlob)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Get(tenantURL("/{id}/resetretention"), GetBlobResetRetention)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Get(tenantURL("/{id}/check"), GetBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Post(tenantURL("/{id}/check"), PostBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Post(fmt.Sprintf("/{%s}%s", api.URL_PARAM_TENANT_ID, searchSubpath), SearchBlobs)
+	return BaseURL + storesSubpath, router
+}
+
+func tenantURL(subpath string) string {
+	return fmt.Sprintf("/{%s}%s%s", api.URL_PARAM_TENANT_ID, blobsSubpath, subpath)
 }
 
 func getBlobLocation(blobid string) string {

@@ -14,8 +14,6 @@ import (
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 )
 
-const adminSubpath = "/admin"
-
 /*
 AdminRoutes getting all routes for the admin endpoint
 */
