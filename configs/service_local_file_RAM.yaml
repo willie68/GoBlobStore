@@ -25,14 +25,9 @@ engine:
       maxcount: 100000
       maxramusage: 1024000000
   index:
-    storageclass: MongoDB
+    storageclass: bluge
     properties:
-      hosts: 
-        - 127.0.0.1:27017
-      username:
-      password:
-      authdatabase: blobstore
-      database: blobstore
+      rootpath: R:/blbstg
 headermapping:
   headerprefix: x-
   retention:

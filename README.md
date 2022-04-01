@@ -254,6 +254,19 @@ Parentheses for grouping of subqueries is not supported:
 
 Operators have aliases: `AND` -> `&` and `OR` -> `|`:
 
+### Internal Fulltextindex
+
+For smaller installations there is a small fulltext implementation based on bluge. (https://blugelabs.com/)
+
+```yaml
+engine:
+...
+ index:
+  storageclass: Bluge
+```
+
+This index uses the already defined storage
+
 ### Mongo Index
 
 For the mongo index option you have to provide the following information
