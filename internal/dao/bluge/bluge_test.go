@@ -1,38 +1,25 @@
 package bluge
 
 import (
-	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/willie68/GoBlobStore/pkg/model"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var cnfg map[string]interface{}
 
 func InitT(ast *assert.Assertions) {
 	cnfg = make(map[string]interface{})
-	cnfg["hosts"] = []string{"127.0.0.1:27017"}
-	cnfg["username"] = "blobstore"
-	cnfg["password"] = "blobstore"
-	cnfg["authdatabase"] = "blobstore"
-	cnfg["database"] = "blobstore"
+	cnfg["rootpath"] = "r:\\blbstg\\"
 
-	err := InitMongoDB(cnfg)
+	err := InitBluge(cnfg)
 	ast.Nil(err)
-	ast.NotNil(client)
-	ast.NotNil(database)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	err = client.Ping(ctx, readpref.Primary())
-	ast.Nil(err)
+	ast.NotNil(bcnfg)
 }
 
-func TestMongoConnect(t *testing.T) {
+func TestBlugeConnect(t *testing.T) {
 
 	ast := assert.New(t)
 
@@ -42,7 +29,8 @@ func TestMongoConnect(t *testing.T) {
 		Tenant: "MCS",
 	}
 	idx.Init()
-	ast.NotNil(idx.col)
+	ast.NotNil(idx.rootpath)
+	ast.NotNil(idx.config)
 
 	b := model.BlobDescription{
 		BlobID:        "123456789",
@@ -64,7 +52,15 @@ func TestMongoConnect(t *testing.T) {
 	ast.Nil(err)
 
 	rets := make([]string, 0)
-	err = idx.Search(`#{"$and": [{"x-tenant": "MCS"}, {"x-user": "Hallo"} ]}`, func(id string) bool {
+	err = idx.Search(`#x-user: Hallo`, func(id string) bool {
+		rets = append(rets, id)
+		return true
+	})
+	ast.Nil(err)
+	ast.Equal(1, len(rets))
+
+	rets = make([]string, 0)
+	err = idx.Search(`#x-user: Hallo2`, func(id string) bool {
 		rets = append(rets, id)
 		return true
 	})
@@ -72,6 +68,7 @@ func TestMongoConnect(t *testing.T) {
 	ast.Equal(1, len(rets))
 }
 
+/*
 func TestQueryConvertion(t *testing.T) {
 	ast := assert.New(t)
 
@@ -134,3 +131,4 @@ func TestQueryConvertion(t *testing.T) {
 	fmt.Println(s)
 	ast.Equal(str, s)
 }
+*/

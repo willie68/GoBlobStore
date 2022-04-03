@@ -10,7 +10,6 @@ import (
 
 	"github.com/blugelabs/bluge"
 	querystr "github.com/blugelabs/query_string"
-	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -19,8 +18,6 @@ import (
 const BLUGE_INDEX = "bluge"
 
 var _ interfaces.Index = &Index{}
-
-var MongoCnfg config.Storage
 
 type Index struct {
 	Tenant   string
@@ -123,10 +120,22 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		switch v := i.(type) {
 		case int:
 			doc.AddField(bluge.NewNumericField(k, float64(v)).StoreValue())
+		case []int:
+			for _, y := range v {
+				doc.AddField(bluge.NewNumericField(k, float64(y)).StoreValue())
+			}
 		case int64:
 			doc.AddField(bluge.NewNumericField(k, float64(v)).StoreValue())
+		case []int64:
+			for _, y := range v {
+				doc.AddField(bluge.NewNumericField(k, float64(y)).StoreValue())
+			}
 		case string:
 			doc.AddField(bluge.NewTextField(k, v).StoreValue())
+		case []string:
+			for _, y := range v {
+				doc.AddField(bluge.NewTextField(k, y).StoreValue())
+			}
 		default:
 		}
 	}

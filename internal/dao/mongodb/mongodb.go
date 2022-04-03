@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -25,8 +24,6 @@ import (
 const MONGO_INDEX = "mongodb"
 
 var _ interfaces.Index = &Index{}
-
-var MongoCnfg config.Storage
 
 type Index struct {
 	Tenant string
