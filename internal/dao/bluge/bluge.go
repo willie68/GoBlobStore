@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/blugelabs/bluge"
 	querystr "github.com/blugelabs/query_string"
@@ -104,19 +103,21 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 	}
 	defer writer.Close()
 	// index some data
-	doc := bluge.NewDocument(b.BlobID).
-		AddField(bluge.NewTextField("StoreID", b.StoreID).StoreValue()).
-		AddField(bluge.NewNumericField("ContentLength", float64(b.ContentLength)).StoreValue()).
-		AddField(bluge.NewTextField("ContentType", b.ContentType).StoreValue()).
-		AddField(bluge.NewDateTimeField("CreationDate", time.Unix(int64(b.CreationDate), 0))).
-		AddField(bluge.NewTextField("Filename", b.Filename).StoreValue()).
-		AddField(bluge.NewTextField("TenantID", b.TenantID).StoreValue()).
-		AddField(bluge.NewTextField("BlobID", b.BlobID).StoreValue()).
-		AddField(bluge.NewDateTimeField("LastAccess", time.Unix(int64(b.LastAccess), 0))).
-		AddField(bluge.NewNumericField("Retention", float64(b.Retention)).StoreValue()).
-		AddField(bluge.NewTextField("BlobURL", b.BlobURL).StoreValue()).
-		AddField(bluge.NewTextField("Hash", b.Hash).StoreValue())
-	for k, i := range b.Properties {
+	doc := bluge.NewDocument(b.BlobID)
+	/*.
+	AddField(bluge.NewTextField("StoreID", b.StoreID).StoreValue()).
+	AddField(bluge.NewNumericField("ContentLength", float64(b.ContentLength)).StoreValue()).
+	AddField(bluge.NewTextField("ContentType", b.ContentType).StoreValue()).
+	AddField(bluge.NewDateTimeField("CreationDate", time.Unix(int64(b.CreationDate), 0))).
+	AddField(bluge.NewTextField("Filename", b.Filename).StoreValue()).
+	AddField(bluge.NewTextField("TenantID", b.TenantID).StoreValue()).
+	AddField(bluge.NewTextField("BlobID", b.BlobID).StoreValue()).
+	AddField(bluge.NewDateTimeField("LastAccess", time.Unix(int64(b.LastAccess), 0))).
+	AddField(bluge.NewNumericField("Retention", float64(b.Retention)).StoreValue()).
+	AddField(bluge.NewTextField("BlobURL", b.BlobURL).StoreValue()).
+	AddField(bluge.NewTextField("Hash", b.Hash).StoreValue())
+	*/
+	for k, i := range b.Map() {
 		switch v := i.(type) {
 		case int:
 			doc.AddField(bluge.NewNumericField(k, float64(v)).StoreValue())
