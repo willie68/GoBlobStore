@@ -58,6 +58,7 @@ func TestBlugeConnect(t *testing.T) {
 	})
 	ast.Nil(err)
 	ast.Equal(1, len(rets))
+	ast.Equal(b.BlobID, rets[0])
 
 	rets = make([]string, 0)
 	err = idx.Search(`#x-user: Hallo2`, func(id string) bool {
@@ -66,6 +67,25 @@ func TestBlugeConnect(t *testing.T) {
 	})
 	ast.Nil(err)
 	ast.Equal(1, len(rets))
+	ast.Equal(b.BlobID, rets[0])
+
+	rets = make([]string, 0)
+	err = idx.Search(`#x-tenant: MCS`, func(id string) bool {
+		rets = append(rets, id)
+		return true
+	})
+	ast.Nil(err)
+	ast.Equal(1, len(rets))
+	ast.Equal(b.BlobID, rets[0])
+
+	rets = make([]string, 0)
+	err = idx.Search(`#contentType: text/plain`, func(id string) bool {
+		rets = append(rets, id)
+		return true
+	})
+	ast.Nil(err)
+	ast.Equal(1, len(rets))
+	ast.Equal(b.BlobID, rets[0])
 }
 
 /*

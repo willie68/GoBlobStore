@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/blugelabs/bluge"
 	querystr "github.com/blugelabs/query_string"
@@ -22,6 +24,7 @@ type Index struct {
 	Tenant   string
 	rootpath string
 	config   bluge.Config
+	wsync    sync.Mutex
 }
 
 type Config struct {
@@ -97,26 +100,8 @@ func (m *Index) Search(query string, callback func(id string) bool) error {
 }
 
 func (m *Index) Index(id string, b model.BlobDescription) error {
-	writer, err := bluge.OpenWriter(m.config)
-	if err != nil {
-		return err
-	}
-	defer writer.Close()
 	// index some data
 	doc := bluge.NewDocument(b.BlobID)
-	/*.
-	AddField(bluge.NewTextField("StoreID", b.StoreID).StoreValue()).
-	AddField(bluge.NewNumericField("ContentLength", float64(b.ContentLength)).StoreValue()).
-	AddField(bluge.NewTextField("ContentType", b.ContentType).StoreValue()).
-	AddField(bluge.NewDateTimeField("CreationDate", time.Unix(int64(b.CreationDate), 0))).
-	AddField(bluge.NewTextField("Filename", b.Filename).StoreValue()).
-	AddField(bluge.NewTextField("TenantID", b.TenantID).StoreValue()).
-	AddField(bluge.NewTextField("BlobID", b.BlobID).StoreValue()).
-	AddField(bluge.NewDateTimeField("LastAccess", time.Unix(int64(b.LastAccess), 0))).
-	AddField(bluge.NewNumericField("Retention", float64(b.Retention)).StoreValue()).
-	AddField(bluge.NewTextField("BlobURL", b.BlobURL).StoreValue()).
-	AddField(bluge.NewTextField("Hash", b.Hash).StoreValue())
-	*/
 	for k, i := range b.Map() {
 		switch v := i.(type) {
 		case int:
@@ -137,9 +122,23 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 			for _, y := range v {
 				doc.AddField(bluge.NewTextField(k, y).StoreValue())
 			}
+		case time.Time:
+			doc.AddField(bluge.NewDateTimeField(k, v).StoreValue())
+		case []time.Time:
+			for _, y := range v {
+				doc.AddField(bluge.NewDateTimeField(k, y).StoreValue())
+			}
 		default:
 		}
 	}
+	
+	m.wsync.Lock()
+	defer m.wsync.Unlock()
+	writer, err := bluge.OpenWriter(m.config)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
 
 	err = writer.Update(doc.ID(), doc)
 	if err != nil {
