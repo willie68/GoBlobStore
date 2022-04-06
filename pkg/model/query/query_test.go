@@ -353,7 +353,7 @@ func TestQParse(t *testing.T) {
 		if err != nil {
 			t.Logf("Error: %v", err)
 		}
-		ast.Nil(err)
+		ast.Nil(err, s)
 		ast.NotNil(res)
 		q, ok := res.(Query)
 		ast.True(ok)
@@ -371,7 +371,7 @@ func TestSingleQParse(t *testing.T) {
 	if err != nil {
 		t.Logf("Error: %v", err)
 	}
-	ast.Nil(err)
+	ast.Nil(err, s)
 	ast.NotNil(res)
 	q, ok := res.(Query)
 	ast.True(ok)

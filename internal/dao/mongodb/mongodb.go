@@ -286,7 +286,7 @@ func oToMdb(c query.Condition) string {
 	return ""
 }
 
-//oToMdb converting a node into a mongo query string
+//nToMdb converting a node into a mongo query string
 func nToMdb(n query.Node) string {
 	var b strings.Builder
 	op := fmt.Sprintf("$%s", strings.ToLower(string(n.Operator)))

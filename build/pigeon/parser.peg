@@ -106,7 +106,7 @@ WinNumber    <- (DIGIT / DOT/ DASH) (DIGIT / DASH / EEE / DOT)*
 Date    <- Digits4 DASH Digits2 DASH Digits2
 Time    <- Digits2 COLON Digits2 COLON Digits2
 Word    <- [a-zA-Z_] [a-zA-Z0-9_]*                         { return string(c.text), nil }
-Number  <- (DIGIT / DOT/ DASH) (DIGIT / DASH / EEE / DOT)* { return string(c.text), nil }
+Number  <- (DIGIT / DOT/ DASH) (DIGIT / DASH / EEE / DOT)* { return strconv.ParseFloat(string(c.text), 64) }
 Digits2 <- DIGIT DIGIT
 Digits4 <- Digits2 Digits2
 

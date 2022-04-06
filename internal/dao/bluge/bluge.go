@@ -3,6 +3,7 @@ package bluge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
+	"github.com/willie68/GoBlobStore/pkg/model/query"
 )
 
 const BLUGE_INDEX = "bluge"
@@ -25,6 +27,7 @@ type Index struct {
 	rootpath string
 	config   bluge.Config
 	wsync    sync.Mutex
+	qsync    sync.Mutex
 }
 
 type Config struct {
@@ -66,6 +69,17 @@ func (m *Index) Search(query string, callback func(id string) bool) error {
 		if err != nil {
 			return err
 		}
+	} else {
+		// parse query string to Mongo query
+		q, err := m.buildAST(query)
+		if err != nil {
+			return err
+		}
+
+		bq, err = toBlugeQuery(*q)
+		if err != nil {
+			return err
+		}
 	}
 	reader, err := bluge.OpenReader(m.config)
 	if err != nil {
@@ -97,6 +111,21 @@ func (m *Index) Search(query string, callback func(id string) bool) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Index) buildAST(q string) (*query.Query, error) {
+	m.qsync.Lock()
+	defer m.qsync.Unlock()
+	query.N.Reset()
+	res, err := query.Parse("query", []byte(q))
+	if err != nil {
+		return nil, err
+	}
+	qu, ok := res.(query.Query)
+	if !ok {
+		return nil, errors.New("unknown result")
+	}
+	return &qu, nil
 }
 
 func (m *Index) Index(id string, b model.BlobDescription) error {
@@ -131,7 +160,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		default:
 		}
 	}
-	
+
 	m.wsync.Lock()
 	defer m.wsync.Unlock()
 	writer, err := bluge.OpenWriter(m.config)

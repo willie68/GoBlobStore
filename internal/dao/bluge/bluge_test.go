@@ -88,67 +88,89 @@ func TestBlugeConnect(t *testing.T) {
 	ast.Equal(b.BlobID, rets[0])
 }
 
-/*
+var tests = []struct {
+	q string
+	n int
+}{
+	{
+		q: `x-tenant:"MCS"`,
+		n: 1,
+	},
+	{
+		q: `x-tenant:"MCS" AND x-user:"Hallo"`,
+		n: 1,
+	},
+	{
+		q: `x-intfield:=1234`,
+		n: 1,
+	},
+	{
+		q: `x-intfield:>1234`,
+		n: 0,
+	},
+	{
+		q: `x-intfield:<1234`,
+		n: 0,
+	},
+	{
+		q: `x-intfield:>=1234`,
+		n: 1,
+	},
+	{
+		q: `x-intfield:<=1234`,
+		n: 1,
+	},
+	{
+		q: `x-intfield:!=1234`,
+		n: 0,
+	},
+}
+
 func TestQueryConvertion(t *testing.T) {
 	ast := assert.New(t)
 
-	str := `#{"$or": [{"$and": [{"field1": "Willie"}, {"field2": {"$gt": 100}}, {"field3": {"$not": {"$eq": "murks"}}}]}, {"$and": [{"field1": "Max"}, {"field2": {"$lte": 100}}, {"field3": {"$ne": "murks"}}]}]}`
-	//#{"$or": [ {"$and": [ {"field1":"Willie"},{field2:>100}) OR (field1:"Max" AND field2:<=100))`
-
-	q := model.Query{
-		Condition: model.Node{
-			Operator: model.OROP,
-			Conditions: []interface{}{
-				model.Node{
-					Operator: model.ANDOP,
-					Conditions: []interface{}{
-						model.Condition{
-							Field:    "field1",
-							Operator: model.NO,
-							Value:    "Willie",
-						},
-						model.Condition{
-							Field:    "field2",
-							Operator: model.GT,
-							Value:    100,
-						},
-						model.Condition{
-							Field:    "field3",
-							Operator: model.EQ,
-							Invert:   true,
-							Value:    "murks",
-						},
-					},
-				},
-				model.Node{
-					Operator: model.ANDOP,
-					Conditions: []interface{}{
-						model.Condition{
-							Field:    "field1",
-							Operator: model.NO,
-							Value:    "Max",
-						},
-						model.Condition{
-							Field:    "field2",
-							Operator: model.LE,
-							Value:    100,
-						},
-						model.Condition{
-							Field:    "field3",
-							Operator: model.NE,
-							Value:    "murks",
-						},
-					},
-				},
-			},
-		},
+	idx := Index{
+		Tenant: "MCS",
 	}
+	idx.Init()
+	ast.NotNil(idx.rootpath)
+	ast.NotNil(idx.config)
 
-	ast.NotNil(q)
+	b := getBlobDescription()
 
-	s := ToMongoQuery(q)
-	fmt.Println(str)
-	fmt.Println(s)
-	ast.Equal(str, s)
+	err := idx.Index(b.BlobID, b)
+	ast.Nil(err)
+
+	for _, t := range tests {
+		rets := make([]string, 0)
+		err = idx.Search(t.q, func(id string) bool {
+			rets = append(rets, id)
+			return true
+		})
+		ast.Nil(err)
+		ast.Equal(t.n, len(rets), t.q)
+		if t.n == 1 && len(rets) > 0 {
+			ast.Equal(b.BlobID, rets[0])
+		}
+	}
 }
-*/
+
+func getBlobDescription() model.BlobDescription {
+	b := model.BlobDescription{
+		BlobID:        "123456789",
+		StoreID:       "MCS",
+		TenantID:      "MCS",
+		ContentLength: 22,
+		ContentType:   "text/plain",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		Filename:      "test.txt",
+		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		Retention:     180000,
+		Properties:    make(map[string]interface{}),
+	}
+	b.Properties["x-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["x-retention"] = []int{123456}
+	b.Properties["x-tenant"] = "MCS"
+	b.Properties["x-intfield"] = 1234
+	return b
+}
