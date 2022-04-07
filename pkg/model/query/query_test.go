@@ -19,7 +19,7 @@ func TestQJson(t *testing.T) {
 				Condition{
 					Field:    "field_1",
 					Operator: EQ,
-					Value:    "Willie",
+					Value:    "H*",
 				},
 			},
 		},
@@ -330,9 +330,13 @@ func TestQParse(t *testing.T) {
 
 	ss := []string{
 		`field:Willie`,
+		`field: Willie`,
 		`field:"Willie"`,
+		`field: "Willie"`,
 		`field:="Willie"`,
 		`field:!="Willie"`,
+		`field:"Wi*"`,
+		`field:Wi*`,
 		`field1:=123.456`,
 		`field1:<=123.456`,
 		`(field1:=123)`,

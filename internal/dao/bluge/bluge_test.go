@@ -95,7 +95,7 @@ var tests = []struct {
 	n  int
 }{
 	{
-		q:  `x-tenant:"MCS"`,
+		q:  `x-tenant:MCS`,
 		id: "123410",
 		n:  100,
 	},
@@ -135,7 +135,7 @@ var tests = []struct {
 		n:  99,
 	},
 	{
-		q:  `x-user:"H*"`,
+		q:  `x-user:H*`,
 		id: "12340",
 		n:  100,
 	},
