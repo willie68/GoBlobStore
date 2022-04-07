@@ -64,7 +64,7 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		if err != nil {
 			return nil, err
 		} else {
-			q = bluge.NewNumericRangeInclusiveQuery(v, v, false, false).SetField(c.Field)
+			q = bluge.NewBooleanQuery().AddMustNot(bluge.NewNumericRangeInclusiveQuery(v, v, true, true).SetField(c.Field))
 		}
 	case query.GT:
 		v, err := cToFloat(c)
@@ -91,7 +91,13 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		}
 		q = bluge.NewNumericRangeInclusiveQuery(bluge.MinNumeric, v, false, true).SetField(c.Field)
 	default:
-		q = bluge.NewMatchQuery(cToStr(c)).SetField(c.Field)
+		if c.HasWildcard() {
+			cq := cToStr(c)
+			cq = strings.ToLower(cq)
+			q = bluge.NewWildcardQuery(cq).SetField(c.Field)
+		} else {
+			q = bluge.NewMatchQuery(cToStr(c)).SetField(c.Field)
+		}
 	}
 	if c.Invert {
 		bq.AddMustNot(q)

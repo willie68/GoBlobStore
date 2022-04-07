@@ -119,6 +119,15 @@ func (c *Condition) VtoS() string {
 	return ""
 }
 
+func (c *Condition) HasWildcard() bool {
+	switch v := c.Value.(type) {
+	case string:
+		return strings.ContainsAny(v, "*?")
+	default:
+		return false
+	}
+}
+
 /*
 func ParseMe(s string) (*Query, error) {
 	res, err := Parse("query", []byte(s))

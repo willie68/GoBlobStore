@@ -1,6 +1,7 @@
 package bluge
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -89,45 +90,61 @@ func TestBlugeConnect(t *testing.T) {
 }
 
 var tests = []struct {
-	q string
-	n int
+	q  string
+	id string
+	n  int
 }{
 	{
-		q: `x-tenant:"MCS"`,
-		n: 1,
+		q:  `x-tenant:"MCS"`,
+		id: "123410",
+		n:  100,
 	},
 	{
-		q: `x-tenant:"MCS" AND x-user:"Hallo"`,
-		n: 1,
+		q:  `x-tenant:"MCS" AND x-user:"Hallo"`,
+		id: "123410",
+		n:  100,
 	},
 	{
-		q: `x-intfield:=1234`,
-		n: 1,
+		q:  `x-intfield:=1234`,
+		id: "123434",
+		n:  1,
 	},
 	{
-		q: `x-intfield:>1234`,
-		n: 0,
+		q:  `x-intfield:>1234`,
+		id: "12340",
+		n:  65,
 	},
 	{
-		q: `x-intfield:<1234`,
-		n: 0,
+		q:  `x-intfield:<1234`,
+		id: "12340",
+		n:  34,
 	},
 	{
-		q: `x-intfield:>=1234`,
-		n: 1,
+		q:  `x-intfield:>=1234`,
+		id: "12340",
+		n:  66,
 	},
 	{
-		q: `x-intfield:<=1234`,
-		n: 1,
+		q:  `x-intfield:<=1234`,
+		id: "12340",
+		n:  35,
 	},
 	{
-		q: `x-intfield:!=1234`,
-		n: 0,
+		q:  `x-intfield:!=1234`,
+		id: "12340",
+		n:  99,
+	},
+	{
+		q:  `x-user:"H*"`,
+		id: "12340",
+		n:  100,
 	},
 }
 
 func TestQueryConvertion(t *testing.T) {
 	ast := assert.New(t)
+
+	InitT(ast)
 
 	idx := Index{
 		Tenant: "MCS",
@@ -136,28 +153,34 @@ func TestQueryConvertion(t *testing.T) {
 	ast.NotNil(idx.rootpath)
 	ast.NotNil(idx.config)
 
-	b := getBlobDescription()
+	bt := idx.NewBatch()
+	for x := 0; x < 100; x++ {
+		id := fmt.Sprintf("1234%d", x)
+		b := getBlobDescription(id, 1200+x)
+		err := bt.Add(b.BlobID, b)
+		ast.Nil(err, "adding to batch")
+	}
 
-	err := idx.Index(b.BlobID, b)
-	ast.Nil(err)
+	err := bt.Index()
+	ast.Nil(err, "indexing")
 
 	for _, t := range tests {
 		rets := make([]string, 0)
-		err = idx.Search(t.q, func(id string) bool {
+		err := idx.Search(t.q, func(id string) bool {
 			rets = append(rets, id)
 			return true
 		})
 		ast.Nil(err)
 		ast.Equal(t.n, len(rets), t.q)
 		if t.n == 1 && len(rets) > 0 {
-			ast.Equal(b.BlobID, rets[0])
+			ast.Equal(t.id, rets[0], t.q)
 		}
 	}
 }
 
-func getBlobDescription() model.BlobDescription {
+func getBlobDescription(id string, num int) model.BlobDescription {
 	b := model.BlobDescription{
-		BlobID:        "123456789",
+		BlobID:        id,
 		StoreID:       "MCS",
 		TenantID:      "MCS",
 		ContentLength: 22,
@@ -169,8 +192,8 @@ func getBlobDescription() model.BlobDescription {
 		Properties:    make(map[string]interface{}),
 	}
 	b.Properties["x-user"] = []string{"Hallo", "Hallo2"}
-	b.Properties["x-retention"] = []int{123456}
+	b.Properties["x-retention"] = []int{num}
 	b.Properties["x-tenant"] = "MCS"
-	b.Properties["x-intfield"] = 1234
+	b.Properties["x-intfield"] = num
 	return b
 }

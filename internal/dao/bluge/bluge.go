@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,7 @@ import (
 const BLUGE_INDEX = "bluge"
 
 var _ interfaces.Index = &Index{}
+var _ interfaces.IndexBatch = &IndexBatch{}
 
 type Index struct {
 	Tenant   string
@@ -28,6 +30,11 @@ type Index struct {
 	config   bluge.Config
 	wsync    sync.Mutex
 	qsync    sync.Mutex
+}
+
+type IndexBatch struct {
+	docs  []model.BlobDescription
+	index *Index
 }
 
 type Config struct {
@@ -130,6 +137,24 @@ func (m *Index) buildAST(q string) (*query.Query, error) {
 
 func (m *Index) Index(id string, b model.BlobDescription) error {
 	// index some data
+	doc := m.toBlugeDoc(b)
+
+	m.wsync.Lock()
+	defer m.wsync.Unlock()
+	writer, err := bluge.OpenWriter(m.config)
+	if err != nil {
+		return err
+	}
+	defer writer.Close()
+
+	err = writer.Update(doc.ID(), doc)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Index) toBlugeDoc(b model.BlobDescription) bluge.Document {
 	doc := bluge.NewDocument(b.BlobID)
 	for k, i := range b.Map() {
 		switch v := i.(type) {
@@ -160,18 +185,40 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		default:
 		}
 	}
+	return *doc
+}
 
-	m.wsync.Lock()
-	defer m.wsync.Unlock()
-	writer, err := bluge.OpenWriter(m.config)
+func (m *Index) NewBatch() interfaces.IndexBatch {
+	return &IndexBatch{index: m}
+}
+
+func (i *IndexBatch) Add(id string, b model.BlobDescription) error {
+	if id != b.BlobID {
+		return fmt.Errorf(`ID "%s" is not equal to BlobID "%s" `, id, b.BlobID)
+	}
+	i.docs = append(i.docs, b)
+	return nil
+}
+
+func (i *IndexBatch) Index() error {
+	b := bluge.NewBatch()
+	for _, bd := range i.docs {
+		doc := i.index.toBlugeDoc(bd)
+		b.Update(doc.ID(), doc)
+	}
+
+	i.index.wsync.Lock()
+	defer i.index.wsync.Unlock()
+	writer, err := bluge.OpenWriter(i.index.config)
 	if err != nil {
 		return err
 	}
 	defer writer.Close()
 
-	err = writer.Update(doc.ID(), doc)
+	err = writer.Batch(b)
 	if err != nil {
 		return err
 	}
+	i.docs = make([]model.BlobDescription, 0)
 	return nil
 }

@@ -24,11 +24,17 @@ import (
 const MONGO_INDEX = "mongodb"
 
 var _ interfaces.Index = &Index{}
+var _ interfaces.IndexBatch = &IndexBatch{}
 
 type Index struct {
 	Tenant string
 	col    driver.Collection
 	qsync  sync.Mutex
+}
+
+type IndexBatch struct {
+	docs  []model.BlobDescription
+	index *Index
 }
 
 type Config struct {
@@ -242,6 +248,29 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 
 	}
 	return errors.New("blob already exists")
+}
+
+func (m *Index) NewBatch() interfaces.IndexBatch {
+	return &IndexBatch{index: m}
+}
+
+func (i *IndexBatch) Add(id string, b model.BlobDescription) error {
+	if id != b.BlobID {
+		return fmt.Errorf(`ID "%s" is not equal to BlobID "%s" `, id, b.BlobID)
+	}
+	i.docs = append(i.docs, b)
+	return nil
+}
+
+func (i *IndexBatch) Index() error {
+	for _, bd := range i.docs {
+		err := i.index.Index(bd.BlobID, bd)
+		if err != nil {
+			return err
+		}
+	}
+	i.docs = make([]model.BlobDescription, 0)
+	return nil
 }
 
 func ToMongoQuery(q query.Query) string {
