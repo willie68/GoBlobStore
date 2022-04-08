@@ -51,6 +51,23 @@ Another unit is the retention system. This works independently of the Storgae pr
 
 The `index` is the fifth element. This is used to search for specific blobs via properties, be they system or custom properties.
 
+## SimpleFile Storage
+
+The simple file storage is a file system based storage. 
+
+```yaml
+engine:
+ retentionManager: SingleRetention
+ tenantautoadd: true
+ backupsyncmode: false
+ storage:
+  storageclass: SimpleFile
+  properties:
+   rootpath: /data/storage
+```
+
+You can use this storage for all kind of storage types, (even backup or cache). The only property needed is the rootpath which will lead to the used file system. On docker you can use any mount point / volume for that. Ever tenant will get a subfolder. On this tenant directory there will be a 2 dimensional folder structure for  the blob data. For the retention files there will be a dedicated folder.
+
 ## S3 Storage
 
 The S3 storage provider can be used as main storage or backup storage with the same parameters.
@@ -211,12 +228,13 @@ auth:
 For finding desired blobs you can configure an index engine. Possible options are
 
 - MongoDB
+- Bluge (https://blugelabs.com/bluge/)
 
 (sorry, nothing more at this moment)
 
 ### Query Language
 
-A separate search language is supported for a search independent of the underlying index engine. This offers a simple syntax for searching.
+A separate query language is supported for search independency of the underlying index engine. This offers a simple syntax for searching.
 
 Some value element examples:
 
@@ -262,10 +280,12 @@ For smaller installations there is a small fulltext implementation based on blug
 engine:
 ...
  index:
-  storageclass: Bluge
+  storageclass: bluge
+  properties:
+    rootpath: <path to a folder>
 ```
 
-This index uses the already defined storage
+You can set the root path to the same folder as in the SimpleFile storage. The structure will be integrated. For every tenant there will be a subfolder. And in this tenant directory for this index there will be a folder _idx created, which will store all needed files for the index. 
 
 ### Mongo Index
 
@@ -296,7 +316,7 @@ As an example:
 #{"$and": [{"x-tenant": "MCS"}, {"x-user": "Willie"} ]}
 ```
 
-## Tenant
+## Tenant Based API Endpoints
 
 The tenant is the main part to split up the data. Every tenant is based on the tenant name or id. This id should be case insensitive and should only consist of chars which are valid for filenames.
 
