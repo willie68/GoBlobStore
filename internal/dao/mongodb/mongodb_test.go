@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/willie68/GoBlobStore/pkg/model"
+	"github.com/willie68/GoBlobStore/pkg/model/query"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
@@ -78,47 +79,47 @@ func TestQueryConvertion(t *testing.T) {
 	str := `#{"$or": [{"$and": [{"field1": "Willie"}, {"field2": {"$gt": 100}}, {"field3": {"$not": {"$eq": "murks"}}}]}, {"$and": [{"field1": "Max"}, {"field2": {"$lte": 100}}, {"field3": {"$ne": "murks"}}]}]}`
 	//#{"$or": [ {"$and": [ {"field1":"Willie"},{field2:>100}) OR (field1:"Max" AND field2:<=100))`
 
-	q := model.Query{
-		Condition: model.Node{
-			Operator: model.OROP,
+	q := query.Query{
+		Condition: query.Node{
+			Operator: query.OROP,
 			Conditions: []interface{}{
-				model.Node{
-					Operator: model.ANDOP,
+				query.Node{
+					Operator: query.ANDOP,
 					Conditions: []interface{}{
-						model.Condition{
+						query.Condition{
 							Field:    "field1",
-							Operator: model.NO,
+							Operator: query.NO,
 							Value:    "Willie",
 						},
-						model.Condition{
+						query.Condition{
 							Field:    "field2",
-							Operator: model.GT,
+							Operator: query.GT,
 							Value:    100,
 						},
-						model.Condition{
+						query.Condition{
 							Field:    "field3",
-							Operator: model.EQ,
+							Operator: query.EQ,
 							Invert:   true,
 							Value:    "murks",
 						},
 					},
 				},
-				model.Node{
-					Operator: model.ANDOP,
+				query.Node{
+					Operator: query.ANDOP,
 					Conditions: []interface{}{
-						model.Condition{
+						query.Condition{
 							Field:    "field1",
-							Operator: model.NO,
+							Operator: query.NO,
 							Value:    "Max",
 						},
-						model.Condition{
+						query.Condition{
 							Field:    "field2",
-							Operator: model.LE,
+							Operator: query.LE,
 							Value:    100,
 						},
-						model.Condition{
+						query.Condition{
 							Field:    "field3",
-							Operator: model.NE,
+							Operator: query.NE,
 							Value:    "murks",
 						},
 					},

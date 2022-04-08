@@ -319,12 +319,12 @@ func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	}
 
 	offset := 0
-	if values["offset"] != nil {
-		offset, _ = strconv.Atoi(values["offset"][0])
+	if values.Get("offset") != "" {
+		offset, _ = strconv.Atoi(values.Get("offset"))
 	}
 	limit := 1000
-	if values["limit"] != nil {
-		limit, _ = strconv.Atoi(values["limit"][0])
+	if values.Get("limit") != "" {
+		limit, _ = strconv.Atoi(values.Get("limit"))
 	}
 	blobs := make([]string, 0)
 	index := 0

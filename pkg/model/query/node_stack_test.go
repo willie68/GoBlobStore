@@ -18,7 +18,7 @@ func TestNodeStackNew(t *testing.T) {
 
 	ast.NotNil(n)
 	ast.NotNil(ns.CurrentNode())
-	ast.Equal(ANDOP, ns.CurrentNode().Operator)
+	ast.Equal(NOOP, ns.CurrentNode().Operator)
 
 	n.Operator = OROP
 	ast.Equal(OROP, ns.CurrentNode().Operator)

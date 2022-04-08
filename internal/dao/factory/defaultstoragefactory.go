@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/dao/bluge"
 	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
@@ -107,6 +108,14 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 		s := stg.Storageclass
 		s = strings.ToLower(s)
 		switch s {
+		case bluge.BLUGE_INDEX:
+			dao = &bluge.Index{
+				Tenant: tenant,
+			}
+			err := dao.Init()
+			if err != nil {
+				return nil, err
+			}
 		case mongodb.MONGO_INDEX:
 			dao = &mongodb.Index{
 				Tenant: tenant,
@@ -237,6 +246,8 @@ func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
 	s := cnfg.Storageclass
 	s = strings.ToLower(s)
 	switch s {
+	case bluge.BLUGE_INDEX:
+		bluge.InitBluge(cnfg.Properties)
 	case mongodb.MONGO_INDEX:
 		mongodb.InitMongoDB(cnfg.Properties)
 	}

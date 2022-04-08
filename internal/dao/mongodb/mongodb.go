@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -25,13 +24,17 @@ import (
 const MONGO_INDEX = "mongodb"
 
 var _ interfaces.Index = &Index{}
-
-var MongoCnfg config.Storage
+var _ interfaces.IndexBatch = &IndexBatch{}
 
 type Index struct {
 	Tenant string
 	col    driver.Collection
 	qsync  sync.Mutex
+}
+
+type IndexBatch struct {
+	docs  []model.BlobDescription
+	index *Index
 }
 
 type Config struct {
@@ -247,6 +250,29 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 	return errors.New("blob already exists")
 }
 
+func (m *Index) NewBatch() interfaces.IndexBatch {
+	return &IndexBatch{index: m}
+}
+
+func (i *IndexBatch) Add(id string, b model.BlobDescription) error {
+	if id != b.BlobID {
+		return fmt.Errorf(`ID "%s" is not equal to BlobID "%s" `, id, b.BlobID)
+	}
+	i.docs = append(i.docs, b)
+	return nil
+}
+
+func (i *IndexBatch) Index() error {
+	for _, bd := range i.docs {
+		err := i.index.Index(bd.BlobID, bd)
+		if err != nil {
+			return err
+		}
+	}
+	i.docs = make([]model.BlobDescription, 0)
+	return nil
+}
+
 func ToMongoQuery(q query.Query) string {
 	var b strings.Builder
 	b.WriteString("#")
@@ -289,7 +315,7 @@ func oToMdb(c query.Condition) string {
 	return ""
 }
 
-//oToMdb converting a node into a mongo query string
+//nToMdb converting a node into a mongo query string
 func nToMdb(n query.Node) string {
 	var b strings.Builder
 	op := fmt.Sprintf("$%s", strings.ToLower(string(n.Operator)))
