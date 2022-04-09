@@ -10,6 +10,7 @@ features
 - http path, http header or jwt based tenant discovery 
 - configurable jwt role based access control
 - user defined retention per blob
+- index option to search for blob properties
 
 # Installation
 

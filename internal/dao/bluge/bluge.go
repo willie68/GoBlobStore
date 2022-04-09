@@ -13,6 +13,8 @@ import (
 
 	"github.com/blugelabs/bluge"
 	querystr "github.com/blugelabs/query_string"
+	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -157,30 +159,31 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 func (m *Index) toBlugeDoc(b model.BlobDescription) bluge.Document {
 	doc := bluge.NewDocument(b.BlobID)
 	for k, i := range b.Map() {
+		key := strings.TrimPrefix(k, config.Get().HeaderMapping[api.HeaderPrefixKey])
 		switch v := i.(type) {
 		case int:
-			doc.AddField(bluge.NewNumericField(k, float64(v)).StoreValue())
+			doc.AddField(bluge.NewNumericField(key, float64(v)).StoreValue())
 		case []int:
 			for _, y := range v {
-				doc.AddField(bluge.NewNumericField(k, float64(y)).StoreValue())
+				doc.AddField(bluge.NewNumericField(key, float64(y)).StoreValue())
 			}
 		case int64:
-			doc.AddField(bluge.NewNumericField(k, float64(v)).StoreValue())
+			doc.AddField(bluge.NewNumericField(key, float64(v)).StoreValue())
 		case []int64:
 			for _, y := range v {
-				doc.AddField(bluge.NewNumericField(k, float64(y)).StoreValue())
+				doc.AddField(bluge.NewNumericField(key, float64(y)).StoreValue())
 			}
 		case string:
-			doc.AddField(bluge.NewTextField(k, v).StoreValue())
+			doc.AddField(bluge.NewTextField(key, v).StoreValue())
 		case []string:
 			for _, y := range v {
-				doc.AddField(bluge.NewTextField(k, y).StoreValue())
+				doc.AddField(bluge.NewTextField(key, y).StoreValue())
 			}
 		case time.Time:
-			doc.AddField(bluge.NewDateTimeField(k, v).StoreValue())
+			doc.AddField(bluge.NewDateTimeField(key, v).StoreValue())
 		case []time.Time:
 			for _, y := range v {
-				doc.AddField(bluge.NewDateTimeField(k, y).StoreValue())
+				doc.AddField(bluge.NewDateTimeField(key, y).StoreValue())
 			}
 		default:
 		}

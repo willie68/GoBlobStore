@@ -95,47 +95,47 @@ var tests = []struct {
 	n  int
 }{
 	{
-		q:  `x-tenant:MCS`,
+		q:  `tenant:MCS`,
 		id: "123410",
 		n:  100,
 	},
 	{
-		q:  `x-tenant:"MCS" AND x-user:"Hallo"`,
+		q:  `tenant:"MCS" AND user:"Hallo"`,
 		id: "123410",
 		n:  100,
 	},
 	{
-		q:  `x-intfield:=1234`,
+		q:  `intfield:=1234`,
 		id: "123434",
 		n:  1,
 	},
 	{
-		q:  `x-intfield:>1234`,
+		q:  `intfield:>1234`,
 		id: "12340",
 		n:  65,
 	},
 	{
-		q:  `x-intfield:<1234`,
+		q:  `intfield:<1234`,
 		id: "12340",
 		n:  34,
 	},
 	{
-		q:  `x-intfield:>=1234`,
+		q:  `intfield:>=1234`,
 		id: "12340",
 		n:  66,
 	},
 	{
-		q:  `x-intfield:<=1234`,
+		q:  `intfield:<=1234`,
 		id: "12340",
 		n:  35,
 	},
 	{
-		q:  `x-intfield:!=1234`,
+		q:  `intfield:!=1234`,
 		id: "12340",
 		n:  99,
 	},
 	{
-		q:  `x-user:H*`,
+		q:  `user:H*`,
 		id: "12340",
 		n:  100,
 	},
@@ -191,9 +191,9 @@ func getBlobDescription(id string, num int) model.BlobDescription {
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}
-	b.Properties["x-user"] = []string{"Hallo", "Hallo2"}
-	b.Properties["x-retention"] = []int{num}
-	b.Properties["x-tenant"] = "MCS"
-	b.Properties["x-intfield"] = num
+	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["X-retention"] = []int{num}
+	b.Properties["X-tenant"] = "MCS"
+	b.Properties["X-intfield"] = num
 	return b
 }

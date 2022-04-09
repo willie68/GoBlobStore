@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/imdario/mergo"
+	"github.com/willie68/GoBlobStore/internal/api"
 	"gopkg.in/yaml.v3"
 )
 
@@ -84,7 +85,7 @@ type Metrics struct {
 	Enable bool `yaml:"enable"`
 }
 
-var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", "headerprefix": "X-"}
+var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", api.HeaderPrefixKey: "X-"}
 
 var DefaultConfig = Config{
 	Port:       8000,
