@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -210,9 +212,10 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		if err == driver.ErrNoDocuments {
 			// dosen't exists, create
 			var bd bson.D
-			bd = append(bd, bson.E{"blobid", id})
+			bd = append(bd, bson.E{Key: "blobid", Value: id})
 			for k, v := range b.Map() {
-				bd = append(bd, bson.E{strings.ToLower(k), v})
+				key := strings.TrimPrefix(k, config.Get().HeaderMapping[api.HeaderPrefixKey])
+				bd = append(bd, bson.E{Key: key, Value: v})
 			}
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -230,9 +233,10 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 	} else {
 		// update with new description
 		var bd bson.D
-		bd = append(bd, bson.E{"blobid", id})
+		bd = append(bd, bson.E{Key: "blobid", Value: id})
 		for k, v := range b.Map() {
-			bd = append(bd, bson.E{strings.ToLower(k), v})
+			key := strings.TrimPrefix(k, config.Get().HeaderMapping[api.HeaderPrefixKey])
+			bd = append(bd, bson.E{Key: key, Value: v})
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -247,7 +251,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		return nil
 
 	}
-	return errors.New("blob already exists")
+	// return errors.New("blob already exists")
 }
 
 func (m *Index) NewBatch() interfaces.IndexBatch {

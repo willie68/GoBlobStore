@@ -57,15 +57,15 @@ func TestMongoConnect(t *testing.T) {
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}
-	b.Properties["x-user"] = []string{"Hallo", "Hallo2"}
-	b.Properties["x-retention"] = []int{123456}
-	b.Properties["x-tenant"] = "MCS"
+	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["X-retention"] = []int{123456}
+	b.Properties["X-tenant"] = "MCS"
 
 	err := idx.Index("123456789", b)
 	ast.Nil(err)
 
 	rets := make([]string, 0)
-	err = idx.Search(`#{"$and": [{"x-tenant": "MCS"}, {"x-user": "Hallo"} ]}`, func(id string) bool {
+	err = idx.Search(`#{"$and": [{"tenant": "MCS"}, {"user": "Hallo"} ]}`, func(id string) bool {
 		rets = append(rets, id)
 		return true
 	})
