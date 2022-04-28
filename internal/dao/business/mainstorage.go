@@ -49,6 +49,14 @@ func (m *MainStorageDao) GetBlobs(callback func(id string) bool) error {
 
 // StoreBlob storing a blob to the storage system
 func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
+	hasBlob, err := m.StgDao.HasBlob(b.BlobID)
+	if err != nil {
+		return "", fmt.Errorf("main: store blob: check blob: %s, %v", b.BlobID, err)
+	}
+	if hasBlob {
+		return "", fmt.Errorf(`blob with id "%s" already exists`, b.BlobID)
+	}
+
 	id, err := m.StgDao.StoreBlob(b, f)
 	if err != nil {
 		return "", err
@@ -304,7 +312,7 @@ func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) er
 	if !m.hasIdx {
 		return errors.New("index not configured")
 	}
-	
+
 	err := m.IdxDao.Search(q, callback)
 	if err != nil {
 		return err

@@ -393,11 +393,19 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		f = mpf
 	}
 
+	// retention given via headers
 	var retentionTime int64 = 0
 	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
 	if ok {
 		retention := request.Header.Get(RetentionHeader)
 		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
+	}
+
+	// blobid given via headers
+	BlobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
+	blobid := ""
+	if ok {
+		blobid = request.Header.Get(BlobIDHeader)
 	}
 
 	metadata := make(map[string]interface{})
@@ -412,6 +420,7 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 	}
 
 	b := model.BlobDescription{
+		BlobID:        blobid,
 		StoreID:       tenant,
 		TenantID:      tenant,
 		ContentLength: cntLength,
@@ -434,6 +443,17 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
+	if blobid != "" {
+		ok, err = storage.HasBlob(blobid)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
+		}
+		if ok {
+			httputils.Err(response, request, serror.Conflict(fmt.Errorf(`blob with id "%s" already exists`, b.BlobID)))
+			return
+		}
+	}
 	_, err = storage.StoreBlob(&b, f)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))

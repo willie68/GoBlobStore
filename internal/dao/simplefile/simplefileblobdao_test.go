@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/internal/utils/slicesutils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -313,4 +314,58 @@ func TestBlobCheck(t *testing.T) {
 	res, err = dao.CheckBlob("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
 	ast.Nil(err)
 	ast.True(res.Healthy, "id: %s: %s", "004b4987-42fb-43e4-8e13-d6994ce0e6f1", res.Message)
+}
+
+func TestCRUDWithGivenID(t *testing.T) {
+	ast := assert.New(t)
+	uuid := utils.GenerateID()
+	dao := getStoreageDao(t)
+
+	b := model.BlobDescription{
+		BlobID:        uuid,
+		StoreID:       "MCS",
+		TenantID:      "MCS",
+		ContentLength: 22,
+		ContentType:   "text/plain",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		Filename:      "test.txt",
+		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		Retention:     180000,
+		Properties:    make(map[string]interface{}),
+	}
+	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
+	b.Properties["X-retention"] = []int{123456}
+	b.Properties["X-tenant"] = "MCS"
+
+	r := strings.NewReader("this is a blob content")
+	id, err := dao.StoreBlob(&b, r)
+	ast.Nil(err)
+	ast.NotNil(id)
+	ast.Equal(id, b.BlobID)
+	ast.Equal(id, uuid)
+
+	info, err := dao.GetBlobDescription(uuid)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
+	ast.Equal(id, uuid)
+
+	var buf bytes.Buffer
+
+	err = dao.RetrieveBlob(uuid, &buf)
+	ast.Nil(err)
+	ast.Equal("this is a blob content", buf.String())
+
+	b.Properties["X-tenant"] = "MCS_2"
+	err = dao.UpdateBlobDescription(id, &b)
+	ast.Nil(err)
+
+	info, err = dao.GetBlobDescription(uuid)
+	ast.Nil(err)
+	ast.Equal(id, info.BlobID)
+	ast.Equal("MCS_2", info.Properties["X-tenant"])
+
+	err = dao.DeleteBlob(uuid)
+	ast.Nil(err)
+
+	dao.Close()
 }
