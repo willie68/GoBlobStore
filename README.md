@@ -149,9 +149,11 @@ There are defined header for operation
 
 `apikey`: the apikey can be used to identify the right usage of this service. (in the configuration you can switch this off)
 
-`retention`: if set, this blob will die only available until this time (in minutes) is over, counted from the creation time, or, if a reset retention occur, from the reset time.
+`retention`: (optional) if set, this blob will die only available until this time (in minutes) is over, counted from the creation time, or, if a reset retention occur, from the reset time.
 
 `filename`: is the filename of the file itself, and only needed if you use direct binary upload.
+
+`blobid`: (optional) is the predefined blob id of the file. This must be tenant unique otherwise you will get an conflict error.
 
 The service automatically save all needed headers to the blob description object. If you set a headerprefix, the service will additionally put all header prefixed with this text to the description, too.
 
@@ -164,6 +166,7 @@ headermapping:
  tenant: X-mcs-tenant
  filename: X-mcs-filename
  apikey: X-mcs-apikey
+ blobid: X-mcs-blobid
 ```
 
 ## JWT Tenant discovery and Authorization

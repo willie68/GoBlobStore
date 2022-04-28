@@ -85,7 +85,7 @@ type Metrics struct {
 	Enable bool `yaml:"enable"`
 }
 
-var defaultHeaderMapping = map[string]string{"tenant": "X-tenant", "retention": "X-retention", "apikey": "X-apikey", "filename": "X-filename", api.HeaderPrefixKey: "X-"}
+var defaultHeaderMapping = map[string]string{api.TenantHeaderKey: "X-tenant", api.RetentionHeaderKey: "X-retention", api.APIKeyHeaderKey: "X-apikey", api.FilenameKey: "X-filename", api.BlobIDHeaderKey: "X-blobid", api.HeaderPrefixKey: "X-"}
 
 var DefaultConfig = Config{
 	Port:       8000,

@@ -1,10 +1,12 @@
 module github.com/willie68/GoBlobStore
 
-go 1.17
+go 1.18
 
 require (
 	github.com/akgarhwal/bloomfilter v0.1.1
 	github.com/aphistic/golf v0.0.0-20180712155816-02c07f170c5a
+	github.com/blugelabs/bluge v0.1.9
+	github.com/blugelabs/query_string v0.3.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/cors v1.2.0
 	github.com/go-chi/httptracer v0.3.0
@@ -36,10 +38,8 @@ require (
 	github.com/blevesearch/segment v0.9.0 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
 	github.com/blevesearch/vellum v1.0.5 // indirect
-	github.com/blugelabs/bluge v0.1.9 // indirect
 	github.com/blugelabs/bluge_segment_api v0.2.0 // indirect
 	github.com/blugelabs/ice v0.2.0 // indirect
-	github.com/blugelabs/query_string v0.3.0 // indirect
 	github.com/caio/go-tdigest v3.1.0+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -82,6 +82,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220224120231-95c6836cb0e7 // indirect
 	golang.org/x/text v0.3.7 // indirect
+	gonum.org/v1/gonum v0.8.2 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/ini.v1 v1.57.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

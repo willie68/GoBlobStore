@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/internal/utils/readercomp"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -226,6 +227,91 @@ func TestRetentionStorage(t *testing.T) {
 
 	err = dao.DeleteRetention(blobID)
 	ast.Nil(err)
+
+	close(t)
+}
+
+func TestCRUDBlobWID(t *testing.T) {
+	setup(t)
+	ast := assert.New(t)
+	uuid := utils.GenerateID()
+	dao, err := createDao()
+
+	ast.Nil(err)
+	ast.NotNil(dao)
+	fileInfo, err := os.Lstat(pdffile)
+	ast.Nil(err)
+	ast.NotNil(fileInfo)
+
+	b := model.BlobDescription{
+		BlobID:        uuid,
+		ContentType:   "application/pdf",
+		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		ContentLength: fileInfo.Size(),
+		Filename:      fileInfo.Name(),
+		TenantID:      tenant,
+		Retention:     0,
+		Properties:    make(map[string]interface{}),
+	}
+	b.Properties["X-tenant"] = "MCS"
+
+	r, err := os.Open(pdffile)
+	ast.Nil(err)
+	ast.NotNil(r)
+
+	id, err := dao.StoreBlob(&b, r)
+	ast.Nil(err)
+	ast.NotNil(id)
+	ast.Equal(id, uuid)
+	r.Close()
+
+	fmt.Printf("blob id: %s", id)
+	ok, err := dao.HasBlob(uuid)
+	ast.Nil(err)
+	ast.True(ok)
+
+	d, err := dao.GetBlobDescription(uuid)
+	ast.Nil(err)
+	ast.NotNil(d)
+
+	ast.Equal(b.ContentType, d.ContentType)
+	ast.Equal(id, d.BlobID)
+	ast.Equal(uuid, d.BlobID)
+	ast.Equal(b.ContentLength, d.ContentLength)
+	ast.Equal(b.Filename, d.Filename)
+
+	w, err := os.Create(testfile)
+	ast.Nil(err)
+	dao.RetrieveBlob(uuid, w)
+	w.Close()
+
+	ok, err = readercomp.FilesEqual(pdffile, testfile)
+	ast.Nil(err)
+	ast.True(ok)
+
+	b.Properties["X-tenant"] = "MCS_2"
+	err = dao.UpdateBlobDescription(uuid, &b)
+	ast.Nil(err)
+
+	d, err = dao.GetBlobDescription(uuid)
+	ast.Nil(err)
+	ast.Equal(uuid, d.BlobID)
+	ast.Equal("MCS_2", d.Properties["X-tenant"])
+
+	blobs := make([]string, 0)
+	err = dao.GetBlobs(func(id string) bool {
+		blobs = append(blobs, id)
+		return true
+	})
+	ast.Nil(err)
+	ast.Equal(1, len(blobs))
+
+	err = dao.DeleteBlob(uuid)
+	ast.Nil(err)
+
+	ok, err = dao.HasBlob(uuid)
+	ast.Nil(err)
+	ast.False(ok)
 
 	close(t)
 }

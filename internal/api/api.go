@@ -12,6 +12,9 @@ const RetentionHeaderKey = "retention"
 // FilenameKey key for the headermapping for the file name
 const FilenameKey = "filename"
 
+// RetentionHeader is the header for defining a retention time
+const BlobIDHeaderKey = "blobid"
+
 // all headers with this prefix will be saved, too
 const HeaderPrefixKey = "headerprefix"
 
