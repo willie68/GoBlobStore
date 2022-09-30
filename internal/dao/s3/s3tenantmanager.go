@@ -56,6 +56,13 @@ func (s *S3TenantManager) Init() error {
 		options = &minio.Options{
 			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
 			Secure: s.usetls,
+			//TODO: das muss hier wieder raus
+			Transport: &http.Transport{
+				MaxIdleConns:       10,
+				IdleConnTimeout:    30 * time.Second,
+				DisableCompression: true,
+				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			},
 		}
 	}
 	client, err := minio.New(endpoint, options)

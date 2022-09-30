@@ -72,6 +72,13 @@ func (s *S3BlobStorage) Init() error {
 		options = &minio.Options{
 			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
 			Secure: s.usetls,
+			//TODO muss auch wieder weg
+			Transport: &http.Transport{
+				MaxIdleConns:       10,
+				IdleConnTimeout:    30 * time.Second,
+				DisableCompression: true,
+				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			},
 		}
 	}
 	client, err := minio.New(endpoint, options)
@@ -391,7 +398,8 @@ func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
 	if !s.usetls || s.Insecure {
 		return nil
 	}
-	return encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket+s.Tenant))
+	ss := encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket+s.Tenant))
+	return ss
 }
 
 // id2f getting the blob file path and name to the payload

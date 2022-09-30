@@ -22,7 +22,7 @@ type BlobDescription struct {
 }
 
 type Check struct {
-	Storage *CheckInfo `yaml:"storage,omitempty" json:"storage,omitempty"`
+	Store   *CheckInfo `yaml:"store,omitempty" json:"store,omitempty"`
 	Backup  *CheckInfo `yaml:"backup,omitempty" json:"backup,omitempty"`
 	Healthy bool       `yaml:"healthy,omitempty" json:"healthy,omitempty"`
 	Message string     `yaml:"message,omitempty" json:"message,omitempty"`

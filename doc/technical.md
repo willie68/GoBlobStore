@@ -93,3 +93,26 @@ This is one of the moving targets. You will find the peg file in build/pigeon/pa
 There is much more implemented in the parser file, but not everything is working. So i only documented the working parts in the readme. In addition, various automated tests are still missing. Here, above all, the evaluation of the results. The parser will be generated into pkg/model/query
 
 Be ware the parser itself is not thread safe, so a serialization is done in the API.
+
+# Tenant specific backup storage
+
+Das mandantenspezifische Backup ist für den Anwendungsfall gedacht, wo ein Mandant seine Daten in seiner eigenen Cloud vorhalten möchte. Dieses kann dann ein S3 Storage System sein, es ist aber auch möglich, daß dieser Mandant seinen eigenen Blob Storage hat.
+
+Deswegen sind für die vollständige Implementierung 2 Features von Nöten:
+
+- Möglichkeit den Backup mandantenspezisch einzurichten
+- zus. Blobstorage Provider: also eine Storage Provider, der einen entfernten Blob Store als Ablage benutzt.
+
+Bei dem Mandanten spezifischen Backup kann zunächst nur ein weiteres S3 eingerichtet werden. Die Zugangsdaten dazu werden in dem Config bereich des Storagesystem des Mandanten als Json hinterlegt. Dort steht dann eine Liste von backup providern, mit den hinterlegten Credentials. Nur eine davon kann aktiv sein. Enthalten sind weiterhin pro Eintrag das Erzeugungsdatum und das Datum der letzten Änderung. Zusätzlich kann auch konfiguriert werden, daß die Ablage auf dieses S3 ohne Verschlüssellung erfolgt. Und wenn doch eine Verschlüssellung erfolgen sollte, kann auch der Schlüssel abgerufen werden.  In der Konfiguration eines inaktiven Eintrages wird weiterhin festgehalten, ob die Migration vollständig war und alle Dateien gelöscht worden sind. (Wichtig für den Lesezugriff)
+
+## Aktivierung eine Providers
+
+Beim Aktivieren eines Eintrages, werden zunächst alle neuen Schreibvorgänge auf das neue Backup geroutet und dann alle Daten auf das neue Backupsystem migriert. Dazu wird zunächst der Primärstorage als Quelle verwendet. Wurde eine Datei migiert, wird diese direkt auf den anderen Backupstores gelöscht. Im 2. Schritt werden dann die vorher konfigurierten Backups nach verwaisten einträgen durchsucht und diese ebenfalls auf das neue Backup migriert. Während dieser Migration ist keine weiterer schreibeneder Zugriff auf die Konfiguration möglich. 
+
+## Schreibzugriff
+
+Geht direkt auf das aktive Backupsystem.
+
+## Lesezugriff
+
+Wird zunächst gegen das aktive Backupsystem geprüft. Sollte dort der Eintrag nicht zu finden sein, wird zunächst das Default Backup konsultiert, danach der Reiher nach die älteren Backups. 

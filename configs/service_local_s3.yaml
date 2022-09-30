@@ -2,6 +2,7 @@ port: 8000
 sslport: 8443
 serviceURL: https://127.0.0.1:8443
 secretfile: "configs/secret.yaml"
+apikey: false
 healthcheck:
   period: 30
 # enable/disable metrics 
@@ -17,16 +18,17 @@ engine:
   storage:
     storageclass: S3Storage
     properties:
-      endpoint: "https://127.0.0.1:9002"
+      endpoint: "http://127.0.0.1:9002"
       bucket: "goblobstore"
       insecure: true
       accessKey: 
       secretKey: 
       password: 
 headermapping:
-  headerprefix: x-
+  headerprefix: X-
   retention: X-es-retention
   tenant: X-es-tenant
-  apikey: 
+  apikey: X-es-apikey
   filename: X-es-filename
+
 #  apikey: X-es-apikey

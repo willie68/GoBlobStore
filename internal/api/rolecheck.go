@@ -28,7 +28,7 @@ const (
 func RoleCheck(allowedRoles []Role) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if !RoleCheckerImpl.CheckRole(r.Context(), allowedRoles) {
+			if (RoleCheckerImpl != nil) && !RoleCheckerImpl.CheckRole(r.Context(), allowedRoles) {
 				msg := "not allowed"
 				apierr := serror.Forbidden(nil, msg)
 				render.Status(r, apierr.Code)

@@ -28,14 +28,18 @@ engine:
     storageclass: bluge
     properties:
       rootpath: R:/blbstg
+  backup:
+    storageclass: SimpleFile
+    properties:
+      rootpath: R:/blbbck
 headermapping:
-  headerprefix: x-
-  retention:
-  tenant: 
-  apikey: 
-  filename:
+  headerprefix: X-
+  retention: X-es-retention
+  tenant: X-es-tenant
+  apikey: X-es-apikey
+  filename: X-es-filename
 auth:
-  type: jwt
+  type:
   properties: 
     validate: true
     strict: true

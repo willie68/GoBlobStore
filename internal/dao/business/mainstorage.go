@@ -332,7 +332,7 @@ func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
 		return nil, err
 	}
 	ri := model.Check{
-		Storage: stgCI,
+		Store:   stgCI,
 		Healthy: stgCI.Healthy,
 		Message: stgCI.Message,
 	}
@@ -375,7 +375,7 @@ func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
 	return stgCI, nil
 }
 
-//GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returnong a false
+//GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returning a false
 func (m *MainStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return m.StgDao.GetAllRetentions(callback)
 }

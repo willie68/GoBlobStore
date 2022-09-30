@@ -18,10 +18,9 @@ import (
 
 const STGCLASS_SIMPLE_FILE = "SimpleFile"
 const STGCLASS_S3 = "S3Storage"
-
 const STGCLASS_FASTCACHE = "FastCache"
 
-var NO_STG_ERROR = errors.New("no storage class given")
+var ErrNoStg = errors.New("no storage class given")
 
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
@@ -71,12 +70,12 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 	}
 
 	bckdao, err := d.getImplStgDao(d.cnfg.Backup, tenant)
-	if err != nil && !errors.Is(err, NO_STG_ERROR) {
+	if err != nil && !errors.Is(err, ErrNoStg) {
 		return nil, err
 	}
 
 	cchdao, err := d.getImplStgDao(d.cnfg.Cache, "blbstg")
-	if err != nil && !errors.Is(err, NO_STG_ERROR) {
+	if err != nil && !errors.Is(err, ErrNoStg) {
 		return nil, err
 	}
 
@@ -125,9 +124,11 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 				return nil, err
 			}
 		}
+	} else {
+		dao = &noindex.Index{}
 	}
 	if dao == nil {
-		return nil, fmt.Errorf("no searcher indexer class implementation for \"%s\" found. %w", stg.Storageclass, NO_STG_ERROR)
+		return nil, fmt.Errorf("no searcher indexer class implementation for \"%s\" found. %w", stg.Storageclass, ErrNoStg)
 	}
 	return dao, nil
 }
@@ -166,7 +167,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	}
 
 	if dao == nil {
-		return nil, fmt.Errorf("no storage class implementation for \"%s\" found. %w", stg.Storageclass, NO_STG_ERROR)
+		return nil, fmt.Errorf("no storage class implementation for \"%s\" found. %w", stg.Storageclass, ErrNoStg)
 	}
 	return dao, nil
 }
