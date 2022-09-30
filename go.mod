@@ -14,7 +14,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.13
-	github.com/minio/minio-go/v7 v7.0.37
+	github.com/minio/minio-go/v7 v7.0.39
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/prometheus/client_golang v1.13.0
 	github.com/spf13/pflag v1.0.5

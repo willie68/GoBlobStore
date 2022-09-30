@@ -11,6 +11,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/mongodb"
+	"github.com/willie68/GoBlobStore/internal/dao/noindex"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	log "github.com/willie68/GoBlobStore/internal/logging"
@@ -40,7 +41,7 @@ func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.Rete
 	return nil
 }
 
-//GetStorageDao return the storage dao for the desired tenant
+// GetStorageDao return the storage dao for the desired tenant
 func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobStorageDao, error) {
 	storageDao, ok := d.tenantStores[tenant]
 	if !ok {

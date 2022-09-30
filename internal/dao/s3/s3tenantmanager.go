@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"github.com/minio/minio-go/v7/pkg/encrypt"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 )
 
 const (
@@ -22,15 +24,15 @@ const (
 )
 
 type S3TenantManager struct {
-	Endpoint   string
-	Insecure   bool // true for self signed certificates
-	Bucket     string
-	AccessKey  string
-	SecretKey  string
-	Password   string
-	minioCient minio.Client
-	usetls     bool
-	storelist  []S3StoreEntry
+	Endpoint    string
+	Insecure    bool // true for self signed certificates
+	Bucket      string
+	AccessKey   string
+	SecretKey   string
+	Password    string
+	minioClient minio.Client
+	usetls      bool
+	storelist   []S3StoreEntry
 }
 
 func (s *S3TenantManager) Init() error {
@@ -70,15 +72,15 @@ func (s *S3TenantManager) Init() error {
 	if err != nil {
 		return err
 	}
-	s.minioCient = *client
+	s.minioClient = *client
 	// check the bucket and try to create it
 	ctx := context.Background()
-	ok, err := s.minioCient.BucketExists(ctx, s.Bucket)
+	ok, err := s.minioClient.BucketExists(ctx, s.Bucket)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		err := s.minioCient.MakeBucket(ctx, s.Bucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
+		err := s.minioClient.MakeBucket(ctx, s.Bucket, minio.MakeBucketOptions{Region: "us-east-1", ObjectLocking: false})
 		if err != nil {
 			return err
 		}
@@ -101,7 +103,7 @@ func (s *S3TenantManager) GetTenants(callback func(tenant string) bool) error {
 
 func (s *S3TenantManager) readStorelist() error {
 	ctx := context.Background()
-	_, err := s.minioCient.StatObject(ctx, s.Bucket, fn_stlst, minio.StatObjectOptions{})
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, fn_stlst, minio.StatObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -110,7 +112,7 @@ func (s *S3TenantManager) readStorelist() error {
 		}
 		return err
 	}
-	reader, err := s.minioCient.GetObject(ctx, s.Bucket, fn_stlst, minio.GetObjectOptions{
+	reader, err := s.minioClient.GetObject(ctx, s.Bucket, fn_stlst, minio.GetObjectOptions{
 		ServerSideEncryption: nil,
 	})
 	if err != nil {
@@ -136,7 +138,7 @@ func (s *S3TenantManager) writeStorelist() error {
 		return err
 	}
 	r := bytes.NewReader(data)
-	_, err = s.minioCient.PutObject(ctx, s.Bucket, fn_stlst, r, -1, minio.PutObjectOptions{
+	_, err = s.minioClient.PutObject(ctx, s.Bucket, fn_stlst, r, -1, minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/json",
 	})
@@ -180,16 +182,79 @@ func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	ctx := context.Background()
+	for object := range s.minioClient.ListObjects(ctx, s.Bucket, minio.ListObjectsOptions{Prefix: tenant, Recursive: true}) {
+		s.minioClient.RemoveObject(ctx, s.Bucket, object.Key, minio.RemoveObjectOptions{ForceDelete: true})
+	}
+
 	return "", nil
 }
 
 func (s *S3TenantManager) HasTenant(tenant string) bool {
+	tenant = strings.ToLower(tenant)
 	for _, store := range s.storelist {
 		if strings.EqualFold(store.Tenant, tenant) {
 			return true
 		}
 	}
 	return false
+}
+
+// SetConfig writing a new config object for the tenant
+func (s *S3TenantManager) SetConfig(tenant string, config interfaces.TenantConfig) error {
+	ctx := context.Background()
+	cfnName := s.getConfigName(tenant)
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	r := bytes.NewReader(data)
+	_, err = s.minioClient.PutObject(ctx, s.Bucket, cfnName, r, -1, minio.PutObjectOptions{
+		ServerSideEncryption: s.getEncryption(),
+		ContentType:          "application/json",
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetConfig reading the config object for the tenant
+func (s *S3TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
+	ctx := context.Background()
+	cfnName := s.getConfigName(tenant)
+
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, cfnName, minio.StatObjectOptions{})
+	if err != nil {
+		if errResp, ok := err.(minio.ErrorResponse); ok {
+			if errResp.StatusCode == 404 {
+				return nil, nil
+			}
+		}
+		return nil, err
+	}
+	reader, err := s.minioClient.GetObject(ctx, s.Bucket, cfnName, minio.GetObjectOptions{
+		ServerSideEncryption: nil,
+	})
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(reader)
+	var cfn interfaces.TenantConfig
+	if err == nil && data != nil {
+		err = json.Unmarshal(data, &cfn)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &cfn, nil
+}
+
+func (s *S3TenantManager) getConfigName(tenant string) string {
+	tenant = strings.ToLower(tenant)
+	return fmt.Sprintf("%s/%s/%s", tenant, "_config", "config.json")
 }
 
 func (s *S3TenantManager) GetSize(tenant string) int64 {

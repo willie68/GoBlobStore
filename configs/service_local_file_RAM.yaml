@@ -33,11 +33,11 @@ engine:
     properties:
       rootpath: R:/blbbck
 headermapping:
-  headerprefix: X-
-  retention: X-es-retention
-  tenant: X-es-tenant
-  apikey: X-es-apikey
-  filename: X-es-filename
+  headerprefix: x-
+  retention: x-retention
+  tenant: x-tenant
+  apikey: x-apikey
+  filename: x-filename
 auth:
   type:
   properties: 

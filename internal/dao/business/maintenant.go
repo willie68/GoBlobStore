@@ -22,7 +22,7 @@ type MainTenantDao struct {
 	rmtSync sync.Mutex
 }
 
-//Init initialise this dao
+// Init initialise this dao
 func (m *MainTenantDao) Init() error {
 	var err error
 	if m.TntDao == nil {
@@ -37,7 +37,7 @@ func (m *MainTenantDao) Init() error {
 	return err
 }
 
-//GetTenants walk thru all configured tenants and get the id back
+// GetTenants walk thru all configured tenants and get the id back
 func (m *MainTenantDao) GetTenants(callback func(tenant string) bool) error {
 	return m.TntDao.GetTenants(func(t string) bool {
 		if !slicesutils.Contains(m.rmTnt, t) {
@@ -47,7 +47,7 @@ func (m *MainTenantDao) GetTenants(callback func(tenant string) bool) error {
 	})
 }
 
-//AddTenant adding a new tenant
+// AddTenant adding a new tenant
 func (m *MainTenantDao) AddTenant(tenant string) error {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return errors.New("can't add tenant, it's in removal state")
@@ -59,7 +59,7 @@ func (m *MainTenantDao) AddTenant(tenant string) error {
 	return err
 }
 
-//RemoveTenant removing a tenant, deleting all data async, return the processid for this
+// RemoveTenant removing a tenant, deleting all data async, return the processid for this
 func (m *MainTenantDao) RemoveTenant(tenant string) (string, error) {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return "", errors.New("tenant is already in removal state")
@@ -87,7 +87,7 @@ func (m *MainTenantDao) removeTnt(tenant string) {
 	m.rmtSync.Unlock()
 }
 
-//HasTenant checking if a tenant is present
+// HasTenant checking if a tenant is present
 func (m *MainTenantDao) HasTenant(tenant string) bool {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return false
@@ -95,7 +95,31 @@ func (m *MainTenantDao) HasTenant(tenant string) bool {
 	return m.TntDao.HasTenant(tenant)
 }
 
-//GetSize getting the overall storage size for this tenant
+// SetConfig writing a new config object for the tenant
+func (m *MainTenantDao) SetConfig(tenant string, config interfaces.TenantConfig) error {
+	err := m.TntDao.SetConfig(tenant, config)
+	if m.hasBck {
+		m.BckDao.SetConfig(tenant, config)
+	}
+	return err
+}
+
+// GetConfig reading the config object for the tenant
+func (m *MainTenantDao) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
+	cfn, err := m.TntDao.GetConfig(tenant)
+	if err != nil {
+		return nil, err
+	}
+	if cfn == nil {
+		cfn, err = m.BckDao.GetConfig(tenant)
+		if err != nil {
+			log.Logger.Errorf("error reading config for tenant %s from backup. %v", tenant, err)
+		}
+	}
+	return cfn, nil
+}
+
+// GetSize getting the overall storage size for this tenant
 func (m *MainTenantDao) GetSize(tenant string) int64 {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return -1
@@ -103,7 +127,7 @@ func (m *MainTenantDao) GetSize(tenant string) int64 {
 	return m.TntDao.GetSize(tenant)
 }
 
-//Close closing the dao
+// Close closing the dao
 func (m *MainTenantDao) Close() error {
 	var err error
 	if m.TntDao != nil {
