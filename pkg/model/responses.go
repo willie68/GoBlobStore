@@ -1,21 +1,32 @@
 package model
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-type GetResponse struct {
+	"github.com/willie68/GoBlobStore/internal/config"
+)
+
+type GetConfigResponse struct {
 	TenantID string `json:"tenantid"`
-	Created  bool   `json:"created"`
+	// to be compatible
+	Created    bool           `json:"created"`
+	Backup     config.Storage `json:"backup"`
+	Properties map[string]any `json:"properties"`
 }
 
-func (r GetResponse) MarshalJSON() ([]byte, error) {
+func (r GetConfigResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type     string `json:"type"`
-		TenantID string `json:"tenantid"`
-		Created  bool   `json:"created"`
+		Type       string         `json:"type"`
+		TenantID   string         `json:"tenantid"`
+		Created    bool           `json:"created"`
+		Backup     config.Storage `json:"backup"`
+		Properties map[string]any `json:"properties"`
 	}{
-		Type:     "createResponse",
-		TenantID: r.TenantID,
-		Created:  r.Created,
+		Type:       "configResponse",
+		TenantID:   r.TenantID,
+		Created:    r.Created,
+		Backup:     r.Backup,
+		Properties: r.Properties,
 	})
 }
 

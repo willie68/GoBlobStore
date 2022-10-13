@@ -1,6 +1,7 @@
 package apiv1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -64,9 +65,19 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	rsp := model.GetResponse{
+	tntCnf, err := dao.GetConfig(tenant)
+	if err != nil {
+		msg := "error getting tenant config"
+		httputils.Err(response, request, serror.InternalServerError(fmt.Errorf("tenant-error: "+msg+": %v", err)))
+		return
+	}
+	rsp := model.GetConfigResponse{
 		TenantID: tenant,
 		Created:  dao.HasTenant(tenant),
+	}
+	if tntCnf != nil {
+		rsp.Backup = tntCnf.Backup
+		rsp.Properties = tntCnf.Properties
 	}
 	render.JSON(response, request, rsp)
 }
