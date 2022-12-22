@@ -103,9 +103,6 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 
 func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string) (interfaces.Index, error) {
 	var dao interfaces.Index
-	if stg.Storageclass == "" {
-		return &nop.NOPIndex{}, nil
-	}
 	if stg.Storageclass != "" {
 		s := stg.Storageclass
 		s = strings.ToLower(s)
