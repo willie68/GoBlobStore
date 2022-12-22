@@ -235,6 +235,7 @@ func main() {
 	}
 
 	config.File = configFile
+	log.Logger.Infof("using config file: %s", configFile)
 
 	// autorestart starts here...
 	if err := config.Load(); err != nil {
