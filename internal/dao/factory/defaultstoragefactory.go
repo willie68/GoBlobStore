@@ -11,6 +11,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/mongodb"
+	"github.com/willie68/GoBlobStore/internal/dao/nop"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	log "github.com/willie68/GoBlobStore/internal/logging"
@@ -41,7 +42,7 @@ func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.Rete
 	return nil
 }
 
-//GetStorageDao return the storage dao for the desired tenant
+// GetStorageDao return the storage dao for the desired tenant
 func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobStorageDao, error) {
 	storageDao, ok := d.tenantStores[tenant]
 	if !ok {
@@ -103,7 +104,9 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 
 func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string) (interfaces.Index, error) {
 	var dao interfaces.Index
-
+	if stg.Storageclass == "" {
+		return &nop.NOPIndex{}, nil
+	}
 	if stg.Storageclass != "" {
 		s := stg.Storageclass
 		s = strings.ToLower(s)
