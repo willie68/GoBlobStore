@@ -110,7 +110,7 @@ func (m *MainTenantDao) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 	if err != nil {
 		return nil, err
 	}
-	if cfn == nil {
+	if (cfn == nil) && (m.BckDao != nil) {
 		cfn, err = m.BckDao.GetConfig(tenant)
 		if err != nil {
 			log.Logger.Errorf("error reading config for tenant %s from backup. %v", tenant, err)
