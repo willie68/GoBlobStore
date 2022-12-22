@@ -129,6 +129,9 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 		response.Header().Add(RetentionHeader, strconv.FormatInt(int64(b.Retention), 10))
 	}
 	response.Header().Set("Content-Type", b.ContentType)
+	if b.ContentLength > 0 {
+		response.Header().Set("Content-Length", fmt.Sprintf("%d", b.ContentLength))
+	}
 	response.WriteHeader(http.StatusOK)
 
 	err = storage.RetrieveBlob(idStr, response)
