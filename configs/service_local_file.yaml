@@ -33,6 +33,15 @@ headermapping:
   filename:
 #  apikey: X-es-apikey
 auth:
-  type: jwt
+  type: #jwt
   properties: 
     validate: false
+    strict: true
+    tenantClaim: Tenant
+    roleClaim: 
+    rolemapping: 
+        object-reader: Reader
+        object-creator: Creator
+        object-admin: ObAdmin
+        tenant-admin: TnAdmin
+        admin: Admin
