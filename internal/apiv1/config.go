@@ -7,7 +7,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
@@ -106,8 +108,23 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
+	var cfg config.Storage
+	err = httputils.Decode(request, &cfg)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
 
 	err = dao.AddTenant(tenant)
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	tntcfg := interfaces.TenantConfig{
+		Backup: cfg,
+	}
+	err = dao.SetConfig(tenant, tntcfg)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
