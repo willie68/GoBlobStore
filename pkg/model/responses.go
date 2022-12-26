@@ -32,15 +32,18 @@ func (r GetConfigResponse) MarshalJSON() ([]byte, error) {
 
 type CreateResponse struct {
 	TenantID string `json:"tenantid"`
+	Backup   string `json:"backup"`
 }
 
 func (r CreateResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Type     string `json:"type"`
 		TenantID string `json:"tenantid"`
+		Backup   string `json:"backup"`
 	}{
 		Type:     "createResponse",
 		TenantID: r.TenantID,
+		Backup:   r.Backup,
 	})
 }
 

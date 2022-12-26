@@ -121,18 +121,22 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	tntcfg := interfaces.TenantConfig{
-		Backup: cfg,
-	}
-	err = dao.SetConfig(tenant, tntcfg)
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
-	}
-
 	rsp := model.CreateResponse{
 		TenantID: tenant,
 	}
+
+	if cfg.Storageclass != "" {
+		tntcfg := interfaces.TenantConfig{
+			Backup: cfg,
+		}
+		err = dao.SetConfig(tenant, tntcfg)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
+		}
+		rsp.Backup = cfg.Storageclass
+	}
+
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, rsp)
 }
