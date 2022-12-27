@@ -15,6 +15,7 @@ engine:
   retentionManager: SingleRetention
   tenantautoadd: true
   backupsyncmode: false
+  allowtntbackup: true
   storage:
     storageclass: SimpleFile
     properties:

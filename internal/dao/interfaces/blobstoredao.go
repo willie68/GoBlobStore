@@ -11,6 +11,7 @@ import (
 type StorageFactory interface {
 	Init(storage config.Engine, rtnm RetentionManager) error
 	GetStorageDao(tenant string) (BlobStorageDao, error)
+	RemoveStorageDao(tenant string) error
 	Close() error
 }
 

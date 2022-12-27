@@ -22,6 +22,7 @@ const STGCLASS_S3 = "S3Storage"
 const STGCLASS_FASTCACHE = "FastCache"
 
 var ErrNoStg = errors.New("no storage class given")
+var _ interfaces.StorageFactory = &DefaultStorageFactory{}
 
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
@@ -56,6 +57,19 @@ func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobSto
 	return *storageDao, nil
 }
 
+func (d *DefaultStorageFactory) RemoveStorageDao(tenant string) error {
+	storageDao, ok := d.tenantStores[tenant]
+	if ok {
+		err := (*storageDao).Close()
+		if err != nil {
+			log.Logger.Errorf("can't close storage for tenant: %s\n %v", tenant, err)
+			return err
+		}
+		delete(d.tenantStores, tenant)
+	}
+	return nil
+}
+
 // createStorage creating a new storage dao for the tenant depending on the configuration
 func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobStorageDao, error) {
 	if !d.TenantDao.HasTenant(tenant) {
@@ -85,6 +99,27 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		return nil, err
 	}
 
+	// creating the tenant specifig backup storage
+	// an error in this part should prevent the startup of the service,
+	// so the last error will be stored into the tenant main storage dao
+	var lasterror error
+	tntCfg, err := d.TenantDao.GetConfig(tenant)
+	if err != nil {
+		lasterror = err
+	}
+
+	var tntBckDao interfaces.BlobStorageDao
+	if tntCfg != nil {
+		// we have to set a password and client side encryption is not supported
+		tntCfg.Backup.Properties["password"] = tenant
+		tntCfg.Backup.Properties["insecure"] = true
+		tntBckDao, err = d.getImplStgDao(tntCfg.Backup, tenant)
+		if err != nil {
+			log.Logger.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
+			lasterror = err
+		}
+	}
+
 	mdao := &business.MainStorageDao{
 		Bcksyncmode: d.cnfg.BackupSyncmode,
 		RtnMng:      d.RtnMgr,
@@ -93,6 +128,8 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		CchDao:      cchdao,
 		IdxDao:      idxdao,
 		Tenant:      tenant,
+		TntBckDao:   tntBckDao,
+		TntError:    lasterror,
 	}
 	err = mdao.Init()
 	if err != nil {

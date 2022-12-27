@@ -54,7 +54,41 @@ The `index` is the fifth element. This is used to search for specific blobs via 
 
 ### Tenant specific backup storage
 
-for every tenant there is the possibility to allow a specific backup storage system, instead of using the default backup storage. This feature will be activate with the `allowtntbackup` flag in the configuration. Now a tenant have the possibility to add a own backup storage to the configuration. After creating (or changing) this storage, the blobstore will automatically start a resynchronization task for that tenant. This task will automatically move all backup file to the new storage provider. In the time of this operation further changes on the backup store will be permitted. Allowed provider for the tenant backup storage are: S3 Storage, Blob Storage.
+for every tenant there is the possibility to allow a specific backup storage system, beside of using the default backup storage. This feature will be activate with the `allowtntbackup` flag in the configuration. Now a tenant have the possibility to add a own backup storage to the configuration. After creating (or changing) this storage, the blobstore will automatically start a resynchronization task for that tenant. This task will automatically move all backup file to the new storage provider. In the time of this operation further changes on the backup store will be permitted. Allowed provider for the tenant backup storage are: S3 Storage, Blob Storage. 
+
+#### Limitation:
+
+- No encryption for external S3 storage
+
+- no auto move on changes of the storage properties
+
+   
+
+Example of a post to create a new tenant backup storage:
+POST: https://localhost:8443/api/v1/config
+Headers: X-tenant: <tenant>
+
+```json
+{
+  "storageclass": "S3Storage",
+  "properties" : {
+   "endpoint": "http://127.0.0.1:9001",
+   "bucket": "mcs",
+   "accessKey": "xiSwpTnOf6QXxu3Y",
+   "secretKey": "sT7lJIgV4tYoOljdpfr9kMoLE0PgMPJ9"
+  }
+}
+```
+
+Answer:
+
+```json
+{
+  "type": "createResponse",
+  "tenantid": "mcs",
+  "backup": "S3Storage"
+}
+```
 
 ## SimpleFile Storage
 

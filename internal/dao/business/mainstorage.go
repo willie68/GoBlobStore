@@ -24,9 +24,11 @@ type MainStorageDao struct {
 	BckDao      interfaces.BlobStorageDao
 	CchDao      interfaces.BlobStorageDao
 	IdxDao      interfaces.Index
+	TntBckDao   interfaces.BlobStorageDao
 	Bcksyncmode bool
 	Tenant      string
 	hasIdx      bool
+	TntError    error
 }
 
 // Init initialise this dao
@@ -72,11 +74,20 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 		r := model.RetentionEntryFromBlobDescription(*b)
 		err = m.RtnMng.AddRetention(m.Tenant, &r)
 	}
+	// main backup
 	if m.BckDao != nil {
 		if m.Bcksyncmode {
 			m.backupFile(b, id)
 		} else {
 			go m.backupFile(b, id)
+		}
+	}
+	// tenant backup
+	if m.TntBckDao != nil {
+		if m.Bcksyncmode {
+			m.tntBackupFile(b, id)
+		} else {
+			go m.tntBackupFile(b, id)
 		}
 	}
 	go m.cacheFile(b)
@@ -155,9 +166,21 @@ func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
 	}
 }
 
+func (m *MainStorageDao) tntBackupFile(b *model.BlobDescription, id string) {
+	if m.TntBckDao != nil {
+		m.bckFile(m.TntBckDao, b, id)
+	}
+}
+
 func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
 	if m.BckDao != nil {
-		ok, err := m.BckDao.HasBlob(b.BlobID)
+		m.bckFile(m.BckDao, b, id)
+	}
+}
+
+func (m *MainStorageDao) bckFile(dao interfaces.BlobStorageDao, b *model.BlobDescription, id string) {
+	if dao != nil {
+		ok, err := dao.HasBlob(b.BlobID)
 		if err != nil {
 			log.Logger.Errorf("main: backupFile: check blob: %s, %v", b.BlobID, err)
 			return
@@ -172,7 +195,7 @@ func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
 				}
 			}()
 			defer rd.Close()
-			if _, err := m.BckDao.StoreBlob(b, rd); err != nil {
+			if _, err := dao.StoreBlob(b, rd); err != nil {
 				log.Logger.Errorf("main: backupFile: store, error getting blob: %s, %v", id, err)
 			}
 		}
@@ -375,7 +398,7 @@ func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
 	return stgCI, nil
 }
 
-//GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returning a false
+// GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returning a false
 func (m *MainStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return m.StgDao.GetAllRetentions(callback)
 }
@@ -412,6 +435,11 @@ func (m *MainStorageDao) ResetRetention(id string) error {
 		}
 	}
 	return err
+}
+
+// Error get last error for this tenant
+func (m *MainStorageDao) Error() error {
+	return m.TntError
 }
 
 // Close closing the blob storage

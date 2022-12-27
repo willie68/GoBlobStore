@@ -20,7 +20,7 @@ var cnfg config.Engine
 var stgf interfaces.StorageFactory
 var migMan *migration.MigrationManagement
 
-//Init initialise the storage factory
+// Init initialise the storage factory
 func Init(storage config.Engine) error {
 	cnfg = storage
 	if cnfg.Storage.Storageclass == "" {
@@ -83,7 +83,7 @@ func Init(storage config.Engine) error {
 	return nil
 }
 
-//GetTenantDao returning the tenant for administration tenants
+// GetTenantDao returning the tenant for administration tenants
 func GetTenantDao() (interfaces.TenantDao, error) {
 	if tenantDao == nil {
 		return nil, errors.New("no tenantdao present")
@@ -91,7 +91,7 @@ func GetTenantDao() (interfaces.TenantDao, error) {
 	return tenantDao, nil
 }
 
-//GetTenantDao returning the tenant for administration tenants
+// GetTenantDao returning the tenant for administration tenants
 func GetStorageFactory() (interfaces.StorageFactory, error) {
 	if stgf == nil {
 		return nil, errors.New("no storage factory present")
@@ -99,7 +99,7 @@ func GetStorageFactory() (interfaces.StorageFactory, error) {
 	return stgf, nil
 }
 
-//GetMigrationManagement returning the tenant for administration tenants
+// GetMigrationManagement returning the tenant for administration tenants
 func GetMigrationManagement() (*migration.MigrationManagement, error) {
 	if migMan == nil {
 		return nil, errors.New("no check management present")

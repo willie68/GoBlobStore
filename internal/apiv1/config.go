@@ -1,6 +1,7 @@
 package apiv1
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -103,7 +104,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("create store for tenant %s", tenant)
-	dao, err := dao.GetTenantDao()
+	tntdao, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -115,7 +116,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = dao.AddTenant(tenant)
+	err = tntdao.AddTenant(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -125,15 +126,27 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		TenantID: tenant,
 	}
 
-	if cfg.Storageclass != "" {
+	if !config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
+		err := errors.New("tenant base backups are not allowed")
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+
+	if config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
 		tntcfg := interfaces.TenantConfig{
 			Backup: cfg,
 		}
-		err = dao.SetConfig(tenant, tntcfg)
+		err = tntdao.SetConfig(tenant, tntcfg)
 		if err != nil {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
+		stf, err := dao.GetStorageFactory()
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
+		}
+		stf.RemoveStorageDao(tenant)
 		rsp.Backup = cfg.Storageclass
 	}
 
