@@ -1,12 +1,18 @@
 package apiv1
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
+	"github.com/willie68/GoBlobStore/internal/dao/factory"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
@@ -64,9 +70,20 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	rsp := model.GetResponse{
+	tntCnf, err := dao.GetConfig(tenant)
+	if err != nil {
+		msg := "error getting tenant config"
+		httputils.Err(response, request, serror.InternalServerError(fmt.Errorf("tenant-error: "+msg+": %v", err)))
+		return
+	}
+	rsp := model.GetConfigResponse{
 		TenantID: tenant,
 		Created:  dao.HasTenant(tenant),
+	}
+	if tntCnf != nil {
+		rsp.Backup = tntCnf.Backup
+		rsp.Properties = tntCnf.Properties
+		rsp.Backup.Properties["secretKey"] = "*"
 	}
 	render.JSON(response, request, rsp)
 }
@@ -90,13 +107,19 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("create store for tenant %s", tenant)
-	dao, err := dao.GetTenantDao()
+	tntdao, err := dao.GetTenantDao()
+	if err != nil {
+		httputils.Err(response, request, serror.InternalServerError(err))
+		return
+	}
+	var cfg config.Storage
+	err = httputils.Decode(request, &cfg)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
-	err = dao.AddTenant(tenant)
+	err = tntdao.AddTenant(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -105,6 +128,36 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 	rsp := model.CreateResponse{
 		TenantID: tenant,
 	}
+
+	if !config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
+		err := errors.New("tenant base backups are not allowed")
+		httputils.Err(response, request, serror.BadRequest(err))
+		return
+	}
+
+	if config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
+		if !strings.EqualFold(cfg.Storageclass, factory.STGCLASS_S3) {
+			err := fmt.Errorf("storage class \"%s\" is not allowed", cfg.Storageclass)
+			httputils.Err(response, request, serror.BadRequest(err))
+			return
+		}
+		tntcfg := interfaces.TenantConfig{
+			Backup: cfg,
+		}
+		err = tntdao.SetConfig(tenant, tntcfg)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
+		}
+		stf, err := dao.GetStorageFactory()
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
+		}
+		stf.RemoveStorageDao(tenant)
+		rsp.Backup = cfg.Storageclass
+	}
+
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, rsp)
 }

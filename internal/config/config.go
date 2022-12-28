@@ -51,6 +51,7 @@ type Engine struct {
 	RetentionManager string  `yaml:"retentionManager"`
 	Tenantautoadd    bool    `yaml:"tenantautoadd"`
 	BackupSyncmode   bool    `yaml:"backupsyncmode"`
+	AllowTntBackup   bool    `yaml:"allowtntbackup"`
 	Storage          Storage `yaml:"storage"`
 	Backup           Storage `yaml:"backup"`
 	Cache            Storage `yaml:"cache"`

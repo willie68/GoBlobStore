@@ -4,7 +4,6 @@
     // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [   
-    
         {
             "name": "GoBLobStore",
             "type": "go",
@@ -16,9 +15,23 @@
             "env": {},
             "args": [
                 "-c",
-                "${workspaceFolder}/configs/service_local_s3.yaml",
-            ]
-        },
+                "${workspaceFolder}/configs/service_local_file.yaml", 
+            ] 
+        }, 
+        { 
+            "name": "Migration GoBLobStore ", 
+            "type": "go", 
+            "request": "launch", 
+            "mode": "auto", 
+            "program": "${workspaceFolder}/cmd/service/main.go", 
+            "cwd": "${workspaceFolder}", 
+            "output": "debug", 
+            "env": {}, 
+            "args": [ 
+                "-c", 
+                "${workspaceFolder}/configs/service_local_file_migration.yaml", 
+            ] 
+        }, 
         {
             "name": "RAM GoBLobStore",
             "type": "go",
@@ -27,7 +40,10 @@
             "program": "${workspaceFolder}/cmd/service/main.go",
             "cwd": "${workspaceFolder}",
             "output": "debug",
-            "env": {},
+            "env": {
+                "locals3.accesskey": "access",
+                "locals3.secretkey": "access",
+            },
             "args": [
                 "-c",
                 "${workspaceFolder}/configs/service_local_file_ram.yaml",

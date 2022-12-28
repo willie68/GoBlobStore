@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 )
 
 func initTenantTest(t *testing.T) {
@@ -95,4 +97,44 @@ func TestSimplefileTenantManager(t *testing.T) {
 
 	ast.Nil(err)
 	ast.Equal(0, len(tenants))
+}
+
+func TestSimplefileTenantManagerConfig(t *testing.T) {
+	initTest(t)
+
+	ast := assert.New(t)
+
+	dao := SimpleFileTenantManager{
+		RootPath: rootpath,
+	}
+	err := dao.Init()
+	ast.Nil(err)
+
+	dao.AddTenant("MCS")
+	ast.True(dao.HasTenant("MCS"))
+
+	cfn, err := dao.GetConfig("MCS")
+	ast.Nil(err)
+	ast.Nil(cfn)
+
+	stg := config.Storage{
+		Storageclass: "S3",
+		Properties:   make(map[string]interface{}),
+	}
+	stg.Properties["accessKey"] = "accessKey"
+	stg.Properties["secretKey"] = "secretKey"
+
+	cfn = &interfaces.TenantConfig{
+		Backup: stg,
+	}
+	err = dao.SetConfig("MCS", *cfn)
+	ast.Nil(err)
+
+	cfn2, err := dao.GetConfig("MCS")
+	ast.Nil(err)
+	ast.NotNil(cfn2)
+
+	ast.Equal(cfn.Backup.Storageclass, cfn2.Backup.Storageclass)
+	ast.Equal(cfn.Backup.Properties["accessKey"], cfn2.Backup.Properties["accessKey"])
+	ast.Equal(cfn.Backup.Properties["secretKey"], cfn2.Backup.Properties["secretKey"])
 }

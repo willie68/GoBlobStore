@@ -72,6 +72,9 @@ func (s *SimpleFileBlobStorageDao) UpdateBlobDescription(id string, b *model.Blo
 }
 
 func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
+	if id == "" {
+		return false, nil
+	}
 	found := s.hasBlobV1(id)
 	if found {
 		return true, nil

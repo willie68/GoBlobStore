@@ -1,7 +1,8 @@
 port: 8000
-sslport: 8443
-serviceURL: https://127.0.0.1:8443
+sslport: 8453
+serviceURL: https://127.0.0.1:8453
 secretfile: ""
+apikey: false
 healthcheck:
   period: 30
 # enable/disable metrics 
@@ -14,6 +15,7 @@ engine:
   retentionManager: SingleRetention
   tenantautoadd: true
   backupsyncmode: false
+  allowtntbackup: true
   storage:
     storageclass: SimpleFile
     properties:
@@ -21,12 +23,12 @@ engine:
   backup:
     storageclass: S3Storage
     properties:
-      endpoint: "http://127.0.0.1:9002"
+      endpoint: "https://127.0.0.1:9002"
       bucket: "goblobstore"
       accessKey: D9Q2D6JQGW1MVCC98LQL
       secretKey: LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr
       password: 4jsfhdjHsd?
-      insecure: true
+      insecure: false
 headermapping:
   headerprefix: x-
   retention: X-es-retention

@@ -52,6 +52,46 @@ Another unit is the retention system. This works independently of the Storgae pr
 
 The `index` is the fifth element. This is used to search for specific blobs via properties, be they system or custom properties.
 
+### Tenant specific backup storage
+
+for every tenant there is the possibility to allow a specific backup storage system, beside of using the default backup storage. This feature will be activate with the `allowtntbackup` flag in the configuration. Now a tenant have the possibility to add a own backup storage to the configuration. After creating (or changing) this storage, the blobstore will automatically start a resynchronization task for that tenant. This task will automatically move all backup file to the new storage provider. In the time of this operation further changes on the backup store will be permitted. Allowed provider for the tenant backup storage are: S3 Storage, Blob Storage. 
+
+#### Limitation:
+
+- Only S3 Storage is permitted
+
+- No encryption for external S3 storage
+
+- no auto move on changes of the storage properties
+
+   
+
+Example of a post to create a new tenant backup storage:
+POST: https://localhost:8443/api/v1/config
+Headers: X-tenant: <tenant>
+
+```json
+{
+  "storageclass": "S3Storage",
+  "properties" : {
+   "endpoint": "http://127.0.0.1:9001",
+   "bucket": "mcs",
+   "accessKey": "xiSwpTnOf6QXxu3Y",
+   "secretKey": "sT7lJIgV4tYoOljdpfr9kMoLE0PgMPJ9"
+  }
+}
+```
+
+Answer:
+
+```json
+{
+  "type": "createResponse",
+  "tenantid": "mcs",
+  "backup": "S3Storage"
+}
+```
+
 ## SimpleFile Storage
 
 The simple file storage is a file system based storage. 
@@ -61,13 +101,14 @@ engine:
  retentionManager: SingleRetention
  tenantautoadd: true
  backupsyncmode: false
+ allowtntbackup: false
  storage:
   storageclass: SimpleFile
   properties:
    rootpath: /data/storage
 ```
 
-You can use this storage for all kind of storage types, (even backup or cache). The only property needed is the rootpath which will lead to the used file system. On docker you can use any mount point / volume for that. Ever tenant will get a subfolder. On this tenant directory there will be a 2 dimensional folder structure for  the blob data. For the retention files there will be a dedicated folder.
+You can use this storage for all kind of storage types, (even backup or cache). The only property needed is the rootpath which will lead to the used file system. On docker you can use any mount point / volume for that. Every tenant will get a subfolder. On this tenant directory there will be a 2 dimensional folder structure for  the blob data. For the retention files there will be a dedicated folder.
 
 ## S3 Storage
 
@@ -80,6 +121,7 @@ engine:
  retentionManager: SingleRetention
  tenantautoadd: true
  backupsyncmode: false
+ allowtntbackup: false
  storage:
   storageclass: S3Storage
   properties:
@@ -98,6 +140,7 @@ engine:
  retentionManager: SingleRetention
  tenantautoadd: true
  backupsyncmode: false
+ allowtntbackup: false
  storage:
   storageclass: SimpleFile
   properties:
@@ -124,6 +167,7 @@ engine:
  retentionManager: SingleRetention
  tenantautoadd: true
  backupsyncmode: false
+ allowtntbackup: false
  storage:
   storageclass: S3Storage
   properties:
@@ -232,7 +276,7 @@ auth:
 For finding desired blobs you can configure an index engine. Possible options are
 
 - MongoDB
-- Bluge (https://blugelabs.com/bluge/)
+- Bluge (https://blugelabs.com/bluge/) (only in single node installations)
 
 (sorry, nothing more at this moment)
 
@@ -278,7 +322,7 @@ Operators have aliases: `AND` -> `&` and `OR` -> `|`:
 
 ### Internal Fulltextindex
 
-For smaller installations there is a small fulltext implementation based on bluge. (https://blugelabs.com/)
+For smaller installations there is a small fulltext implementation based on bluge. (https://blugelabs.com/) This index can only be used in a single instance installation. With multi instances the writing can fail, if the index of a tenant is written from two nodes at a time. For multi instance searching please use the mongo index.
 
 ```yaml
 engine:
@@ -343,4 +387,4 @@ Second via jwt: you can have a configurable claim for the tenant, which is used 
 `/api/v1/admin/check`
 `/api/v1/admin/restore`
 
-The third option is a configurable http header. This order is also the order for evaluating. With one exclusion, if you try to select the tenant via route and jwt tenant evaluation is active, than both tenants will be checked to be equal. Otherwise no access is given.
+The third option is a configurable http header. This order is also the order for evaluating. With one exclusion, if you try to select the tenant via route and jwt tenant evaluation is active, than both tenants will be checked to be equal. Otherwise access is denied.

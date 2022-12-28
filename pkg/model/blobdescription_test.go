@@ -77,7 +77,7 @@ func TestCheck(t *testing.T) {
 		Properties:    make(map[string]interface{}),
 		Hash:          "sha-256:fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
 		Check: &Check{
-			Storage: &CheckInfo{
+			Store: &CheckInfo{
 				LastCheck: &now,
 				Healthy:   true,
 				Message:   "checked",
@@ -105,10 +105,10 @@ func TestCheck(t *testing.T) {
 
 	ast.Equal(blobDescription.BlobID, blobInfo.BlobID)
 
-	ast.True(now.Equal(*blobInfo.Check.Storage.LastCheck))
+	ast.True(now.Equal(*blobInfo.Check.Store.LastCheck))
 	ast.True(now.Equal(*blobInfo.Check.Backup.LastCheck))
 
 	ast.True(blobInfo.Check.Healthy)
-	ast.True(blobInfo.Check.Storage.Healthy)
+	ast.True(blobInfo.Check.Store.Healthy)
 	ast.True(blobInfo.Check.Backup.Healthy)
 }

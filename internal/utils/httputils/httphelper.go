@@ -52,10 +52,10 @@ func TenantID(r *http.Request) (string, error) {
 func Decode(r *http.Request, v interface{}) error {
 	err := render.DefaultDecoder(r, v)
 	if err != nil {
-		serror.BadRequest(err, "decode-body", "could not decode body")
+		return serror.BadRequest(err, "decode-body", "could not decode body")
 	}
 	if err := val.Struct(v); err != nil {
-		serror.BadRequest(err, "validate-body", "body invalid")
+		return serror.BadRequest(err, "validate-body", "body invalid")
 	}
 	return nil
 }

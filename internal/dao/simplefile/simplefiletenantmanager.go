@@ -1,6 +1,7 @@
 package simplefile
 
 import (
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -72,6 +73,44 @@ func (s *SimpleFileTenantManager) HasTenant(tenant string) bool {
 	}
 
 	return true
+}
+
+// SetConfig writing a new config object for the tenant
+func (s *SimpleFileTenantManager) SetConfig(tenant string, config interfaces.TenantConfig) error {
+	cfnName := s.getConfigName(tenant)
+	err := os.MkdirAll(filepath.Dir(cfnName), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	str, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(cfnName, str, os.ModePerm)
+	return err
+}
+
+// GetConfig reading the config object for the tenant
+func (s *SimpleFileTenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
+	cfnName := s.getConfigName(tenant)
+	if _, err := os.Stat(cfnName); os.IsNotExist(err) {
+		return nil, nil
+	}
+	data, err := ioutil.ReadFile(cfnName)
+	if err != nil {
+		return nil, err
+	}
+
+	var cfn interfaces.TenantConfig
+	err = json.Unmarshal(data, &cfn)
+	if err != nil {
+		return nil, err
+	}
+	return &cfn, nil
+}
+
+func (s *SimpleFileTenantManager) getConfigName(tenant string) string {
+	return filepath.Join(s.RootPath, tenant, "_config", "config.json")
 }
 
 func (s *SimpleFileTenantManager) GetSize(tenant string) int64 {

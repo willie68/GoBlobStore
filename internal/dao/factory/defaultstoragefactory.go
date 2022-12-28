@@ -11,18 +11,18 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/mongodb"
-	"github.com/willie68/GoBlobStore/internal/dao/nop"
+	"github.com/willie68/GoBlobStore/internal/dao/noindex"
 	"github.com/willie68/GoBlobStore/internal/dao/s3"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
-const STGCLASS_SIMPLE_FILE = "SimpleFile"
-const STGCLASS_S3 = "S3Storage"
+const STGCLASS_SIMPLE_FILE = "simplefile"
+const STGCLASS_S3 = "s3storage"
+const STGCLASS_FASTCACHE = "fastcache"
 
-const STGCLASS_FASTCACHE = "FastCache"
-
-var NO_STG_ERROR = errors.New("no storage class given")
+var ErrNoStg = errors.New("no storage class given")
+var _ interfaces.StorageFactory = &DefaultStorageFactory{}
 
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
@@ -57,6 +57,19 @@ func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobSto
 	return *storageDao, nil
 }
 
+func (d *DefaultStorageFactory) RemoveStorageDao(tenant string) error {
+	storageDao, ok := d.tenantStores[tenant]
+	if ok {
+		err := (*storageDao).Close()
+		if err != nil {
+			log.Logger.Errorf("can't close storage for tenant: %s\n %v", tenant, err)
+			return err
+		}
+		delete(d.tenantStores, tenant)
+	}
+	return nil
+}
+
 // createStorage creating a new storage dao for the tenant depending on the configuration
 func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobStorageDao, error) {
 	if !d.TenantDao.HasTenant(tenant) {
@@ -72,18 +85,39 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 	}
 
 	bckdao, err := d.getImplStgDao(d.cnfg.Backup, tenant)
-	if err != nil && !errors.Is(err, NO_STG_ERROR) {
+	if err != nil && !errors.Is(err, ErrNoStg) {
 		return nil, err
 	}
 
 	cchdao, err := d.getImplStgDao(d.cnfg.Cache, "blbstg")
-	if err != nil && !errors.Is(err, NO_STG_ERROR) {
+	if err != nil && !errors.Is(err, ErrNoStg) {
 		return nil, err
 	}
 
 	idxdao, err := d.getImplIdxDao(d.cnfg.Index, tenant)
 	if err != nil {
 		return nil, err
+	}
+
+	// creating the tenant specifig backup storage
+	// an error in this part should prevent the startup of the service,
+	// so the last error will be stored into the tenant main storage dao
+	var lasterror error
+	tntCfg, err := d.TenantDao.GetConfig(tenant)
+	if err != nil {
+		lasterror = err
+	}
+
+	var tntBckDao interfaces.BlobStorageDao
+	if tntCfg != nil {
+		// we have to set a password and client side encryption is not supported
+		tntCfg.Backup.Properties["password"] = tenant
+		tntCfg.Backup.Properties["insecure"] = true
+		tntBckDao, err = d.getImplStgDao(tntCfg.Backup, tenant)
+		if err != nil {
+			log.Logger.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
+			lasterror = err
+		}
 	}
 
 	mdao := &business.MainStorageDao{
@@ -94,6 +128,8 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		CchDao:      cchdao,
 		IdxDao:      idxdao,
 		Tenant:      tenant,
+		TntBckDao:   tntBckDao,
+		TntError:    lasterror,
 	}
 	err = mdao.Init()
 	if err != nil {
@@ -104,9 +140,6 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 
 func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string) (interfaces.Index, error) {
 	var dao interfaces.Index
-	if stg.Storageclass == "" {
-		return &nop.NOPIndex{}, nil
-	}
 	if stg.Storageclass != "" {
 		s := stg.Storageclass
 		s = strings.ToLower(s)
@@ -128,9 +161,11 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 				return nil, err
 			}
 		}
+	} else {
+		dao = &noindex.Index{}
 	}
 	if dao == nil {
-		return nil, fmt.Errorf("no searcher indexer class implementation for \"%s\" found. %w", stg.Storageclass, NO_STG_ERROR)
+		return nil, fmt.Errorf("no searcher indexer class implementation for \"%s\" found. %w", stg.Storageclass, ErrNoStg)
 	}
 	return dao, nil
 }
@@ -138,7 +173,8 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
 	var dao interfaces.BlobStorageDao
 	var err error
-	switch stg.Storageclass {
+	stgcl := strings.ToLower(stg.Storageclass)
+	switch stgcl {
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
@@ -169,7 +205,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	}
 
 	if dao == nil {
-		return nil, fmt.Errorf("no storage class implementation for \"%s\" found. %w", stg.Storageclass, NO_STG_ERROR)
+		return nil, fmt.Errorf("no storage class implementation for \"%s\" found. %w", stg.Storageclass, ErrNoStg)
 	}
 	return dao, nil
 }
@@ -195,9 +231,12 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 	if err != nil {
 		return nil, err
 	}
-	password, err := config.GetConfigValueAsString(stg.Properties, "password")
-	if err != nil {
-		return nil, err
+	password := tenant
+	if !insecure {
+		password, err = config.GetConfigValueAsString(stg.Properties, "password")
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &s3.S3BlobStorage{
 		Endpoint:  endpoint,

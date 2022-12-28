@@ -137,6 +137,9 @@ func (m *Index) buildAST(q string) (*query.Query, error) {
 	return &qu, nil
 }
 
+//Index the index will index a single document, be aware this will only work in a single instance installation.
+// the implementation will check, if the index writer is already opened and wait til it's closed, but only
+// in a single instance of the blob storage. So in a multinode enviroment this will fail.
 func (m *Index) Index(id string, b model.BlobDescription) error {
 	// index some data
 	doc := m.toBlugeDoc(b)
