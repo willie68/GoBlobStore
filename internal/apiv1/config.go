@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
+	"github.com/willie68/GoBlobStore/internal/dao/factory"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
@@ -81,6 +83,7 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 	if tntCnf != nil {
 		rsp.Backup = tntCnf.Backup
 		rsp.Properties = tntCnf.Properties
+		rsp.Backup.Properties["secretKey"] = "*"
 	}
 	render.JSON(response, request, rsp)
 }
@@ -128,11 +131,16 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 
 	if !config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
 		err := errors.New("tenant base backups are not allowed")
-		httputils.Err(response, request, serror.InternalServerError(err))
+		httputils.Err(response, request, serror.BadRequest(err))
 		return
 	}
 
 	if config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
+		if !strings.EqualFold(cfg.Storageclass, factory.STGCLASS_S3) {
+			err := fmt.Errorf("storage class \"%s\" is not allowed", cfg.Storageclass)
+			httputils.Err(response, request, serror.BadRequest(err))
+			return
+		}
 		tntcfg := interfaces.TenantConfig{
 			Backup: cfg,
 		}

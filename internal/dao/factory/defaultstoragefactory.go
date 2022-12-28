@@ -17,9 +17,9 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
-const STGCLASS_SIMPLE_FILE = "SimpleFile"
-const STGCLASS_S3 = "S3Storage"
-const STGCLASS_FASTCACHE = "FastCache"
+const STGCLASS_SIMPLE_FILE = "simplefile"
+const STGCLASS_S3 = "s3storage"
+const STGCLASS_FASTCACHE = "fastcache"
 
 var ErrNoStg = errors.New("no storage class given")
 var _ interfaces.StorageFactory = &DefaultStorageFactory{}
@@ -173,7 +173,8 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
 	var dao interfaces.BlobStorageDao
 	var err error
-	switch stg.Storageclass {
+	stgcl := strings.ToLower(stg.Storageclass)
+	switch stgcl {
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
@@ -230,9 +231,12 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 	if err != nil {
 		return nil, err
 	}
-	password, err := config.GetConfigValueAsString(stg.Properties, "password")
-	if err != nil {
-		return nil, err
+	password := tenant
+	if !insecure {
+		password, err = config.GetConfigValueAsString(stg.Properties, "password")
+		if err != nil {
+			return nil, err
+		}
 	}
 	return &s3.S3BlobStorage{
 		Endpoint:  endpoint,

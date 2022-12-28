@@ -58,6 +58,8 @@ for every tenant there is the possibility to allow a specific backup storage sys
 
 #### Limitation:
 
+- Only S3 Storage is permitted
+
 - No encryption for external S3 storage
 
 - no auto move on changes of the storage properties
