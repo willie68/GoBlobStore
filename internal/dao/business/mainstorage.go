@@ -438,7 +438,7 @@ func (m *MainStorageDao) ResetRetention(id string) error {
 }
 
 // Error get last error for this tenant
-func (m *MainStorageDao) Error() error {
+func (m *MainStorageDao) GetLastError() error {
 	return m.TntError
 }
 

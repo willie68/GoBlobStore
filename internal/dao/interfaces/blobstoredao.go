@@ -41,5 +41,7 @@ type BlobStorageDao interface {
 	DeleteRetention(id string) error
 	ResetRetention(id string) error
 
+	GetLastError() error // getting the last error
+
 	Close() error // closing the storage
 }
