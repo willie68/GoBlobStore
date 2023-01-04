@@ -90,9 +90,9 @@ func createBlobDescription(id string) model.BlobDescription {
 		TenantID:      tenant,
 		ContentLength: 22,
 		ContentType:   "text/plain",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		Filename:      fmt.Sprintf("test_%s.txt", id),
-		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}

@@ -1,11 +1,8 @@
 package simplefile
 
 import (
-	"archive/zip"
 	"bytes"
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -17,67 +14,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const (
-	zipfile  = "../../../testdata/mcs.zip"
-	rootpath = "../../../testdata/blobstorage"
-	tenant   = "MCS"
-)
-
-func initTest(t *testing.T) {
-	ast := assert.New(t)
-
-	if _, err := os.Stat(rootpath); err == nil {
-		err := os.RemoveAll(rootpath)
-		ast.Nil(err)
-	}
-	// getting the zip file and extracting it into the file system
-	os.MkdirAll(rootpath, os.ModePerm)
-
-	// getting the zip file and extracting it into the file system
-	archive, err := zip.OpenReader(zipfile)
-	if err != nil {
-		panic(err)
-	}
-	defer archive.Close()
-
-	for _, f := range archive.File {
-		filePath := filepath.Join(rootpath, f.Name)
-		fmt.Println("unzipping file ", filePath)
-
-		if !strings.HasPrefix(filePath, filepath.Clean(rootpath)+string(os.PathSeparator)) {
-			fmt.Println("invalid file path")
-			return
-		}
-		if f.FileInfo().IsDir() {
-			fmt.Println("creating directory...")
-			os.MkdirAll(filePath, os.ModePerm)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
-			panic(err)
-		}
-
-		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			panic(err)
-		}
-
-		fileInArchive, err := f.Open()
-		if err != nil {
-			panic(err)
-		}
-
-		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			panic(err)
-		}
-
-		dstFile.Close()
-		fileInArchive.Close()
-	}
-}
-
-func getStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
+func getSFStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
 	dao := SimpleFileBlobStorageDao{
 		RootPath: rootpath,
 		Tenant:   tenant,
@@ -106,7 +43,7 @@ func TestTenanthandling(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 	ast := assert.New(t)
 
 	ok, err := dao.HasBlob("wrongid")
@@ -123,7 +60,7 @@ func TestNotFound(t *testing.T) {
 
 func TestList(t *testing.T) {
 	initTest(t)
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 
 	srcPath, _ := filepath.Abs(filepath.Join(rootpath, tenant))
 	assert.Equal(t, srcPath, dao.filepath)
@@ -149,7 +86,7 @@ func TestList(t *testing.T) {
 
 func TestInfo(t *testing.T) {
 	initTest(t)
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 	ast := assert.New(t)
 
 	ok, err := dao.HasBlob("004b4987-42fb-43e4-8e13-d6994ce0e6f1")
@@ -177,16 +114,16 @@ func TestInfo(t *testing.T) {
 
 func TestCRUD(t *testing.T) {
 	ast := assert.New(t)
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 
 	b := model.BlobDescription{
 		StoreID:       "MCS",
 		TenantID:      "MCS",
 		ContentLength: 22,
 		ContentType:   "text/plain",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		Filename:      "test.txt",
-		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}
@@ -228,7 +165,7 @@ func TestCRUD(t *testing.T) {
 func TestRetentionStorage(t *testing.T) {
 	ast := assert.New(t)
 
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 	ast.NotNil(dao)
 
 	b := model.BlobDescription{
@@ -236,9 +173,9 @@ func TestRetentionStorage(t *testing.T) {
 		TenantID:      tenant,
 		ContentLength: 22,
 		ContentType:   "text/plain",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		Filename:      "test.txt",
-		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
 		Properties:    make(map[string]interface{}),
 	}
@@ -293,7 +230,7 @@ func TestBlobCheck(t *testing.T) {
 
 	ast := assert.New(t)
 
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 	ast.NotNil(dao)
 
 	blobs := make([]string, 0)
@@ -319,7 +256,7 @@ func TestBlobCheck(t *testing.T) {
 func TestCRUDWithGivenID(t *testing.T) {
 	ast := assert.New(t)
 	uuid := utils.GenerateID()
-	dao := getStoreageDao(t)
+	dao := getSFStoreageDao(t)
 
 	b := model.BlobDescription{
 		BlobID:        uuid,
@@ -327,9 +264,9 @@ func TestCRUDWithGivenID(t *testing.T) {
 		TenantID:      "MCS",
 		ContentLength: 22,
 		ContentType:   "text/plain",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		Filename:      "test.txt",
-		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}

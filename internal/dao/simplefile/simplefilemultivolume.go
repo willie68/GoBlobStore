@@ -1,44 +1,40 @@
 package simplefile
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"os"
-	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/volume"
-	log "github.com/willie68/GoBlobStore/internal/logging"
-	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
 type SimpleFileMultiVolumeDao struct {
-	RootPath string                           // this is the root path for the file system storage
-	Tenant   string                           // this is the tenant, on which this dao will work
-	bdCch    map[string]model.BlobDescription // short time cache of blobdescriptions
+	RootPath string // this is the root path for the file system storage
+	Tenant   string // this is the tenant, on which this dao will work
 	volMan   volume.VolumeManager
-	cm       sync.RWMutex
 	daos     []SimpleFileBlobStorageDao
+	daoIdx   map[string]*SimpleFileBlobStorageDao
 }
 
-var _ interfaces.BlobStorageDao = &SimpleFileMultiVolumeDao{}
+var (
+	_                 interfaces.BlobStorageDao = &SimpleFileMultiVolumeDao{}
+	ErrNotImplemented error                     = errors.New("not implemented")
+	ErrDaoNotFound    error                     = errors.New("dao not found")
+)
 
 // ---- SimpleFileMultiVolumeDao
 func (s *SimpleFileMultiVolumeDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
 	}
-	s.bdCch = make(map[string]model.BlobDescription)
 	volMan, err := volume.NewVolumeManager(s.RootPath)
 	if err != nil {
 		return err
 	}
 	s.daos = make([]SimpleFileBlobStorageDao, 0)
+	s.daoIdx = make(map[string]*SimpleFileBlobStorageDao)
 	s.volMan = volMan
 	s.volMan.AddCallback(func(name string) bool {
 		return s.addVolume(name)
@@ -52,144 +48,125 @@ func (s *SimpleFileMultiVolumeDao) GetTenant() string {
 	return s.Tenant
 }
 
+// GetBlobs walking thru all blobs of this tenant
 func (s *SimpleFileMultiVolumeDao) GetBlobs(callback func(id string) bool) error {
-	return s.getBlobsV2(callback)
+	for _, dao := range s.daos {
+		err := dao.GetBlobs(callback)
+		if err != io.EOF {
+			return err
+		}
+	}
+	return io.EOF
 }
 
 func (s *SimpleFileMultiVolumeDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
-	return s.storeBlobV2(b, f)
+	dao, err := s.selectDao()
+	if err != nil {
+		return "", err
+	}
+	return dao.StoreBlob(b, f)
 }
 
 // updating the blob description
 func (s *SimpleFileMultiVolumeDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
-	err := s.updateBlobDescriptionV2(id, b)
-	if err == os.ErrNotExist {
-		err = s.updateBlobDescriptionV1(id, b)
-	}
-	if err != nil {
-		return err
-	}
-	return nil
+	return ErrNotImplemented
 }
 
+// HasBlob checking if one dao has this blob
 func (s *SimpleFileMultiVolumeDao) HasBlob(id string) (bool, error) {
-	if id == "" {
-		return false, nil
+	_, err := s.dao4id(id)
+	if err != nil {
+		return false, err
 	}
-	found := s.hasBlobV1(id)
-	if found {
-		return true, nil
-	}
-	found = s.hasBlobV2(id)
-	return found, nil
+	return true, nil
 }
 
+// GetBlobDescription getting the lob description from the dao holding the blob
 func (s *SimpleFileMultiVolumeDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
-	info, err := s.getBlobDescriptionV2(id)
-	if err == os.ErrNotExist {
-		info, err = s.getBlobDescriptionV1(id)
-	}
+	dao, err := s.dao4id(id)
 	if err != nil {
 		return nil, err
 	}
-	return info, nil
+	return dao.GetBlobDescription(id)
 }
 
+// RetrieveBlob retriving the blob from the first dao holding the blob file
 func (s *SimpleFileMultiVolumeDao) RetrieveBlob(id string, writer io.Writer) error {
-	err := s.getBlobV2(id, writer)
-	if err == os.ErrNotExist {
-		err = s.getBlobV1(id, writer)
-	}
+	dao, err := s.dao4id(id)
 	if err != nil {
 		return err
 	}
-	return nil
+	return dao.RetrieveBlob(id, writer)
 }
 
 func (s *SimpleFileMultiVolumeDao) DeleteBlob(id string) error {
-	s.deleteFilesV1(id)
-	s.deleteFilesV2(id)
-	return nil
+	dao, err := s.dao4id(id)
+	if err != nil {
+		return err
+	}
+	return dao.DeleteBlob(id)
 }
 
 // CheckBlob checking a single blob from the storage system
 func (s *SimpleFileMultiVolumeDao) CheckBlob(id string) (*model.CheckInfo, error) {
-	return utils.CheckBlob(id, s)
+	dao, err := s.dao4id(id)
+	if err != nil {
+		return nil, err
+	}
+	return dao.CheckBlob(id)
 }
 
+// SearchBlobs is not implemented for this storage
 func (s *SimpleFileMultiVolumeDao) SearchBlobs(q string, callback func(id string) bool) error {
-	return errors.New("not implemented yet")
+	return ErrNotImplemented
 }
 
 // GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (s *SimpleFileMultiVolumeDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
-	retCbk := func(path string, file os.FileInfo, err error) error {
-		if file != nil {
-			if !file.IsDir() {
-				dat, err := os.ReadFile(path)
-				if err != nil {
-					log.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
-					return nil
-				}
-				ety := model.RetentionEntry{}
-				err = json.Unmarshal(dat, &ety)
-				if err != nil {
-					log.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
-					return nil
-				}
-				ok := callback(ety)
-				if !ok {
-					return filepath.SkipDir
-				}
-				return nil
-			}
+	for _, dao := range s.daos {
+		err := dao.GetAllRetentions(callback)
+		if err != nil {
+			return err
 		}
-		return nil
 	}
-	retPath := filepath.Join(s.filepath, RETENTION_PATH)
-	filepath.Walk(retPath, retCbk)
-
 	return nil
 }
 
 func (s *SimpleFileMultiVolumeDao) GetRetention(id string) (model.RetentionEntry, error) {
-	r, err := s.getRetention(id)
+	dao, err := s.dao4id(id)
 	if err != nil {
 		return model.RetentionEntry{}, err
 	}
-	if r == nil {
-		return model.RetentionEntry{}, fmt.Errorf("no retention file found for id %s", id)
-	}
-	return *r, err
+	return dao.GetRetention(id)
 }
 
 func (s *SimpleFileMultiVolumeDao) AddRetention(r *model.RetentionEntry) error {
-	b, err := s.GetBlobDescription(r.BlobID)
+	dao, err := s.dao4id(r.BlobID)
 	if err != nil {
 		return err
 	}
-	b.Retention = r.Retention
-	b.Properties[retentionBaseKey] = r.RetentionBase
-	return s.writeRetentionFile(b)
+	return dao.AddRetention(r)
 }
 
 func (s *SimpleFileMultiVolumeDao) DeleteRetention(id string) error {
-	idx := s.dao4id(id)
-	dao := s.daos[idx]
-	return dao.deleteRetentionFile(id)
-}
-
-func (s *SimpleFileMultiVolumeDao) ResetRetention(id string) error {
-	r, err := s.getRetention(id)
+	dao, err := s.dao4id(id)
 	if err != nil {
 		return err
 	}
-	r.RetentionBase = int(time.Now().UnixNano() / 1000000)
-	return s.AddRetention(r)
+	return dao.DeleteRetention(id)
+}
+
+func (s *SimpleFileMultiVolumeDao) ResetRetention(id string) error {
+	r, err := s.GetRetention(id)
+	if err != nil {
+		return err
+	}
+	r.RetentionBase = time.Now().UnixMilli()
+	return s.AddRetention(&r)
 }
 
 func (s *SimpleFileMultiVolumeDao) GetLastError() error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (s *SimpleFileMultiVolumeDao) Close() error {
@@ -200,14 +177,24 @@ func (s *SimpleFileMultiVolumeDao) Close() error {
 	return nil
 }
 
-func (s *SimpleFileMultiVolumeDao) dao4id(id string) int {
-	for x, dao := range s.daos {
+func (s *SimpleFileMultiVolumeDao) selectDao() (*SimpleFileBlobStorageDao, error) {
+	rnd := s.volMan.Rnd()
+	name := s.volMan.SelectFree(rnd)
+	dao := s.daoIdx[name]
+	if dao == nil {
+		return nil, errors.New("dao not found")
+	}
+	return dao, nil
+}
+
+func (s *SimpleFileMultiVolumeDao) dao4id(id string) (*SimpleFileBlobStorageDao, error) {
+	for _, dao := range s.daos {
 		ok, _ := dao.HasBlob(id)
 		if ok {
-			return x
+			return &dao, nil
 		}
 	}
-	return -1
+	return nil, ErrDaoNotFound
 }
 
 func (s *SimpleFileMultiVolumeDao) addVolume(name string) bool {
@@ -227,5 +214,6 @@ func (s *SimpleFileMultiVolumeDao) addVolume(name string) bool {
 		return false
 	}
 	s.daos = append(s.daos, *sfbd)
+	s.daoIdx[name] = sfbd
 	return true
 }

@@ -181,14 +181,9 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-		tenantpath, err := config.GetConfigValueAsString(stg.Properties, "tenantpath")
-		if err != nil {
-			return nil, err
-		}
 		dao = &simplefile.SimpleFileMultiVolumeDao{
-			RootPath:   rootpath,
-			TenantPath: tenantpath,
-			Tenant:     tenant,
+			RootPath: rootpath,
+			Tenant:   tenant,
 		}
 		err = dao.Init()
 		if err != nil {

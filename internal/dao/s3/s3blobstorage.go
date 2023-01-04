@@ -357,7 +357,7 @@ func (s *S3BlobStorage) ResetRetention(id string) error {
 	if err != nil {
 		return err
 	}
-	r.RetentionBase = int(time.Now().UnixNano() / 1000000)
+	r.RetentionBase = time.Now().UnixMilli()
 	return s.AddRetention(r)
 }
 

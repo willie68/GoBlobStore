@@ -51,9 +51,9 @@ func TestMongoConnect(t *testing.T) {
 		TenantID:      "MCS",
 		ContentLength: 22,
 		ContentType:   "text/plain",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		Filename:      "test.txt",
-		LastAccess:    int(time.Now().UnixNano() / 1000000),
+		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),
 	}

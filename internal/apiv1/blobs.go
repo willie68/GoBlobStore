@@ -431,7 +431,7 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		Retention:     retentionTime,
 		Filename:      filename,
 		Properties:    metadata,
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 	}
 
 	stgf, err := dao.GetStorageFactory()

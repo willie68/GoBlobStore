@@ -2,6 +2,7 @@ package volume
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -25,6 +26,7 @@ type VolumeManager struct {
 	sonyflake sonyflake.Sonyflake
 	callbacks []Callback
 	ticker    *time.Ticker
+	rnd       *rand.Rand
 }
 
 type Callback func(name string) bool
@@ -48,6 +50,9 @@ func NewVolumeManager(rootpath string) (VolumeManager, error) {
 }
 
 func (v *VolumeManager) Init() error {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	v.rnd = rand.New(s1)
+
 	if v.ticker != nil {
 		v.ticker.Stop()
 	}
@@ -95,6 +100,7 @@ func (v *VolumeManager) Rescan() error {
 			}
 		}
 	}
+	v.CalculatePerMill()
 	return nil
 }
 
@@ -193,4 +199,8 @@ func (v *VolumeManager) SelectFree(i int) string {
 		}
 	}
 	return ""
+}
+
+func (v *VolumeManager) Rnd() int {
+	return v.rnd.Intn(1000)
 }
