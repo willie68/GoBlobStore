@@ -20,6 +20,7 @@ import (
 const STGCLASS_SIMPLE_FILE = "simplefile"
 const STGCLASS_S3 = "s3storage"
 const STGCLASS_FASTCACHE = "fastcache"
+const STGCLASS_SFMV = "sfmv"
 
 var ErrNoStg = errors.New("no storage class given")
 var _ interfaces.StorageFactory = &DefaultStorageFactory{}
@@ -175,6 +176,24 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	var err error
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
+	case STGCLASS_SFMV:
+		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
+		if err != nil {
+			return nil, err
+		}
+		tenantpath, err := config.GetConfigValueAsString(stg.Properties, "tenantpath")
+		if err != nil {
+			return nil, err
+		}
+		dao = &simplefile.SimpleFileMultiVolumeDao{
+			RootPath:   rootpath,
+			TenantPath: tenantpath,
+			Tenant:     tenant,
+		}
+		err = dao.Init()
+		if err != nil {
+			return nil, err
+		}
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {

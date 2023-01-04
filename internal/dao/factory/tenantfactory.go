@@ -14,6 +14,19 @@ import (
 func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
+	case STGCLASS_SFMV:
+		rootpath, err := config.GetConfigValueAsString(stg.Properties, "tenantpath")
+		if err != nil {
+			return nil, err
+		}
+		dao := &simplefile.SimpleFileTenantManager{
+			RootPath: rootpath,
+		}
+		err = dao.Init()
+		if err != nil {
+			return nil, err
+		}
+		return dao, nil
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {

@@ -135,7 +135,7 @@ engine:
   storageclass: SFMV
   properties:
    rootpath: /data
-   tenantstore: /data/tnt
+   tenantpath: /data/tnt
 ```
 
 You can use this storage for main or backup storage. Every tenant will get a subfolder on every volume, if there is data for this tenant on this volume. On this tenant directory there will be a 2 dimensional folder structure for the blob data. For the retention files there will be a dedicated folder on every volume (only for the files on this volume). The tenant manager will have it's own volume. This can be shared with one of the data volumes. On **POST/PUT** data the storage will randomly select a volume, but volumes with higher utilization have a lower probability of being selected. On **GET** all volumes will be checked for the present of the file. New volumes will be automatically detected.
