@@ -10,10 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	tenant = "test"
-)
-
 var (
 	rootFilePrefix = filepath.Join(os.TempDir(), "go_test")
 	volumes        VolumeManager
@@ -64,7 +60,7 @@ func TestFileInfo(t *testing.T) {
 		return true
 	})
 
-	err := volumes.Init(rootFilePrefix)
+	err := volumes.Init()
 	ast.Nil(err)
 
 	ast.Equal(len(vols), count)
@@ -82,6 +78,10 @@ func TestFileInfo(t *testing.T) {
 		infoFile := filepath.Join(infoDir, ".volumeinfo")
 		_, err = os.Stat(infoFile)
 		ast.Nil(err)
+
+		volInfo := volumes.Info(v)
+		ast.NotNil(volInfo)
+		ast.Equal(v, volInfo.Name)
 	}
 }
 
@@ -90,6 +90,9 @@ func TestIDs(t *testing.T) {
 	clear(t)
 	initTest(t)
 	ast.NotNil(volumes)
+
+	err := volumes.Init()
+	ast.Nil(err)
 
 	id := volumes.ID("mvn01")
 	ast.NotEqual("", id)
@@ -109,7 +112,7 @@ func TestRescan(t *testing.T) {
 		return true
 	})
 
-	err := volumes.Init(rootFilePrefix)
+	err := volumes.Init()
 	ast.Nil(err)
 
 	ast.Equal(len(vols), count)
@@ -131,7 +134,7 @@ func TestAddVol(t *testing.T) {
 		return true
 	})
 
-	err := volumes.Init(rootFilePrefix)
+	err := volumes.Init()
 	ast.Nil(err)
 	ast.Equal(len(vols), count)
 
