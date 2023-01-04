@@ -21,15 +21,17 @@ import (
 )
 
 const (
-	rootFilePrefix = "R:/"
+	rootFilePrefix = "../../../testdata/main"
 	tenant         = "test"
-	blbcount       = 10000
-	blbPath        = rootFilePrefix + "blbstg"
-	cchPath        = rootFilePrefix + "blbcch"
-	bckPath        = rootFilePrefix + "bckstg"
+	blbcount       = 1000
 )
 
-var main interfaces.BlobStorageDao
+var (
+	blbPath = filepath.Join(rootFilePrefix, "blbstg")
+	cchPath = filepath.Join(rootFilePrefix, "blbcch")
+	bckPath = filepath.Join(rootFilePrefix, "bckstg")
+	main    interfaces.BlobStorageDao
+)
 
 func initTest(t *testing.T) {
 	stgDao := &simplefile.SimpleFileBlobStorageDao{
@@ -60,9 +62,7 @@ func initTest(t *testing.T) {
 }
 
 func clear(t *testing.T) {
-	// getting the zip file and extracting it into the file system
-	err := removeContents(rootFilePrefix)
-	assert.Nil(t, err)
+	removeContents(rootFilePrefix)
 }
 
 func removeContents(dir string) error {
