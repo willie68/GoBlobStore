@@ -19,6 +19,7 @@ func initTenantTest(t *testing.T) {
 	}
 }
 func TestAutoPathCreation(t *testing.T) {
+	time.Sleep(1 * time.Second)
 	initTenantTest(t)
 	ast := assert.New(t)
 
@@ -30,7 +31,7 @@ func TestAutoPathCreation(t *testing.T) {
 		RootPath: rootpath,
 	}
 	err := dao.Init()
-	ast.Nil(err)
+	ast.Nil(err, "error: %v", err)
 
 	_, err = os.Stat(rootpath)
 
