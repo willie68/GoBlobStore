@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
@@ -22,6 +23,7 @@ The call back will be fired on every new mount of a volume in the monitored root
 */
 type VolumeManager struct {
 	root      string
+	cm        sync.Mutex
 	volumes   map[string]VolumeInfo
 	sonyflake sonyflake.Sonyflake
 	callbacks []Callback
@@ -51,6 +53,7 @@ func NewVolumeManager(rootpath string) (VolumeManager, error) {
 
 func (v *VolumeManager) Init() error {
 	s1 := rand.NewSource(time.Now().UnixNano())
+	v.cm = sync.Mutex{}
 	v.rnd = rand.New(s1)
 
 	if v.ticker != nil {
@@ -71,6 +74,8 @@ func (v *VolumeManager) Init() error {
 }
 
 func (v *VolumeManager) HasVolume(name string) bool {
+	v.cm.Lock()
+	defer v.cm.Unlock()
 	_, ok := v.volumes[name]
 	return ok
 }
@@ -139,8 +144,9 @@ func (v *VolumeManager) volInfo(name string) (*VolumeInfo, error) {
 	vi.Free = du.Free
 	vi.Used = du.Used
 	vi.Total = du.Total
-
+	v.cm.Lock()
 	v.volumes[name] = vi
+	v.cm.Unlock()
 	data, err := yaml.Marshal(vi)
 	if err != nil {
 		return nil, err
@@ -150,6 +156,8 @@ func (v *VolumeManager) volInfo(name string) (*VolumeInfo, error) {
 }
 
 func (v *VolumeManager) Info(name string) *VolumeInfo {
+	v.cm.Lock()
+	defer v.cm.Unlock()
 	vi, ok := v.volumes[name]
 	if ok {
 		return &vi
@@ -158,6 +166,8 @@ func (v *VolumeManager) Info(name string) *VolumeInfo {
 }
 
 func (v *VolumeManager) ID(name string) string {
+	v.cm.Lock()
+	defer v.cm.Unlock()
 	vi, ok := v.volumes[name]
 	if ok {
 		return vi.ID
@@ -168,6 +178,8 @@ func (v *VolumeManager) ID(name string) string {
 func (v *VolumeManager) CalculatePerMill() error {
 	var g uint64
 	var gfreepm int
+	v.cm.Lock()
+	defer v.cm.Unlock()
 	for k, vi := range v.volumes {
 		// Gesamtspeicher
 		g += vi.Total
@@ -186,6 +198,8 @@ func (v *VolumeManager) CalculatePerMill() error {
 }
 
 func (v *VolumeManager) SelectFree(i int) string {
+	v.cm.Lock()
+	defer v.cm.Unlock()
 	keys := make([]string, 0, len(v.volumes))
 	for k := range v.volumes {
 		keys = append(keys, k)

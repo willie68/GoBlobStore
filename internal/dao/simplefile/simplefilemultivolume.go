@@ -3,6 +3,7 @@ package simplefile
 import (
 	"errors"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
@@ -16,6 +17,7 @@ type SimpleFileMultiVolumeDao struct {
 	volMan   volume.VolumeManager
 	daos     []SimpleFileBlobStorageDao
 	daoIdx   map[string]*SimpleFileBlobStorageDao
+	cm       sync.Mutex
 }
 
 var (
@@ -29,12 +31,15 @@ func (s *SimpleFileMultiVolumeDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
 	}
+	s.cm = sync.Mutex{}
 	volMan, err := volume.NewVolumeManager(s.RootPath)
 	if err != nil {
 		return err
 	}
+	s.cm.Lock()
 	s.daos = make([]SimpleFileBlobStorageDao, 0)
 	s.daoIdx = make(map[string]*SimpleFileBlobStorageDao)
+	s.cm.Unlock()
 	s.volMan = volMan
 	s.volMan.AddCallback(func(name string) bool {
 		return s.addVolume(name)
@@ -180,6 +185,8 @@ func (s *SimpleFileMultiVolumeDao) Close() error {
 func (s *SimpleFileMultiVolumeDao) selectDao() (*SimpleFileBlobStorageDao, error) {
 	rnd := s.volMan.Rnd()
 	name := s.volMan.SelectFree(rnd)
+	s.cm.Lock()
+	defer s.cm.Unlock()
 	dao := s.daoIdx[name]
 	if dao == nil {
 		return nil, errors.New("dao not found")
@@ -214,6 +221,8 @@ func (s *SimpleFileMultiVolumeDao) addVolume(name string) bool {
 		return false
 	}
 	s.daos = append(s.daos, *sfbd)
+	s.cm.Lock()
+	defer s.cm.Unlock()
 	s.daoIdx[name] = sfbd
 	return true
 }
