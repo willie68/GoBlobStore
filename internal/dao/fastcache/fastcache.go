@@ -91,7 +91,7 @@ func (f *FastCache) Init() error {
 	return nil
 }
 
-//removeContents delete all files in directory
+// removeContents delete all files in directory
 func (f *FastCache) removeContents(dir string) error {
 	d, err := os.Open(dir)
 	if err != nil {
@@ -369,7 +369,7 @@ func (f *FastCache) SearchBlobs(q string, callback func(id string) bool) error {
 	return errors.New("not implemented yet")
 }
 
-//Retentionrelated methods
+// Retentionrelated methods
 // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (f *FastCache) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return errNotImplemented
@@ -389,6 +389,10 @@ func (f *FastCache) DeleteRetention(id string) error {
 
 func (f *FastCache) ResetRetention(id string) error {
 	return errNotImplemented
+}
+
+func (s *FastCache) GetLastError() error {
+	return nil
 }
 
 // closing the storage

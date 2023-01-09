@@ -110,6 +110,38 @@ engine:
 
 You can use this storage for all kind of storage types, (even backup or cache). The only property needed is the rootpath which will lead to the used file system. On docker you can use any mount point / volume for that. Every tenant will get a subfolder. On this tenant directory there will be a 2 dimensional folder structure for  the blob data. For the retention files there will be a dedicated folder.
 
+## SimpleFileMultiVolume Storage
+
+The simple file multi volume storage is a file system based storage. It will use multiple volumes, accessed via a single root path, as sub folders. For the Tenantmanager you can configure an extra space. Eg.:
+
+You have different volumes mounted beneath a root path called /data as they will be called mvn01 mvn02 .... This will lead into a file system tree
+
+```
+/data -+- /mvn01
+       |- /mvn02
+       |- /mvn03
+       |- ...
+```
+
+The storage manager will than automatically determine capacity and free space of every volume and will report this into a file .volumeinfo.   
+
+```yaml
+engine:
+ retentionManager: SingleRetention
+ tenantautoadd: true
+ backupsyncmode: false
+ allowtntbackup: false
+ storage:
+  storageclass: SFMV
+  properties:
+   rootpath: /data
+   tenantpath: /data/tnt
+```
+
+You can use this storage for main or backup storage. Every tenant will get a subfolder on every volume, if there is data for this tenant on this volume. On this tenant directory there will be a 2 dimensional folder structure for the blob data. For the retention files there will be a dedicated folder on every volume (only for the files on this volume). The tenant manager will have it's own volume. This can be shared with one of the data volumes. On **POST/PUT** data the storage will randomly select a volume, but volumes with higher utilization have a lower probability of being selected. On **GET** all volumes will be checked for the present of the file. New volumes will be automatically detected.
+
+There is no sharding in this storage. So a backup should always be configured.  
+
 ## S3 Storage
 
 The S3 storage provider can be used as main storage or backup storage with the same parameters.

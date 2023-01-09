@@ -111,7 +111,7 @@ func TestCRUDBlob(t *testing.T) {
 
 	b := model.BlobDescription{
 		ContentType:   "application/pdf",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		ContentLength: fileInfo.Size(),
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,
@@ -193,7 +193,7 @@ func TestRetentionStorage(t *testing.T) {
 		Filename:      pdffile,
 		TenantID:      tenant,
 		BlobID:        blobID,
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		Retention:     1,
 		RetentionBase: 0,
 	}
@@ -246,7 +246,7 @@ func TestCRUDBlobWID(t *testing.T) {
 	b := model.BlobDescription{
 		BlobID:        uuid,
 		ContentType:   "application/pdf",
-		CreationDate:  int(time.Now().UnixNano() / 1000000),
+		CreationDate:  time.Now().UnixMilli(),
 		ContentLength: fileInfo.Size(),
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,

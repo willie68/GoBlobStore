@@ -9,11 +9,11 @@ type BlobDescription struct {
 	StoreID       string `yaml:"storeid" json:"storeid"`
 	ContentLength int64  `yaml:"contentLength" json:"contentLength"`
 	ContentType   string `yaml:"contentType" json:"contentType"`
-	CreationDate  int    `yaml:"creationDate" json:"creationDate"`
+	CreationDate  int64  `yaml:"creationDate" json:"creationDate"`
 	Filename      string `yaml:"filename" json:"filename"`
 	TenantID      string `yaml:"tenantID" json:"tenantID"`
 	BlobID        string `yaml:"blobID" json:"blobID"`
-	LastAccess    int    `yaml:"lastAccess" json:"lastAccess"`
+	LastAccess    int64  `yaml:"lastAccess" json:"lastAccess"`
 	Retention     int64  `yaml:"retention" json:"retention"`
 	BlobURL       string `yaml:"blobUrl" json:"blobUrl"`
 	Hash          string `yaml:"hash" json:"hash"`
@@ -65,12 +65,12 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 		StoreID       string `yaml:"storeid" json:"storeid"`
 		ContentLength int64  `yaml:"contentLength" json:"contentLength"`
 		ContentType   string `yaml:"contentType" json:"contentType"`
-		CreationDate  int    `yaml:"creationDate" json:"creationDate"`
+		CreationDate  int64  `yaml:"creationDate" json:"creationDate"`
 		Filename      string `yaml:"filename" json:"filename"`
 		TenantID      string `yaml:"tenantID" json:"tenantID"`
 		BlobID        string `yaml:"blobID" json:"blobID"`
 		BlobURL       string `yaml:"blobUrl" json:"blobUrl"`
-		LastAccess    int    `yaml:"lastAccess" json:"lastAccess"`
+		LastAccess    int64  `yaml:"lastAccess" json:"lastAccess"`
 		Retention     int64  `yaml:"retention" json:"retention"`
 		Hash          string `yaml:"hash" json:"hash"`
 		Check         *Check `yaml:"check,omitempty" json:"check,omitempty"`

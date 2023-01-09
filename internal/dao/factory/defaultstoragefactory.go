@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/bluge"
@@ -20,6 +21,7 @@ import (
 const STGCLASS_SIMPLE_FILE = "simplefile"
 const STGCLASS_S3 = "s3storage"
 const STGCLASS_FASTCACHE = "fastcache"
+const STGCLASS_SFMV = "sfmv"
 
 var ErrNoStg = errors.New("no storage class given")
 var _ interfaces.StorageFactory = &DefaultStorageFactory{}
@@ -28,12 +30,12 @@ type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
 	RtnMgr       interfaces.RetentionManager
 	CchDao       interfaces.BlobStorageDao
-	tenantStores map[string]*interfaces.BlobStorageDao
+	tenantStores sync.Map
 	cnfg         config.Engine
 }
 
 func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.RetentionManager) error {
-	d.tenantStores = make(map[string]*interfaces.BlobStorageDao)
+	d.tenantStores = sync.Map{}
 	d.cnfg = storage
 	d.RtnMgr = rtnm
 	if d.cnfg.Index.Storageclass != "" {
@@ -44,28 +46,35 @@ func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.Rete
 
 // GetStorageDao return the storage dao for the desired tenant
 func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobStorageDao, error) {
-	storageDao, ok := d.tenantStores[tenant]
+	dao, ok := d.tenantStores.Load(tenant)
 	if !ok {
 		storageDao, err := d.createStorage(tenant)
 		if err != nil {
 			log.Logger.Errorf("can't create storage for tenant: %s\n %v", tenant, err)
 			return nil, err
 		}
-		d.tenantStores[tenant] = &storageDao
+		d.tenantStores.Store(tenant, &storageDao)
 		return storageDao, nil
+	}
+	storageDao, ok := dao.(*interfaces.BlobStorageDao)
+	if !ok {
+		return nil, fmt.Errorf("wrong type in map for tenant %s", tenant)
 	}
 	return *storageDao, nil
 }
 
 func (d *DefaultStorageFactory) RemoveStorageDao(tenant string) error {
-	storageDao, ok := d.tenantStores[tenant]
+	dao, ok := d.tenantStores.Load(tenant)
 	if ok {
-		err := (*storageDao).Close()
-		if err != nil {
-			log.Logger.Errorf("can't close storage for tenant: %s\n %v", tenant, err)
-			return err
+		storageDao, ok := dao.(*interfaces.BlobStorageDao)
+		if ok {
+			err := (*storageDao).Close()
+			if err != nil {
+				log.Logger.Errorf("can't close storage for tenant: %s\n %v", tenant, err)
+				return err
+			}
 		}
-		delete(d.tenantStores, tenant)
+		d.tenantStores.Delete(tenant)
 	}
 	return nil
 }
@@ -175,6 +184,19 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	var err error
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
+	case STGCLASS_SFMV:
+		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
+		if err != nil {
+			return nil, err
+		}
+		dao = &simplefile.SimpleFileMultiVolumeDao{
+			RootPath: rootpath,
+			Tenant:   tenant,
+		}
+		err = dao.Init()
+		if err != nil {
+			return nil, err
+		}
 	case STGCLASS_SIMPLE_FILE:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
@@ -297,13 +319,15 @@ func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
 }
 
 func (d *DefaultStorageFactory) Close() error {
-	var tDao interfaces.BlobStorageDao
-	for k, v := range d.tenantStores {
-		tDao = *v
-		err := tDao.Close()
-		if err != nil {
-			log.Logger.Errorf("error closing tenant storage dao: %s\r\n%v,", k, err)
+	d.tenantStores.Range(func(key, v any) bool {
+		tDao, ok := v.(*interfaces.BlobStorageDao)
+		if ok {
+			err := (*tDao).Close()
+			if err != nil {
+				log.Logger.Errorf("error closing tenant storage dao: %s\r\n%v,", key, err)
+			}
 		}
-	}
+		return true
+	})
 	return nil
 }

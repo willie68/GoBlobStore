@@ -28,7 +28,7 @@ var _ interfaces.BlobStorageDao = &SimpleFileBlobStorageDao{}
 
 const retentionBaseKey = "retentionBase"
 
-//---- SimpleFileBlobStorageDao
+// ---- SimpleFileBlobStorageDao
 func (s *SimpleFileBlobStorageDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
@@ -120,7 +120,7 @@ func (s *SimpleFileBlobStorageDao) SearchBlobs(q string, callback func(id string
 	return errors.New("not implemented yet")
 }
 
-//GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
+// GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	retCbk := func(path string, file os.FileInfo, err error) error {
 		if file != nil {
@@ -187,8 +187,12 @@ func (s *SimpleFileBlobStorageDao) ResetRetention(id string) error {
 	if err != nil {
 		return err
 	}
-	r.RetentionBase = int(time.Now().UnixNano() / 1000000)
+	r.RetentionBase = time.Now().UnixMilli()
 	return s.AddRetention(r)
+}
+
+func (s *SimpleFileBlobStorageDao) GetLastError() error {
+	return nil
 }
 
 func (s *SimpleFileBlobStorageDao) Close() error {

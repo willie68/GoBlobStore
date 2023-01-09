@@ -168,6 +168,11 @@ func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64
 		return 0, err
 	}
 
+	err = s.createFilePathV2(id)
+	if err != nil {
+		return 0, err
+	}
+
 	f, err := os.Create(binFile)
 
 	if err != nil {
@@ -184,7 +189,7 @@ func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64
 	return size, nil
 }
 
-//TODO implement error handling
+// TODO implement error handling
 func (s *SimpleFileBlobStorageDao) deleteFilesV2(id string) error {
 	binFile := s.getBinV2(id)
 	os.Remove(binFile)
@@ -267,9 +272,12 @@ func (s *SimpleFileBlobStorageDao) buildFilenameV2(id string, ext string) (strin
 	fp := s.filepath
 	fp = filepath.Join(fp, id[:2])
 	fp = filepath.Join(fp, id[2:4])
-	err := os.MkdirAll(fp, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
 	return filepath.Join(fp, fmt.Sprintf("%s%s", id, ext)), nil
+}
+
+func (s *SimpleFileBlobStorageDao) createFilePathV2(id string) error {
+	fp := s.filepath
+	fp = filepath.Join(fp, id[:2])
+	fp = filepath.Join(fp, id[2:4])
+	return os.MkdirAll(fp, os.ModePerm)
 }

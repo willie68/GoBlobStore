@@ -65,20 +65,33 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	dao, err := dao.GetTenantDao()
+	tntdao, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	tntCnf, err := dao.GetConfig(tenant)
+	tntCnf, err := tntdao.GetConfig(tenant)
 	if err != nil {
 		msg := "error getting tenant config"
 		httputils.Err(response, request, serror.InternalServerError(fmt.Errorf("tenant-error: "+msg+": %v", err)))
 		return
 	}
+	var lastError error = nil
+	stgfac, err := dao.GetStorageFactory()
+	if err != nil {
+		lastError = err
+	} else {
+		stgdao, err := stgfac.GetStorageDao(tenant)
+		if err != nil {
+			lastError = err
+		} else {
+			lastError = stgdao.GetLastError()
+		}
+	}
 	rsp := model.GetConfigResponse{
-		TenantID: tenant,
-		Created:  dao.HasTenant(tenant),
+		TenantID:  tenant,
+		Created:   tntdao.HasTenant(tenant),
+		LastError: lastError,
 	}
 	if tntCnf != nil {
 		rsp.Backup = tntCnf.Backup

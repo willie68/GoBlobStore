@@ -90,7 +90,7 @@ func (s *SimpleFileBlobStorageDao) buildRetentionFilename(id string) (string, er
 	return filepath.Join(fp, fmt.Sprintf("%s%s", id, RETENTION_EXT)), nil
 }
 
-//TODO implement error handling
+// TODO implement error handling
 func (s *SimpleFileBlobStorageDao) deleteFilesV1(id string) error {
 	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BINARY_EXT))
 	os.Remove(binFile)

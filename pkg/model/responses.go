@@ -11,6 +11,7 @@ type GetConfigResponse struct {
 	// to be compatible
 	Created    bool           `json:"created"`
 	Backup     config.Storage `json:"backup"`
+	LastError  error          `json:"lastError"`
 	Properties map[string]any `json:"properties"`
 }
 
@@ -20,12 +21,14 @@ func (r GetConfigResponse) MarshalJSON() ([]byte, error) {
 		TenantID   string         `json:"tenantid"`
 		Created    bool           `json:"created"`
 		Backup     config.Storage `json:"backup"`
+		LastError  error          `json:"lastError"`
 		Properties map[string]any `json:"properties"`
 	}{
 		Type:       "configResponse",
 		TenantID:   r.TenantID,
 		Created:    r.Created,
 		Backup:     r.Backup,
+		LastError:  r.LastError,
 		Properties: r.Properties,
 	})
 }

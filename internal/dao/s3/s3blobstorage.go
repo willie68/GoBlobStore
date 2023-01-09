@@ -44,7 +44,7 @@ type S3BlobStorage struct {
 
 var _ interfaces.BlobStorageDao = &S3BlobStorage{}
 
-//S3 Blob Storage
+// S3 Blob Storage
 // initialise this dao
 func (s *S3BlobStorage) Init() error {
 	if s.Tenant == "" {
@@ -285,7 +285,7 @@ func (s *S3BlobStorage) SearchBlobs(q string, callback func(id string) bool) err
 }
 
 // Retentionrelated methods
-//GetAllRetentions for every retention entry for this tenant we call the callback function,
+// GetAllRetentions for every retention entry for this tenant we call the callback function,
 // you can stop the walk by returning a false in the callback
 func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	filename := s.tntrp()
@@ -335,7 +335,7 @@ func (s *S3BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
 	return *r, err
 }
 
-//DeleteRetention deletes the retention entry from the storaage
+// DeleteRetention deletes the retention entry from the storaage
 func (s *S3BlobStorage) DeleteRetention(id string) error {
 	filename := s.id2rf(id)
 	ctx := context.Background()
@@ -357,8 +357,12 @@ func (s *S3BlobStorage) ResetRetention(id string) error {
 	if err != nil {
 		return err
 	}
-	r.RetentionBase = int(time.Now().UnixNano() / 1000000)
+	r.RetentionBase = time.Now().UnixMilli()
 	return s.AddRetention(r)
+}
+
+func (s *S3BlobStorage) GetLastError() error {
+	return nil
 }
 
 // closing the storage
@@ -372,7 +376,7 @@ func (s *S3BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
 	return s.getRetentionByFile(filename)
 }
 
-//getRetentionByFile get a retention entry for filename
+// getRetentionByFile get a retention entry for filename
 func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry, error) {
 	ctx := context.Background()
 	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{
@@ -393,7 +397,7 @@ func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEnt
 	return &re, nil
 }
 
-//getEncryption here you get the ServerSide encryption for the tenant
+// getEncryption here you get the ServerSide encryption for the tenant
 func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
 	if !s.usetls || s.Insecure {
 		return nil
@@ -412,7 +416,7 @@ func (s *S3BlobStorage) id2rf(id string) string {
 	return fmt.Sprintf("%s/retention/%s.json", s.Tenant, id)
 }
 
-//tntrp getting the path to the retention files
+// tntrp getting the path to the retention files
 func (s *S3BlobStorage) tntrp() string {
 	return fmt.Sprintf("%s/retention/", s.Tenant)
 }
