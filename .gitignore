@@ -19,5 +19,8 @@ testdata/blbstg
 testdata/blobstorage
 testdata/bckstorage
 testdata/main
+testdata/mv
 
 debug
+
+test.log

@@ -20,6 +20,7 @@ const (
 	zipfile  = "../../../testdata/mcs.zip"
 	rootpath = "../../../testdata/blobstorage"
 	bckpath  = "../../../testdata/bckstorage"
+	migTnt   = "MCS"
 )
 
 type MockStorage struct {
@@ -42,14 +43,12 @@ func initBckTest(t *testing.T) {
 
 	for _, f := range archive.File {
 		filePath := filepath.Join(rootpath, f.Name)
-		fmt.Println("unzipping file ", filePath)
 
 		if !strings.HasPrefix(filePath, filepath.Clean(rootpath)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
 			return
 		}
 		if f.FileInfo().IsDir() {
-			fmt.Println("creating directory...")
 			os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}
@@ -101,7 +100,7 @@ func TestSyncForward(t *testing.T) {
 	ast := assert.New(t)
 	mainStg := &simplefile.SimpleFileBlobStorageDao{
 		RootPath: rootpath,
-		Tenant:   tenant,
+		Tenant:   migTnt,
 	}
 	err := mainStg.Init()
 	ast.Nil(err)
@@ -117,7 +116,7 @@ func TestSyncForward(t *testing.T) {
 
 	bckStg := &simplefile.SimpleFileBlobStorageDao{
 		RootPath: bckpath,
-		Tenant:   tenant,
+		Tenant:   migTnt,
 	}
 	err = bckStg.Init()
 	ast.Nil(err)
