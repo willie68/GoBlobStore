@@ -1,6 +1,7 @@
 package simplefile
 
 import (
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -13,10 +14,11 @@ import (
 func initTenantTest(t *testing.T) {
 	ast := assert.New(t)
 
-	if _, err := os.Stat(rootpath); err == nil {
-		err := os.RemoveAll(rootpath)
-		ast.Nil(err)
+	if _, err := os.Stat(rootpath); errors.Is(err, os.ErrNotExist) {
+		return
 	}
+	err := os.RemoveAll(rootpath)
+	ast.Nil(err)
 }
 func TestAutoPathCreation(t *testing.T) {
 	time.Sleep(1 * time.Second)
@@ -39,7 +41,7 @@ func TestAutoPathCreation(t *testing.T) {
 }
 
 func TestSimplefileTenantManager(t *testing.T) {
-	initTest(t)
+	initTenantTest(t)
 
 	ast := assert.New(t)
 
@@ -47,9 +49,6 @@ func TestSimplefileTenantManager(t *testing.T) {
 		RootPath: rootpath,
 	}
 	err := dao.Init()
-	ast.Nil(err)
-
-	_, err = dao.RemoveTenant(tenant)
 	ast.Nil(err)
 
 	time.Sleep(1 * time.Second)
@@ -101,7 +100,7 @@ func TestSimplefileTenantManager(t *testing.T) {
 }
 
 func TestSimplefileTenantManagerConfig(t *testing.T) {
-	initTest(t)
+	initTenantTest(t)
 
 	ast := assert.New(t)
 

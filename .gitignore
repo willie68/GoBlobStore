@@ -16,10 +16,15 @@
 
 testdata/pdf_dst.pdf
 testdata/blbstg
+testdata/bckstg
+testdata/blbcch
 testdata/blobstorage
 testdata/bckstorage
+testdata/check
 testdata/main
+testdata/migration
 testdata/mv
+
 
 debug
 

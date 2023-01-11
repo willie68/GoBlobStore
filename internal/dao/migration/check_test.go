@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	rootFilePrefix = "R:/"
-	tenant         = "test"
+	rootFilePrefix = "../../../testdata/check/"
+	tenant         = "chktnt"
 	blbPath        = rootFilePrefix + "blbstg"
 	cchPath        = rootFilePrefix + "blbcch"
 	bckPath        = rootFilePrefix + "bckstg"
@@ -76,6 +76,9 @@ func clear(t *testing.T) {
 }
 
 func removeContents(dir string) error {
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
 	d, err := os.Open(dir)
 	if err != nil {
 		return err
@@ -265,9 +268,9 @@ func TestCheck(t *testing.T) {
 	res := check(ast)
 
 	// nominal
-	ast.Equal(99, res.CacheCount)
-	ast.Equal(99, res.PrimaryCount)
-	ast.Equal(99, res.BackupCount)
+	ast.Equal(99, res.CacheCount, "cache count")
+	ast.Equal(99, res.PrimaryCount, "primary count")
+	ast.Equal(99, res.BackupCount, "backup count")
 
 	// Test 1: cache inconsistent
 	r, ok := getResult(Test1ID, res.Cache)

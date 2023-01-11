@@ -17,10 +17,11 @@ import (
 )
 
 const (
-	zipfile  = "../../../testdata/mcs.zip"
-	rootpath = "../../../testdata/blobstorage"
-	bckpath  = "../../../testdata/bckstorage"
-	migTnt   = "MCS"
+	testdata = "../../../testdata"
+	zipfile  = testdata + "/mig.zip"
+	rootpath = testdata + "/migration/blobstorage"
+	bckpath  = testdata + "/migration/bckstorage"
+	migTnt   = "migtnt"
 )
 
 type MockStorage struct {
