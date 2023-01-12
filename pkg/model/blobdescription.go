@@ -2,6 +2,7 @@ package model
 
 import (
 	"encoding/json"
+	"sync"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type BlobDescription struct {
 	Hash          string `yaml:"hash" json:"hash"`
 	Check         *Check `yaml:"check,omitempty" json:"check,omitempty"`
 	Properties    map[string]interface{}
+	sm            sync.Mutex
 }
 
 type Check struct {
@@ -50,6 +52,8 @@ func (b BlobDescription) Map() map[string]interface{} {
 	if b.Check != nil {
 		mymap["check"] = b.Check
 	}
+	b.sm.Lock()
+	defer b.sm.Unlock()
 	for k, v := range b.Properties {
 		mymap[k] = v
 	}
@@ -112,6 +116,8 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	if blob.Check != nil {
 		b.Check = blob.Check
 	}
+	b.sm.Lock()
+	defer b.sm.Unlock()
 	b.Properties = mymap
 	return nil
 }

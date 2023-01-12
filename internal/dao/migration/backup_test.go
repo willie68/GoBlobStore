@@ -133,6 +133,7 @@ func TestSyncForward(t *testing.T) {
 
 	err = migrateBckTnt(mainStg, bckStg)
 	ast.Nil(err)
+	wg.Wait()
 
 	count, err = getBlobCount(mainStg)
 	ast.Nil(err)

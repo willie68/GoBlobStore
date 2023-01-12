@@ -34,8 +34,11 @@ func initSFMVTest(t *testing.T) {
 
 func clear(t *testing.T) {
 	// getting the zip file and extracting it into the file system
-	err := removeContents(sfmvRootPath)
-	assert.Nil(t, err)
+	if _, err := os.Stat(sfmvRootPath); err == nil {
+		err := os.RemoveAll(sfmvRootPath)
+		assert.Nil(t, err)
+	}
+	os.MkdirAll(sfmvRootPath, os.ModePerm)
 }
 
 func getSFMVStoreageDao(t *testing.T) SimpleFileMultiVolumeDao {

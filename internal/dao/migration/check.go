@@ -41,7 +41,7 @@ type CheckResultLine struct {
 }
 
 // Admin functions
-//CheckStorage checks the storage to find inconsistencies.
+// CheckStorage checks the storage to find inconsistencies.
 // It will write a audit file with a line for every blob in the storage, including name, hash, and state
 func (c *CheckContext) CheckStorage() (string, error) {
 	c.Running = true

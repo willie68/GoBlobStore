@@ -264,6 +264,7 @@ func TestCheck(t *testing.T) {
 	Test5ID := blobs[4]
 	main.CchDao.DeleteBlob(Test5ID)
 
+	time.Sleep(1 * time.Second)
 	// checking
 	res := check(ast)
 

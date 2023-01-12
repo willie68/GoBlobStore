@@ -3,6 +3,7 @@ package migration
 import (
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
@@ -12,6 +13,8 @@ import (
 type BackupCheck struct {
 	Tenant string
 }
+
+var wg sync.WaitGroup
 
 // MigrateBackup migrates all blobs in the main storage for all tenants into the backup storage, if not already present
 func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactory) error {
@@ -47,7 +50,11 @@ func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao)
 		}
 		if !found {
 			log.Logger.Infof("migrating file for tenant: %s, %s", stg.GetTenant(), id)
-			go backup(id, stg, bck)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				backup(id, stg, bck)
+			}()
 		}
 		return true
 	})
