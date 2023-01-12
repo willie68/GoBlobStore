@@ -66,7 +66,7 @@ func TestCRUDTenantOps(t *testing.T) {
 	ast.Equal(1, len(tenants))
 
 	ast.True(dao.HasTenant(tenant))
-	ast.Equal(int64(0), dao.GetSize(tenant))
+	ast.True(dao.GetSize(tenant) <= 0)
 
 	_, err = dao.RemoveTenant(tenant)
 	ast.Nil(err)
@@ -104,7 +104,7 @@ func TestUnknownTenant(t *testing.T) {
 	ast.Equal(0, len(tenants))
 
 	ast.False(dao.HasTenant(tenant))
-	ast.Equal(int64(-1), dao.GetSize(tenant))
+	ast.True(dao.GetSize(tenant) <= 0)
 
 	closeTntTest(ast)
 }

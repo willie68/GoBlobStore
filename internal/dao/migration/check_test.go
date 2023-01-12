@@ -71,27 +71,8 @@ func initChkTest(t *testing.T) {
 
 func clear(t *testing.T) {
 	// getting the zip file and extracting it into the file system
-	err := removeContents(rootFilePrefix)
+	err := os.RemoveAll(rootFilePrefix)
 	assert.Nil(t, err)
-}
-
-func removeContents(dir string) error {
-	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
-	}
-	return nil
 }
 
 func createBlobDescription(id string) model.BlobDescription {
@@ -260,7 +241,7 @@ func TestCheck(t *testing.T) {
 	err = os.WriteFile(fp, []byte("changed content"), 0644)
 	ast.Nil(err)
 
-	// Test1: Delete Blob only from primary storage
+	// Test5: Delete Blob only from cache
 	Test5ID := blobs[4]
 	main.CchDao.DeleteBlob(Test5ID)
 
