@@ -60,10 +60,11 @@ func initChkTest(t *testing.T) {
 	bckDao.Init()
 
 	main = &business.MainStorageDao{
-		StgDao: stgDao,
-		CchDao: cchDao,
-		BckDao: bckDao,
-		Tenant: tenant,
+		StgDao:      stgDao,
+		CchDao:      cchDao,
+		BckDao:      bckDao,
+		Tenant:      tenant,
+		Bcksyncmode: true,
 	}
 
 	main.Init()
