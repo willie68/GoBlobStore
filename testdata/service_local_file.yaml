@@ -4,27 +4,35 @@ serviceURL: https://127.0.0.1:8443
 secretfile: ""
 apikey: false
 healthcheck:
-  period: 30
+  period: 60
 # enable/disable metrics 
 metrics:
   enable: true
 logging:
   level: debug
-  filename: ""
+  filename: "${logfile}"
 engine:
   retentionManager: SingleRetention
   tenantautoadd: true
   backupsyncmode: false
+  allowtntbackup: true
   storage:
     storageclass: SimpleFile
     properties:
-      rootpath: E:/blb_bck
+      rootpath: H:/temp/blbstg
+  cache:
+    storageclass: FastCache
+    properties:
+      rootpath: H:/temp/blbcache
+      maxcount: 100000
+      maxramusage: 1024000000
 headermapping:
   headerprefix: x-
-  retention: X-es-retention
-  tenant: X-es-tenant
-  apikey: X-es-apikey
-  filename: X-es-filename
+  retention:
+  tenant: 
+  apikey: 
+  filename:
+#  apikey: X-es-apikey
 auth:
   type: #jwt
   properties: 

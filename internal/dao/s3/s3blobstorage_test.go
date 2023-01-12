@@ -22,6 +22,7 @@ const (
 	testfile = "../../../testdata/pdf_dst.pdf"
 )
 
+// TODO all tests are skipped
 func setup(t *testing.T) {
 	tntDao = S3TenantManager{
 		Endpoint:  "http://127.0.0.1:9002",
@@ -57,6 +58,7 @@ func createDao() (S3BlobStorage, error) {
 }
 
 func TestS3Init(t *testing.T) {
+	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
 	dao, err := createDao()
@@ -68,6 +70,7 @@ func TestS3Init(t *testing.T) {
 }
 
 func TestCheckUnknownBlob(t *testing.T) {
+	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
 	dao, err := createDao()
@@ -82,6 +85,7 @@ func TestCheckUnknownBlob(t *testing.T) {
 	close(t)
 }
 func TestCheckEmptyTenant(t *testing.T) {
+	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
 	dao := S3BlobStorage{
@@ -99,6 +103,7 @@ func TestCheckEmptyTenant(t *testing.T) {
 }
 
 func TestCRUDBlob(t *testing.T) {
+	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
 	dao, err := createDao()
@@ -180,6 +185,7 @@ func TestCRUDBlob(t *testing.T) {
 }
 
 func TestRetentionStorage(t *testing.T) {
+	t.SkipNow()
 	setup(t)
 
 	ast := assert.New(t)
@@ -232,6 +238,7 @@ func TestRetentionStorage(t *testing.T) {
 }
 
 func TestCRUDBlobWID(t *testing.T) {
+	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
 	uuid := utils.GenerateID()

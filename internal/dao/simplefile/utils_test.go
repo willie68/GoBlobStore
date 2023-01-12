@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	zipfile  = "../../../testdata/mcs.zip"
+	zipfile  = "../../../testdata/mig.zip"
 	rootpath = "../../../testdata/blobstorage"
 	tenant   = "MCS"
 )
@@ -37,14 +37,11 @@ func initTest(t *testing.T) {
 
 	for _, f := range archive.File {
 		filePath := filepath.Join(rootpath, f.Name)
-		fmt.Println("unzipping file ", filePath)
-
 		if !strings.HasPrefix(filePath, filepath.Clean(rootpath)+string(os.PathSeparator)) {
 			fmt.Println("invalid file path")
 			return
 		}
 		if f.FileInfo().IsDir() {
-			fmt.Println("creating directory...")
 			os.MkdirAll(filePath, os.ModePerm)
 			continue
 		}

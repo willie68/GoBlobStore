@@ -11,31 +11,18 @@ import (
 )
 
 var (
-	rootFilePrefix = filepath.Join(os.TempDir(), "go_test")
+	rootFilePrefix = "../../../testdata/mv"
 	volumes        VolumeManager
 	vols           = []string{"mvn01", "mvn02"}
 )
 
 func clear(t *testing.T) {
 	// getting the zip file and extracting it into the file system
-	err := removeContents(rootFilePrefix)
-	assert.Nil(t, err)
-}
-
-func removeContents(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
+	if _, err := os.Stat(rootFilePrefix); err == nil {
+		err := os.RemoveAll(rootFilePrefix)
+		assert.Nil(t, err)
 	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
-	}
-	return nil
+	os.MkdirAll(rootFilePrefix, os.ModePerm)
 }
 
 func initTest(t *testing.T) {
