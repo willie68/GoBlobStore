@@ -40,7 +40,7 @@ func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactor
 	return nil
 }
 
-// migrateBckTnt migrates all files from the main storage of the teant to the backup storage
+// migrateBckTnt migrates all files from the main storage of the tenant to the backup storage
 func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao) error {
 	log.Logger.Infof("starting backup migration for tenant: %s", stg.GetTenant())
 	stg.GetBlobs(func(id string) bool {
