@@ -227,7 +227,7 @@ There are defined header for operation
 
 `retention`: (optional) if set, this blob will die only available until this time (in minutes) is over, counted from the creation time, or, if a reset retention occur, from the reset time.
 
-`filename`: is the filename of the file itself, and only needed if you use direct binary upload.
+`filename`: is the filename of the file itself, and only needed if you use direct binary upload. Please note that the value must be encoded according to RFC8187 if the file name contains umlauts.
 
 `blobid`: (optional) is the predefined blob id of the file. This must be tenant unique otherwise you will get an conflict error.
 

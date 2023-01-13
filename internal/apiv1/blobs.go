@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/vfaronov/httpheader"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
@@ -132,6 +133,12 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 	if b.ContentLength > 0 {
 		response.Header().Set("Content-Length", fmt.Sprintf("%d", b.ContentLength))
 	}
+	contentDisposition := "attachment"
+	if b.Filename != "" {
+		contentDisposition += fmt.Sprintf("; filename*=%s", httpheader.EncodeExtValue(b.Filename, ""))
+	}
+	response.Header().Set("Content-Disposition", contentDisposition)
+
 	response.WriteHeader(http.StatusOK)
 
 	err = storage.RetrieveBlob(idStr, response)
@@ -392,6 +399,12 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		FilenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
 		if ok {
 			filename = request.Header.Get(FilenameHeader)
+			header, _, err := httpheader.DecodeExtValue(filename)
+			if err != nil {
+				httputils.Err(response, request, serror.InternalServerError(err))
+				return
+			}
+			filename = header
 		}
 		f = mpf
 	}
