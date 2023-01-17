@@ -16,6 +16,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// SimpleFileBlobStorageDao service for storing blob files into a file system
 type SimpleFileBlobStorageDao struct {
 	RootPath string                           // this is the root path for the file system storage
 	Tenant   string                           // this is the tenant, on which this dao will work
@@ -29,6 +30,8 @@ var _ interfaces.BlobStorageDao = &SimpleFileBlobStorageDao{}
 const retentionBaseKey = "retentionBase"
 
 // ---- SimpleFileBlobStorageDao
+
+// Init initialise this dao
 func (s *SimpleFileBlobStorageDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
@@ -51,15 +54,17 @@ func (s *SimpleFileBlobStorageDao) GetTenant() string {
 	return s.Tenant
 }
 
+// GetBlobs getting a list of blob from the filesystem
 func (s *SimpleFileBlobStorageDao) GetBlobs(callback func(id string) bool) error {
 	return s.getBlobsV2(callback)
 }
 
+// StoreBlob storing a blob to the storage system
 func (s *SimpleFileBlobStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	return s.storeBlobV2(b, f)
 }
 
-// updating the blob description
+// UpdateBlobDescription updating the blob description
 func (s *SimpleFileBlobStorageDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
 	err := s.updateBlobDescriptionV2(id, b)
 	if err == os.ErrNotExist {
@@ -71,6 +76,7 @@ func (s *SimpleFileBlobStorageDao) UpdateBlobDescription(id string, b *model.Blo
 	return nil
 }
 
+// HasBlob checking, if a blob is present
 func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
 	if id == "" {
 		return false, nil
@@ -83,6 +89,7 @@ func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
 	return found, nil
 }
 
+// GetBlobDescription getting the description of the file
 func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	info, err := s.getBlobDescriptionV2(id)
 	if err == os.ErrNotExist {
@@ -94,6 +101,7 @@ func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDes
 	return info, nil
 }
 
+// RetrieveBlob retrieving the binary data from the storage system
 func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) error {
 	err := s.getBlobV2(id, writer)
 	if err == os.ErrNotExist {
@@ -105,6 +113,7 @@ func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) err
 	return nil
 }
 
+// DeleteBlob removing a blob from the storage system
 func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
 	s.deleteFilesV1(id)
 	s.deleteFilesV2(id)
@@ -116,7 +125,8 @@ func (s *SimpleFileBlobStorageDao) CheckBlob(id string) (*model.CheckInfo, error
 	return utils.CheckBlob(id, s)
 }
 
-func (s *SimpleFileBlobStorageDao) SearchBlobs(q string, callback func(id string) bool) error {
+// SearchBlobs quering a single blob, niy
+func (s *SimpleFileBlobStorageDao) SearchBlobs(_ string, _ func(id string) bool) error {
 	return errors.New("not implemented yet")
 }
 
@@ -145,12 +155,13 @@ func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.Retent
 		}
 		return nil
 	}
-	retPath := filepath.Join(s.filepath, RETENTION_PATH)
+	retPath := filepath.Join(s.filepath, RetentionPath)
 	filepath.Walk(retPath, retCbk)
 
 	return nil
 }
 
+// GetRetention getting a single retention entry
 func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
 	r, err := s.getRetention(id)
 	if err != nil {
@@ -162,6 +173,7 @@ func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry
 	return *r, err
 }
 
+// AddRetention adding a retention entry to the storage
 func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
 	b, err := s.GetBlobDescription(r.BlobID)
 	if err != nil {
@@ -172,6 +184,7 @@ func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
 	return s.writeRetentionFile(b)
 }
 
+// DeleteRetention deletes the retention entry from the storage
 func (s *SimpleFileBlobStorageDao) DeleteRetention(id string) error {
 	/*
 		_, err := s.GetBlobDescription(id)
@@ -182,6 +195,7 @@ func (s *SimpleFileBlobStorageDao) DeleteRetention(id string) error {
 	return s.deleteRetentionFile(id)
 }
 
+// ResetRetention resets the retention for a blob
 func (s *SimpleFileBlobStorageDao) ResetRetention(id string) error {
 	r, err := s.getRetention(id)
 	if err != nil {
@@ -191,10 +205,12 @@ func (s *SimpleFileBlobStorageDao) ResetRetention(id string) error {
 	return s.AddRetention(r)
 }
 
+// GetLastError returning the last error (niy)
 func (s *SimpleFileBlobStorageDao) GetLastError() error {
 	return nil
 }
 
+// Close closing the storage
 func (s *SimpleFileBlobStorageDao) Close() error {
 	return nil
 }

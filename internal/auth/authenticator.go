@@ -1,3 +1,4 @@
+// Package auth all things related to authentication and authorisation
 package auth
 
 import (
@@ -7,11 +8,13 @@ import (
 	"strings"
 )
 
+// used context key for parameter given in a std context
 var (
 	TokenCtxKey = &contextKey{"Token"}
 	ErrorCtxKey = &contextKey{"Error"}
 )
 
+// defining some commen errors
 var (
 	ErrUnauthorized = errors.New("token is unauthorized")
 	ErrExpired      = errors.New("token is expired")
@@ -21,6 +24,7 @@ var (
 	ErrAlgoInvalid  = errors.New("algorithm mismatch")
 )
 
+// FromContext extract the JWT and a flatten claim structur from a context
 func FromContext(ctx context.Context) (*JWT, map[string]interface{}, error) {
 	token, ok := ctx.Value(TokenCtxKey).(*JWT)
 
@@ -39,6 +43,7 @@ func FromContext(ctx context.Context) (*JWT, map[string]interface{}, error) {
 	return token, claims, err
 }
 
+// Authenticator returns a handler for authentication
 func Authenticator(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token, _, err := FromContext(r.Context())
@@ -57,12 +62,14 @@ func Authenticator(next http.Handler) http.Handler {
 	})
 }
 
+// Verifier returns a handler for verification
 func Verifier(ja *JWTAuth) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return Verify(ja, TokenFromHeader, TokenFromCookie)(next)
 	}
 }
 
+// Verify checking a request
 func Verify(ja *JWTAuth, findTokenFns ...func(r *http.Request) string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
@@ -75,6 +82,7 @@ func Verify(ja *JWTAuth, findTokenFns ...func(r *http.Request) string) func(http
 	}
 }
 
+// VerifyRequest this request -> authorisation
 func VerifyRequest(ja *JWTAuth, r *http.Request, findTokenFns ...func(r *http.Request) string) (*JWT, error) {
 	var tokenString string
 
@@ -94,6 +102,7 @@ func VerifyRequest(ja *JWTAuth, r *http.Request, findTokenFns ...func(r *http.Re
 	return VerifyToken(ja, tokenString)
 }
 
+// VerifyToken verify the bearer oken
 func VerifyToken(ja *JWTAuth, tokenString string) (*JWT, error) {
 	// Decode & verify the token
 	token, err := DecodeJWT(tokenString)
@@ -109,6 +118,7 @@ func VerifyToken(ja *JWTAuth, tokenString string) (*JWT, error) {
 	return &token, nil
 }
 
+// NewContext creating a new context for the http functions
 func NewContext(ctx context.Context, t *JWT, err error) context.Context {
 	ctx = context.WithValue(ctx, TokenCtxKey, t)
 	ctx = context.WithValue(ctx, ErrorCtxKey, err)

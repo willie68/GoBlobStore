@@ -1,3 +1,4 @@
+// Package main this is the entry point into the service
 package main
 
 import (
@@ -43,7 +44,7 @@ var apikey string
 var ssl bool
 var configFile string
 var serviceConfig config.Config
-var Tracer opentracing.Tracer
+var tracer opentracing.Tracer
 var sslsrv *http.Server
 var srv *http.Server
 
@@ -75,9 +76,9 @@ func apiRoutes() (*chi.Mux, error) {
 			AllowCredentials: true,
 			MaxAge:           300, // Maximum value not ignored by any of major browsers
 		}),
-		httptracer.Tracer(Tracer, httptracer.Config{
+		httptracer.Tracer(tracer, httptracer.Config{
 			ServiceName:    config.Servicename,
-			ServiceVersion: "V" + apiv1.ApiVersion,
+			ServiceVersion: "V" + apiv1.APIVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
 				return false
@@ -168,9 +169,9 @@ func healthRoutes() *chi.Mux {
 		middleware.Logger,
 		//middleware.DefaultCompress,
 		middleware.Recoverer,
-		httptracer.Tracer(Tracer, httptracer.Config{
+		httptracer.Tracer(tracer, httptracer.Config{
 			ServiceName:    config.Servicename,
-			ServiceVersion: "V" + apiv1.ApiVersion,
+			ServiceVersion: "V" + apiv1.APIVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
 				return false
@@ -250,13 +251,13 @@ func main() {
 	log.Logger.Info("service is starting")
 
 	var closer io.Closer
-	Tracer, closer = initJaeger(config.Servicename, serviceConfig.OpenTracing)
-	opentracing.SetGlobalTracer(Tracer)
+	tracer, closer = initJaeger(config.Servicename, serviceConfig.OpenTracing)
+	opentracing.SetGlobalTracer(tracer)
 	defer closer.Close()
 
 	healthCheckConfig := health.CheckConfig(serviceConfig.HealthCheck)
 
-	health.InitHealthSystem(healthCheckConfig, Tracer)
+	health.InitHealthSystem(healthCheckConfig, tracer)
 
 	if serviceConfig.Sslport > 0 {
 		ssl = true

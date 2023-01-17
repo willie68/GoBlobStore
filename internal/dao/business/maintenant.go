@@ -12,8 +12,10 @@ import (
 // this type is doing all the stuff for managing different tenants in the system.
 // It will use the underlying tenant daos for the storage part.
 
+// cecking interface compatibility
 var _ interfaces.TenantDao = &MainTenantDao{}
 
+// MainTenantDao the business object for doing all tenant based operations
 type MainTenantDao struct {
 	TntDao  interfaces.TenantDao
 	BckDao  interfaces.TenantDao

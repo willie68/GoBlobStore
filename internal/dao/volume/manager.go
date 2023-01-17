@@ -14,13 +14,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-/*
-This is a volume manager, which provide functionality about volumes mapped to a static root path.
-e.g. /root/mvn01, /root/mvn02 ...
-every sub folder should be another mount point. The manager provide information about presence, capacity, free space and utilization.
-It also provide a utilization in m% of all volumes.
-The call back will be fired on every new mount of a volume in the monitored root folder.
-*/
+// VolumeManager This is a volume manager, which provide functionality about volumes mapped to a static root path.
+//
+// e.g. /root/mvn01, /root/mvn02 ...
+// every sub folder should be another mount point. The manager provide information about presence, capacity, free space and utilization.
+// It also provide a utilization in m% of all volumes.
+// The call back will be fired on every new mount of a volume in the monitored root folder.
 type VolumeManager struct {
 	root      string
 	cm        sync.Mutex
@@ -31,8 +30,10 @@ type VolumeManager struct {
 	rnd       *rand.Rand
 }
 
+// Callback a simple callback function
 type Callback func(name string) bool
 
+// VolumeInfo information about a volume
 type VolumeInfo struct {
 	Name     string `yaml:"name",json:"name"`
 	ID       string `yaml:"id",json:"id"`
@@ -44,6 +45,7 @@ type VolumeInfo struct {
 	freepm   int    `yaml:"-",json:"-"`
 }
 
+// NewVolumeManager creating a new NewVolumeManager with a root path
 func NewVolumeManager(rootpath string) (VolumeManager, error) {
 	vs := VolumeManager{
 		root: rootpath,
@@ -51,6 +53,7 @@ func NewVolumeManager(rootpath string) (VolumeManager, error) {
 	return vs, nil
 }
 
+// Init initialise the volume manager
 func (v *VolumeManager) Init() error {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	v.cm = sync.Mutex{}
@@ -73,6 +76,7 @@ func (v *VolumeManager) Init() error {
 	return err
 }
 
+// HasVolume checking if a volume is present
 func (v *VolumeManager) HasVolume(name string) bool {
 	v.cm.Lock()
 	defer v.cm.Unlock()
@@ -80,11 +84,13 @@ func (v *VolumeManager) HasVolume(name string) bool {
 	return ok
 }
 
+// AddCallback adding a callback for volume list changes
 func (v *VolumeManager) AddCallback(cb Callback) bool {
 	v.callbacks = append(v.callbacks, cb)
 	return true
 }
 
+// Rescan rescan the mountpoints for new volumes
 func (v *VolumeManager) Rescan() error {
 	entries, err := os.ReadDir(v.root)
 	if err != nil {
@@ -155,6 +161,7 @@ func (v *VolumeManager) volInfo(name string) (*VolumeInfo, error) {
 	return &vi, err
 }
 
+// Info getting the volume info of a single volume
 func (v *VolumeManager) Info(name string) *VolumeInfo {
 	v.cm.Lock()
 	defer v.cm.Unlock()
@@ -165,6 +172,7 @@ func (v *VolumeManager) Info(name string) *VolumeInfo {
 	return nil
 }
 
+// ID retunr the ID of a named volume
 func (v *VolumeManager) ID(name string) string {
 	v.cm.Lock()
 	defer v.cm.Unlock()
@@ -175,6 +183,7 @@ func (v *VolumeManager) ID(name string) string {
 	return ""
 }
 
+// CalculatePerMill calculates the volume utilization in /1000
 func (v *VolumeManager) CalculatePerMill() error {
 	var g uint64
 	var gfreepm int
@@ -197,6 +206,7 @@ func (v *VolumeManager) CalculatePerMill() error {
 	return nil
 }
 
+// SelectFree select the next free volume in conjuction to the 1000 based selector
 func (v *VolumeManager) SelectFree(i int) string {
 	v.cm.Lock()
 	defer v.cm.Unlock()
@@ -215,6 +225,7 @@ func (v *VolumeManager) SelectFree(i int) string {
 	return ""
 }
 
+// Rnd getting a 1000 based selector randomly
 func (v *VolumeManager) Rnd() int {
 	return v.rnd.Intn(1000)
 }

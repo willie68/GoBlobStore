@@ -91,7 +91,7 @@ func GetTenantDao() (interfaces.TenantDao, error) {
 	return tenantDao, nil
 }
 
-// GetTenantDao returning the tenant for administration tenants
+// GetStorageFactory returning the storage factory
 func GetStorageFactory() (interfaces.StorageFactory, error) {
 	if stgf == nil {
 		return nil, errors.New("no storage factory present")
@@ -107,6 +107,7 @@ func GetMigrationManagement() (*migration.MigrationManagement, error) {
 	return migMan, nil
 }
 
+// Close closing ths storage factory
 func Close() {
 	err := stgf.Close()
 	if err != nil {

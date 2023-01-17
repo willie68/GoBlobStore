@@ -11,6 +11,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// SimpleFileMultiVolumeDao ths dao takes multi volumes and treats them as a single file storage
 type SimpleFileMultiVolumeDao struct {
 	RootPath string // this is the root path for the file system storage
 	Tenant   string // this is the tenant, on which this dao will work
@@ -20,13 +21,18 @@ type SimpleFileMultiVolumeDao struct {
 	cm       sync.Mutex
 }
 
+// checking interface compatibility
+var _ interfaces.BlobStorageDao = &SimpleFileMultiVolumeDao{}
+
+// defining some error
 var (
-	_                 interfaces.BlobStorageDao = &SimpleFileMultiVolumeDao{}
-	ErrNotImplemented error                     = errors.New("not implemented")
-	ErrDaoNotFound    error                     = errors.New("dao not found")
+	ErrNotImplemented = errors.New("not implemented")
+	ErrDaoNotFound    = errors.New("dao not found")
 )
 
 // ---- SimpleFileMultiVolumeDao
+
+// Init initialise this dao
 func (s *SimpleFileMultiVolumeDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
@@ -64,6 +70,7 @@ func (s *SimpleFileMultiVolumeDao) GetBlobs(callback func(id string) bool) error
 	return io.EOF
 }
 
+// StoreBlob storing a blob to the storage system
 func (s *SimpleFileMultiVolumeDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	dao, err := s.selectDao()
 	if err != nil {
@@ -72,8 +79,9 @@ func (s *SimpleFileMultiVolumeDao) StoreBlob(b *model.BlobDescription, f io.Read
 	return dao.StoreBlob(b, f)
 }
 
-// updating the blob description
-func (s *SimpleFileMultiVolumeDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+// UpdateBlobDescription updating the blob description
+// TODO implement this
+func (s *SimpleFileMultiVolumeDao) UpdateBlobDescription(_ string, _ *model.BlobDescription) error {
 	return ErrNotImplemented
 }
 
@@ -104,6 +112,7 @@ func (s *SimpleFileMultiVolumeDao) RetrieveBlob(id string, writer io.Writer) err
 	return dao.RetrieveBlob(id, writer)
 }
 
+// DeleteBlob removing a blob from the storage system
 func (s *SimpleFileMultiVolumeDao) DeleteBlob(id string) error {
 	dao, err := s.dao4id(id)
 	if err != nil {
@@ -122,7 +131,7 @@ func (s *SimpleFileMultiVolumeDao) CheckBlob(id string) (*model.CheckInfo, error
 }
 
 // SearchBlobs is not implemented for this storage
-func (s *SimpleFileMultiVolumeDao) SearchBlobs(q string, callback func(id string) bool) error {
+func (s *SimpleFileMultiVolumeDao) SearchBlobs(_ string, _ func(id string) bool) error {
 	return ErrNotImplemented
 }
 
@@ -137,6 +146,7 @@ func (s *SimpleFileMultiVolumeDao) GetAllRetentions(callback func(r model.Retent
 	return nil
 }
 
+// GetRetention getting a single retention entry
 func (s *SimpleFileMultiVolumeDao) GetRetention(id string) (model.RetentionEntry, error) {
 	dao, err := s.dao4id(id)
 	if err != nil {
@@ -145,6 +155,7 @@ func (s *SimpleFileMultiVolumeDao) GetRetention(id string) (model.RetentionEntry
 	return dao.GetRetention(id)
 }
 
+// AddRetention adding a retention entry to the storage
 func (s *SimpleFileMultiVolumeDao) AddRetention(r *model.RetentionEntry) error {
 	dao, err := s.dao4id(r.BlobID)
 	if err != nil {
@@ -153,6 +164,7 @@ func (s *SimpleFileMultiVolumeDao) AddRetention(r *model.RetentionEntry) error {
 	return dao.AddRetention(r)
 }
 
+// DeleteRetention deletes the retention entry from the storage
 func (s *SimpleFileMultiVolumeDao) DeleteRetention(id string) error {
 	dao, err := s.dao4id(id)
 	if err != nil {
@@ -161,6 +173,7 @@ func (s *SimpleFileMultiVolumeDao) DeleteRetention(id string) error {
 	return dao.DeleteRetention(id)
 }
 
+// ResetRetention resets the retention for a blob
 func (s *SimpleFileMultiVolumeDao) ResetRetention(id string) error {
 	r, err := s.GetRetention(id)
 	if err != nil {
@@ -170,10 +183,12 @@ func (s *SimpleFileMultiVolumeDao) ResetRetention(id string) error {
 	return s.AddRetention(&r)
 }
 
+// GetLastError returning the last error (niy)
 func (s *SimpleFileMultiVolumeDao) GetLastError() error {
 	return ErrNotImplemented
 }
 
+// Close closing the storage
 func (s *SimpleFileMultiVolumeDao) Close() error {
 	for _, dao := range s.daos {
 		dao.Close()

@@ -12,12 +12,14 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// GenerateID generate an uuid as string without minuses
 func GenerateID() string {
 	uuidStr := uuid.NewString()
 	uuidStr = strings.ReplaceAll(uuidStr, "-", "")
 	return uuidStr
 }
 
+// BuildHash building a hash string of the binaries of a blob, using sha256
 func BuildHash(id string, stg interfaces.BlobStorageDao) (string, error) {
 	h := sha256.New()
 	err := stg.RetrieveBlob(id, h)
@@ -27,6 +29,7 @@ func BuildHash(id string, stg interfaces.BlobStorageDao) (string, error) {
 	return fmt.Sprintf("sha-256:%x", h.Sum(nil)), nil
 }
 
+// CheckBlob checking the blob with the hash function
 func CheckBlob(id string, s interfaces.BlobStorageDao) (*model.CheckInfo, error) {
 	ok, err := s.HasBlob(id)
 	if !ok {

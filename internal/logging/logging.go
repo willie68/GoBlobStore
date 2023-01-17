@@ -11,6 +11,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+// constants for logging levels
 const (
 	Debug string = "DEBUG"
 	Info         = "INFO"
@@ -19,11 +20,10 @@ const (
 	Fatal        = "FATAL"
 )
 
+// Levels defining a list of levels
 var Levels = []string{Debug, Info, Alert, Error, Fatal}
 
-/*
-ServiceLogger main type for logging
-*/
+// ServiceLogger main type for logging
 type serviceLogger struct {
 	Level      string
 	LevelInt   int
@@ -39,9 +39,7 @@ type serviceLogger struct {
 // Logger to use for all logging
 var Logger serviceLogger
 
-/*
-Init initialise logging
-*/
+// Init initialise logging
 func (s *serviceLogger) Init() {
 	s.gelfActive = false
 	if s.GelfURL != "" {
@@ -72,6 +70,7 @@ func (s *serviceLogger) Init() {
 	log.SetOutput(w)
 }
 
+// SetLevel setting the level of this logger
 func (s *serviceLogger) SetLevel(level string) {
 	switch strings.ToUpper(level) {
 	case Debug:
@@ -87,9 +86,7 @@ func (s *serviceLogger) SetLevel(level string) {
 	}
 }
 
-/*
-Debug log this message at debug level
-*/
+// Debug log this message at debug level
 func (s *serviceLogger) Debug(msg string) {
 	if s.LevelInt <= 0 {
 		if s.gelfActive {
@@ -99,9 +96,7 @@ func (s *serviceLogger) Debug(msg string) {
 	}
 }
 
-/*
-Debugf log this message at debug level with formatting
-*/
+// Debugf log this message at debug level with formatting
 func (s *serviceLogger) Debugf(format string, va ...interface{}) {
 	if s.LevelInt <= 0 {
 		if s.gelfActive {
@@ -111,9 +106,7 @@ func (s *serviceLogger) Debugf(format string, va ...interface{}) {
 	}
 }
 
-/*
-Info log this message at info level
-*/
+// Info log this message at info level
 func (s *serviceLogger) Info(msg string) {
 	if s.LevelInt <= 1 {
 		if s.gelfActive {
@@ -123,9 +116,7 @@ func (s *serviceLogger) Info(msg string) {
 	}
 }
 
-/*
-Infof log this message at info level with formatting
-*/
+// Infof log this message at info level with formatting
 func (s *serviceLogger) Infof(format string, va ...interface{}) {
 	if s.LevelInt <= 1 {
 		if s.gelfActive {
@@ -135,9 +126,7 @@ func (s *serviceLogger) Infof(format string, va ...interface{}) {
 	}
 }
 
-/*
-Alert log this message at alert level
-*/
+// Alert log this message at alert level
 func (s *serviceLogger) Alert(msg string) {
 	if s.LevelInt <= 2 {
 		if s.gelfActive {
@@ -147,9 +136,7 @@ func (s *serviceLogger) Alert(msg string) {
 	}
 }
 
-/*
-Alertf log this message at alert level with formatting.
-*/
+// Alertf log this message at alert level with formatting.
 func (s *serviceLogger) Alertf(format string, va ...interface{}) {
 	if s.LevelInt <= 2 {
 		if s.gelfActive {
@@ -199,9 +186,7 @@ func (s *serviceLogger) Errorf(format string, va ...interface{}) {
 	}
 }
 
-/*
-Close this logging client
-*/
+// Close this logging client
 func (s *serviceLogger) Close() {
 	if s.gelfActive {
 		s.c.Close()

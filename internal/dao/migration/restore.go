@@ -11,6 +11,7 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
+// RestoreContext struct for the running a full restore of the tenant
 type RestoreContext struct {
 	TenantID  string
 	ID        string
@@ -22,6 +23,7 @@ type RestoreContext struct {
 	cancel    bool
 }
 
+// checking interface compatibility
 var _ interfaces.Running = &RestoreContext{}
 
 // MigrateRestore migrates all blobs in the backup storage for a tenant into the main storage, if not already present
@@ -45,6 +47,7 @@ func MigrateRestore(tenant string, stgf interfaces.StorageFactory) (*RestoreCont
 	return &r, nil
 }
 
+// Restore starting a full restore of a tenant
 func (r *RestoreContext) Restore() {
 	r.Running = true
 	defer func() { r.Running = false }()
@@ -68,6 +71,7 @@ func (r *RestoreContext) Restore() {
 	}
 }
 
+// IsRunning checking if a full restore is running
 func (r *RestoreContext) IsRunning() bool {
 	return r.Running
 }

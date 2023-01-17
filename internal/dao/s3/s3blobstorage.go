@@ -1,3 +1,4 @@
+// Package s3 this package contains all s3 related structs
 package s3
 
 /*
@@ -30,6 +31,7 @@ const (
 	blobDescription = "Blobdescription"
 )
 
+// S3BlobStorage service for storing blob files into a S3 compatible storage
 type S3BlobStorage struct {
 	Endpoint    string
 	Insecure    bool
@@ -45,7 +47,8 @@ type S3BlobStorage struct {
 var _ interfaces.BlobStorageDao = &S3BlobStorage{}
 
 // S3 Blob Storage
-// initialise this dao
+
+// Init initialise this dao
 func (s *S3BlobStorage) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
@@ -108,7 +111,7 @@ func (s *S3BlobStorage) GetTenant() string {
 	return s.Tenant
 }
 
-// getting a list of blob from the filesystem using offset and limit
+// GetBlobs getting a list of blob from the storage
 func (s *S3BlobStorage) GetBlobs(callback func(id string) bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -136,7 +139,8 @@ func (s *S3BlobStorage) GetBlobs(callback func(id string) bool) error {
 }
 
 // CRUD operation on the blob files
-// storing a blob to the storage system
+
+// StoreBlob storing a blob to the storage system
 func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	ctx := context.Background()
 	if b.BlobID == "" {
@@ -162,8 +166,8 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 	return b.BlobID, nil
 }
 
-// updating the blob description
-func (s *S3BlobStorage) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+// UpdateBlobDescription updating the blob description
+func (s *S3BlobStorage) UpdateBlobDescription(_ string, b *model.BlobDescription) error {
 	metadatastr, err := json.Marshal(b)
 	if err != nil {
 		return err
@@ -196,7 +200,7 @@ func (s *S3BlobStorage) UpdateBlobDescription(id string, b *model.BlobDescriptio
 	return nil
 }
 
-// checking, if a blob is present
+// HasBlob checking, if a blob is present
 func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
@@ -212,7 +216,7 @@ func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
 	return true, nil
 }
 
-// getting the description of the file
+// GetBlobDescription getting the description of the file
 func (s *S3BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
@@ -238,7 +242,7 @@ func (s *S3BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, e
 	return nil, os.ErrNotExist
 }
 
-// retrieving the binary data from the storage system
+// RetrieveBlob retrieving the binary data from the storage system
 func (s *S3BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
@@ -259,7 +263,7 @@ func (s *S3BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 	return nil
 }
 
-// removing a blob from the storage system
+// DeleteBlob removing a blob from the storage system
 func (s *S3BlobStorage) DeleteBlob(id string) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
@@ -280,11 +284,13 @@ func (s *S3BlobStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 	return utils.CheckBlob(id, s)
 }
 
-func (s *S3BlobStorage) SearchBlobs(q string, callback func(id string) bool) error {
+// SearchBlobs quering a single blob, niy
+func (s *S3BlobStorage) SearchBlobs(_ string, _ func(id string) bool) error {
 	return errors.New("not implemented yet")
 }
 
 // Retentionrelated methods
+
 // GetAllRetentions for every retention entry for this tenant we call the callback function,
 // you can stop the walk by returning a false in the callback
 func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
@@ -335,7 +341,7 @@ func (s *S3BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
 	return *r, err
 }
 
-// DeleteRetention deletes the retention entry from the storaage
+// DeleteRetention deletes the retention entry from the storage
 func (s *S3BlobStorage) DeleteRetention(id string) error {
 	filename := s.id2rf(id)
 	ctx := context.Background()
@@ -361,11 +367,12 @@ func (s *S3BlobStorage) ResetRetention(id string) error {
 	return s.AddRetention(r)
 }
 
+// GetLastError returning the last error (niy)
 func (s *S3BlobStorage) GetLastError() error {
 	return nil
 }
 
-// closing the storage
+// Close closing the storage
 func (s *S3BlobStorage) Close() error {
 	return nil
 }

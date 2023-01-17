@@ -7,7 +7,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-// this is the interface for the factory which will create tenant specifig storage implementations
+// StorageFactory this is the interface for the factory which will create tenant specifig storage implementations
 type StorageFactory interface {
 	Init(storage config.Engine, rtnm RetentionManager) error
 	GetStorageDao(tenant string) (BlobStorageDao, error)
@@ -15,7 +15,7 @@ type StorageFactory interface {
 	Close() error
 }
 
-// BlobStoreDao this is the interface which all implementation of a blob storage engine has to fulfill
+// BlobStorageDao this is the interface which all implementation of a blob storage engine has to fulfill
 type BlobStorageDao interface {
 	Init() error       // initialise this dao
 	GetTenant() string // get the tenant id

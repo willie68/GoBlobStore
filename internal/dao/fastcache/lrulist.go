@@ -8,28 +8,33 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// LRUEntry one lru list entry
 type LRUEntry struct {
 	LastAccess  time.Time             `json:"lastAccess"`
 	Description model.BlobDescription `json:"description"`
 	Data        []byte                `json:"data"`
 }
 
+// LRUList the full ist of lru entries
 type LRUList struct {
 	MaxCount   int
-	MaxRamSize int64
+	MaxRAMSize int64
 	entries    []LRUEntry
 	dmu        sync.Mutex
 	ramsize    int64
 }
 
+// Init initialise this LRU list
 func (l *LRUList) Init() {
 	l.entries = make([]LRUEntry, 0)
 }
 
+// Size getting the size of the list
 func (l *LRUList) Size() int {
 	return len(l.entries)
 }
 
+// Add add a new entry to the list
 func (l *LRUList) Add(e LRUEntry) bool {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
@@ -40,6 +45,7 @@ func (l *LRUList) Add(e LRUEntry) bool {
 	return true
 }
 
+// Update an entry
 func (l *LRUList) Update(e LRUEntry) {
 	id := e.Description.BlobID
 	l.dmu.Lock()
@@ -51,6 +57,7 @@ func (l *LRUList) Update(e LRUEntry) {
 	}
 }
 
+// UpdateAccess updates the access time of an entry
 func (l *LRUList) UpdateAccess(id string) {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
@@ -60,6 +67,7 @@ func (l *LRUList) UpdateAccess(id string) {
 	}
 }
 
+// GetFullIDList getting a copy of the full id list of all entries
 func (l *LRUList) GetFullIDList() []string {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
@@ -70,6 +78,7 @@ func (l *LRUList) GetFullIDList() []string {
 	return ids
 }
 
+// HandleContrains doing the self reoganising
 func (l *LRUList) HandleContrains() string {
 	var id string
 	l.dmu.Lock()
@@ -79,8 +88,8 @@ func (l *LRUList) HandleContrains() string {
 		oldest := l.getOldest()
 		id = l.entries[oldest].Description.BlobID
 	}
-	if l.MaxRamSize > 0 {
-		for l.ramsize > l.MaxRamSize {
+	if l.MaxRAMSize > 0 {
+		for l.ramsize > l.MaxRAMSize {
 			oldest := l.getOldestWithData()
 			if oldest == -1 {
 				l.ramsize = 0
@@ -93,6 +102,7 @@ func (l *LRUList) HandleContrains() string {
 	return id
 }
 
+// Has checking the existence of an entry
 func (l *LRUList) Has(id string) bool {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
@@ -103,6 +113,7 @@ func (l *LRUList) Has(id string) bool {
 	return false
 }
 
+// Get getting an entry if present
 func (l *LRUList) Get(id string) (LRUEntry, bool) {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
@@ -114,6 +125,7 @@ func (l *LRUList) Get(id string) (LRUEntry, bool) {
 	return LRUEntry{}, false
 }
 
+// Delete removing an entry from the list
 func (l *LRUList) Delete(id string) string {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()

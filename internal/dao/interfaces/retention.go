@@ -2,6 +2,7 @@ package interfaces
 
 import "github.com/willie68/GoBlobStore/pkg/model"
 
+// RetentionManager interface for retention manager
 type RetentionManager interface {
 	Init(stgf StorageFactory) error
 

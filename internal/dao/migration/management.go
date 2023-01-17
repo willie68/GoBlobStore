@@ -12,11 +12,13 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// MigrationManagement this dao takes control over several async migration parts, as backup, checks ...
 type MigrationManagement struct {
 	StorageFactory interfaces.StorageFactory
 	cCtxs          map[string]interface{}
 }
 
+// MigrationResult is the result of a async migration task
 type MigrationResult struct {
 	ID        string
 	Startet   time.Time
@@ -27,14 +29,16 @@ type MigrationResult struct {
 }
 
 // management functions
-// createStorage creating a new storage dao for the tenant depending on the configuration
-func (c *MigrationManagement) Init() error {
-	c.cCtxs = make(map[string]interface{})
+
+// Init creates a new migration service
+func (m *MigrationManagement) Init() error {
+	m.cCtxs = make(map[string]interface{})
 	return nil
 }
 
-func (c *MigrationManagement) IsRunning(tenant string) bool {
-	if it, ok := c.cCtxs[tenant]; ok {
+// IsRunning checking if a migration task is running for a tenant
+func (m *MigrationManagement) IsRunning(tenant string) bool {
+	if it, ok := m.cCtxs[tenant]; ok {
 		if r, ok := it.(interfaces.Running); ok {
 			if r.IsRunning() {
 				return true
@@ -44,8 +48,9 @@ func (c *MigrationManagement) IsRunning(tenant string) bool {
 	return false
 }
 
-func (c *MigrationManagement) GetResult(tenant string) (MigrationResult, error) {
-	if i, ok := c.cCtxs[tenant]; ok {
+// GetResult getting the result of the last migration task
+func (m *MigrationManagement) GetResult(tenant string) (MigrationResult, error) {
+	if i, ok := m.cCtxs[tenant]; ok {
 		switch v := i.(type) {
 		case *CheckContext:
 			res := MigrationResult{
@@ -70,29 +75,30 @@ func (c *MigrationManagement) GetResult(tenant string) (MigrationResult, error) 
 	return MigrationResult{}, errors.New("no process running for tenant")
 }
 
-func (c *MigrationManagement) StartRestore(tenant string) (string, error) {
-	if c.IsRunning(tenant) {
+// StartRestore starting a restore task for a tenant
+func (m *MigrationManagement) StartRestore(tenant string) (string, error) {
+	if m.IsRunning(tenant) {
 		return "", errors.New("process already running for tenant")
 	}
 
-	cCtx, err := c.getRestoreDao(tenant)
+	cCtx, err := m.getRestoreDao(tenant)
 	if err != nil {
 		return "", err
 	}
-	c.cCtxs[tenant] = cCtx
+	m.cCtxs[tenant] = cCtx
 	cCtx.Running = true
-	go c.doRestore(cCtx)
+	go m.doRestore(cCtx)
 	return cCtx.ID, nil
 }
 
-func (c *MigrationManagement) doRestore(cCtx *RestoreContext) {
+func (m *MigrationManagement) doRestore(cCtx *RestoreContext) {
 	cCtx.Started = time.Now()
 	defer func() { cCtx.Finnished = time.Now() }()
 	cCtx.Restore()
 }
 
-func (c *MigrationManagement) getRestoreDao(tenant string) (*RestoreContext, error) {
-	d, err := c.StorageFactory.GetStorageDao(tenant)
+func (m *MigrationManagement) getRestoreDao(tenant string) (*RestoreContext, error) {
+	d, err := m.StorageFactory.GetStorageDao(tenant)
 	if err != nil {
 		return nil, err
 	}
@@ -111,12 +117,14 @@ func (c *MigrationManagement) getRestoreDao(tenant string) (*RestoreContext, err
 	return &cCtx, nil
 }
 
-func (c *MigrationManagement) Close() error {
+// Close closing this service
+func (m *MigrationManagement) Close() error {
 	return nil
 }
 
 // management functions
 
+// StartCheck starting a check of all blob for a tenant
 func (m *MigrationManagement) StartCheck(tenant string) (string, error) {
 	if m.IsRunning(tenant) {
 		return "", errors.New("process already running for tenant")
@@ -168,8 +176,8 @@ func (m *MigrationManagement) doCheck(cCtx *CheckContext) {
 	cCtx.BlobID = id
 }
 
-func (c *MigrationManagement) getCheckDao(tenant string) (*CheckContext, error) {
-	d, err := c.StorageFactory.GetStorageDao(tenant)
+func (m *MigrationManagement) getCheckDao(tenant string) (*CheckContext, error) {
+	d, err := m.StorageFactory.GetStorageDao(tenant)
 	if err != nil {
 		return nil, err
 	}

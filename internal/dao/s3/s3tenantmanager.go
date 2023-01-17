@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	fn_stlst = "storelist.json"
+	fnStlst = "storelist.json"
 )
 
+// S3TenantManager the s3 based tenant manager
 type S3TenantManager struct {
 	Endpoint    string
 	Insecure    bool // true for self signed certificates
@@ -35,6 +36,7 @@ type S3TenantManager struct {
 	storelist   []S3StoreEntry
 }
 
+// Init intialise this tenant manager
 func (s *S3TenantManager) Init() error {
 	u, err := url.Parse(s.Endpoint)
 	if err != nil {
@@ -88,6 +90,7 @@ func (s *S3TenantManager) Init() error {
 	return nil
 }
 
+// GetTenants walk thru all tenants
 func (s *S3TenantManager) GetTenants(callback func(tenant string) bool) error {
 	if s.storelist == nil {
 		err := s.readStorelist()
@@ -103,7 +106,7 @@ func (s *S3TenantManager) GetTenants(callback func(tenant string) bool) error {
 
 func (s *S3TenantManager) readStorelist() error {
 	ctx := context.Background()
-	_, err := s.minioClient.StatObject(ctx, s.Bucket, fn_stlst, minio.StatObjectOptions{})
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, fnStlst, minio.StatObjectOptions{})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -112,7 +115,7 @@ func (s *S3TenantManager) readStorelist() error {
 		}
 		return err
 	}
-	reader, err := s.minioClient.GetObject(ctx, s.Bucket, fn_stlst, minio.GetObjectOptions{
+	reader, err := s.minioClient.GetObject(ctx, s.Bucket, fnStlst, minio.GetObjectOptions{
 		ServerSideEncryption: nil,
 	})
 	if err != nil {
@@ -138,7 +141,7 @@ func (s *S3TenantManager) writeStorelist() error {
 		return err
 	}
 	r := bytes.NewReader(data)
-	_, err = s.minioClient.PutObject(ctx, s.Bucket, fn_stlst, r, -1, minio.PutObjectOptions{
+	_, err = s.minioClient.PutObject(ctx, s.Bucket, fnStlst, r, -1, minio.PutObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
 		ContentType:          "application/json",
 	})
@@ -148,6 +151,7 @@ func (s *S3TenantManager) writeStorelist() error {
 	return nil
 }
 
+// AddTenant add a new tenant to the manager
 func (s *S3TenantManager) AddTenant(tenant string) error {
 	if s.HasTenant(tenant) {
 		return errors.New("tenant already exists")
@@ -163,6 +167,7 @@ func (s *S3TenantManager) AddTenant(tenant string) error {
 	return nil
 }
 
+// RemoveTenant remove a tenant from the service, delete all related data
 func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
 	if !s.HasTenant(tenant) {
 		return "", nil
@@ -191,6 +196,7 @@ func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
 	return "", nil
 }
 
+// HasTenant chacking if a tenant is present
 func (s *S3TenantManager) HasTenant(tenant string) bool {
 	tenant = strings.ToLower(tenant)
 	for _, store := range s.storelist {
@@ -257,7 +263,8 @@ func (s *S3TenantManager) getConfigName(tenant string) string {
 	return fmt.Sprintf("%s/%s/%s", tenant, "_config", "config.json")
 }
 
-func (s *S3TenantManager) GetSize(tenant string) int64 {
+// GetSize getting the overal storage size for a tenant, niy
+func (s *S3TenantManager) GetSize(_ string) int64 {
 	return 0
 }
 
@@ -268,6 +275,7 @@ func (s *S3TenantManager) getEncryption() encrypt.ServerSide {
 	return encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket))
 }
 
+// Close closing the manager
 func (s *S3TenantManager) Close() error {
 	return nil
 }

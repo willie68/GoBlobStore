@@ -1,3 +1,4 @@
+// Package bluge this package contains all things related to the bluge fulltext index engine. see: https://github.com/blugelabs/bluge
 package bluge
 
 import (
@@ -21,11 +22,13 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model/query"
 )
 
-const BLUGE_INDEX = "bluge"
+// BlugeIndex name of the index engine
+const BlugeIndex = "bluge"
 
 var _ interfaces.Index = &Index{}
 var _ interfaces.IndexBatch = &IndexBatch{}
 
+// Index a tenant based single indexer
 type Index struct {
 	Tenant   string
 	rootpath string
@@ -34,11 +37,13 @@ type Index struct {
 	qsync    sync.Mutex
 }
 
+// IndexBatch for bulk indexing
 type IndexBatch struct {
 	docs  []model.BlobDescription
 	index *Index
 }
 
+// Config the config for the indexer
 type Config struct {
 	Rootpath string `yaml:"rootpath"`
 }
@@ -48,6 +53,7 @@ var (
 	bcnfg Config
 )
 
+// InitBluge initialise the main engine, mainly retriving and storing the configuration
 func InitBluge(p map[string]interface{}) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
@@ -58,9 +64,11 @@ func InitBluge(p map[string]interface{}) error {
 	return nil
 }
 
+// CloseBluge just for the sake of completeness
 func CloseBluge() {
 }
 
+// Init initialise a index service for a tenant
 func (m *Index) Init() error {
 	m.Tenant = strings.ToLower(m.Tenant)
 	m.rootpath = filepath.Join(bcnfg.Rootpath, m.Tenant, "_idx")
@@ -69,6 +77,7 @@ func (m *Index) Init() error {
 	return nil
 }
 
+// Search doing a search for a tenant
 func (m *Index) Search(query string, callback func(id string) bool) error {
 	var bq bluge.Query
 	var err error
@@ -137,10 +146,10 @@ func (m *Index) buildAST(q string) (*query.Query, error) {
 	return &qu, nil
 }
 
-//Index the index will index a single document, be aware this will only work in a single instance installation.
+// Index the index will index a single document, be aware this will only work in a single instance installation.
 // the implementation will check, if the index writer is already opened and wait til it's closed, but only
 // in a single instance of the blob storage. So in a multinode enviroment this will fail.
-func (m *Index) Index(id string, b model.BlobDescription) error {
+func (m *Index) Index(_ string, b model.BlobDescription) error {
 	// index some data
 	doc := m.toBlugeDoc(b)
 
@@ -194,10 +203,12 @@ func (m *Index) toBlugeDoc(b model.BlobDescription) bluge.Document {
 	return *doc
 }
 
+// NewBatch creating a new batch job for indexing
 func (m *Index) NewBatch() interfaces.IndexBatch {
 	return &IndexBatch{index: m}
 }
 
+// Add adding a description to the batch
 func (i *IndexBatch) Add(id string, b model.BlobDescription) error {
 	if id != b.BlobID {
 		return fmt.Errorf(`ID "%s" is not equal to BlobID "%s" `, id, b.BlobID)
@@ -206,6 +217,7 @@ func (i *IndexBatch) Add(id string, b model.BlobDescription) error {
 	return nil
 }
 
+// Index indexing the batch
 func (i *IndexBatch) Index() error {
 	b := bluge.NewBatch()
 	for _, bd := range i.docs {

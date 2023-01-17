@@ -1,3 +1,4 @@
+// Package business the package contains the structs for the business rules of the storage system
 package business
 
 /*
@@ -16,8 +17,10 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// testing interface compatibility
 var _ interfaces.BlobStorageDao = &MainStorageDao{}
 
+// MainStorageDao the main dao for the business rules
 type MainStorageDao struct {
 	RtnMng      interfaces.RetentionManager
 	StgDao      interfaces.BlobStorageDao
@@ -96,7 +99,7 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 	return id, err
 }
 
-// updating the blob description
+// UpdateBlobDescription updating the blob description
 func (m *MainStorageDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
 	err := m.StgDao.UpdateBlobDescription(id, b)
 	if err != nil {
@@ -331,6 +334,7 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 	return nil
 }
 
+// SearchBlobs if an index dao is present, redirect the search to the index service
 func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) error {
 	if !m.hasIdx {
 		return errors.New("index not configured")
@@ -403,6 +407,7 @@ func (m *MainStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) 
 	return m.StgDao.GetAllRetentions(callback)
 }
 
+// AddRetention adding a retention entry to the main and backup storage
 func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	err := m.StgDao.AddRetention(r)
 	if m.BckDao != nil {
@@ -413,10 +418,12 @@ func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	return err
 }
 
+// GetRetention getting a single retention entry fromthe main storage
 func (m *MainStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
 	return m.StgDao.GetRetention(id)
 }
 
+// DeleteRetention deletes the retention entry from the main and backup storage
 func (m *MainStorageDao) DeleteRetention(id string) error {
 	err := m.StgDao.DeleteRetention(id)
 	if m.BckDao != nil {
@@ -427,6 +434,7 @@ func (m *MainStorageDao) DeleteRetention(id string) error {
 	return err
 }
 
+// ResetRetention resets the retention for a blob, main and backup storage
 func (m *MainStorageDao) ResetRetention(id string) error {
 	err := m.StgDao.ResetRetention(id)
 	if m.BckDao != nil {
@@ -437,7 +445,7 @@ func (m *MainStorageDao) ResetRetention(id string) error {
 	return err
 }
 
-// Error get last error for this tenant
+// GetLastError Error get last error for this tenant
 func (m *MainStorageDao) GetLastError() error {
 	return m.TntError
 }

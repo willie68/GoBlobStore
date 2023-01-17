@@ -2,6 +2,7 @@ package interfaces
 
 import "github.com/willie68/GoBlobStore/internal/config"
 
+// TenantConfig config for the tenant
 type TenantConfig struct {
 	Backup     config.Storage `yaml:"backup" json:"backup"`
 	Properties map[string]any `yaml:"properties" json:"properties"`

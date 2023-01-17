@@ -9,6 +9,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// SingleRetentionManagerName name of this retentionmananger
 const SingleRetentionManagerName = "SingleRetention"
 
 // SingleRetentionManager is a single node retention manager
@@ -23,6 +24,7 @@ type SingleRetentionManager struct {
 	quit          chan bool
 }
 
+// check interface compatibility
 var _ interfaces.RetentionManager = &SingleRetentionManager{}
 
 // Init initialise the retention manager, creating the list of retention entries
@@ -107,7 +109,7 @@ func (s *SingleRetentionManager) refereshRetention() error {
 	return nil
 }
 
-//pushToList adding a new retention to the retention list, if fits
+// pushToList adding a new retention to the retention list, if fits
 func (s *SingleRetentionManager) pushToList(r model.RetentionEntry) {
 	//s.retentionList = append(s.retentionList, r)
 	for _, v := range s.retentionList {
@@ -136,6 +138,7 @@ func insertAt(data []model.RetentionEntry, i int, v model.RetentionEntry) []mode
 	return data
 }
 
+// GetAllRetentions walk thru all blobs with retentions
 func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r model.RetentionEntry) bool) error {
 	stg, err := s.stgf.GetStorageDao(tenant)
 	if err != nil {
@@ -148,7 +151,7 @@ func (s *SingleRetentionManager) GetAllRetentions(tenant string, callback func(r
 	return nil
 }
 
-//AddRetention adding a new retention to the retention manager
+// AddRetention adding a new retention to the retention manager
 func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionEntry) error {
 	if r.Retention > 0 {
 		stg, err := s.stgf.GetStorageDao(tenant)
@@ -164,6 +167,7 @@ func (s *SingleRetentionManager) AddRetention(tenant string, r *model.RetentionE
 	return nil
 }
 
+// DeleteRetention deleting a retention
 func (s *SingleRetentionManager) DeleteRetention(tenant string, id string) error {
 	stg, err := s.stgf.GetStorageDao(tenant)
 	if err != nil {
@@ -176,6 +180,7 @@ func (s *SingleRetentionManager) DeleteRetention(tenant string, id string) error
 	return nil
 }
 
+// ResetRetention resets the retention for a single blob
 func (s *SingleRetentionManager) ResetRetention(tenant string, id string) error {
 	stg, err := s.stgf.GetStorageDao(tenant)
 	if err != nil {
@@ -188,6 +193,7 @@ func (s *SingleRetentionManager) ResetRetention(tenant string, id string) error 
 	return nil
 }
 
+// Close closing this manager
 func (s *SingleRetentionManager) Close() error {
 	s.quit <- true
 	return nil

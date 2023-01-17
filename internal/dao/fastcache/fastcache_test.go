@@ -18,7 +18,7 @@ const (
 	rootpath = "R:/blbcch/"
 )
 
-func initTest(t *testing.T) {
+func initTest(_ *testing.T) {
 	// getting the zip file and extracting it into the file system
 	os.MkdirAll(rootpath, os.ModePerm)
 }
@@ -52,7 +52,7 @@ func getStoreageDao(t *testing.T) *FastCache {
 	dao := FastCache{
 		RootPath:   rootpath,
 		MaxCount:   20,
-		MaxRamSize: 1 * 1024 * 1024 * 1024,
+		MaxRAMSize: 1 * 1024 * 1024 * 1024,
 	}
 	err := dao.Init()
 	if err != nil {
@@ -239,7 +239,7 @@ func getBlobDescription(id string) *model.BlobDescription {
 		ContentLength: 22,
 		ContentType:   "text/plain",
 		CreationDate:  time.Now().UnixMilli(),
-		Filename:      "id",
+		Filename:      id,
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
 		Properties:    make(map[string]interface{}),

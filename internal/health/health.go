@@ -13,10 +13,8 @@ import (
 
 var myhealthy bool
 
-/*
-This is the healtchcheck you will have to provide.
-*/
-func check(tracer opentracing.Tracer) (bool, string) {
+// check This is the healtchcheck you will have to provide
+func check(_ opentracing.Tracer) (bool, string) {
 	// TODO implement here your healthcheck.
 	myhealthy = true
 	message := ""
@@ -29,7 +27,7 @@ func check(tracer opentracing.Tracer) (bool, string) {
 	return myhealthy, message
 }
 
-//##### template internal functions for processing the healthchecks #####
+// ##### template internal functions for processing the healthchecks #####
 var message string
 var readyz bool
 var lastChecked time.Time
@@ -61,9 +59,7 @@ func InitHealthSystem(config CheckConfig, tracer opentracing.Tracer) {
 	}()
 }
 
-/*
-internal function to process the health check
-*/
+// doCheck internal function to process the health check
 func doCheck(tracer opentracing.Tracer) {
 	var msg string
 	readyz, msg = check(tracer)
@@ -75,9 +71,7 @@ func doCheck(tracer opentracing.Tracer) {
 	lastChecked = time.Now()
 }
 
-/*
-Routes getting all routes for the health endpoint
-*/
+// Routes getting all routes for the health endpoint
 func Routes() *chi.Mux {
 	router := chi.NewRouter()
 	router.Get("/livez", GetLivenessEndpoint)
@@ -87,9 +81,7 @@ func Routes() *chi.Mux {
 	return router
 }
 
-/*
-GetLivenessEndpoint liveness probe
-*/
+// GetLivenessEndpoint liveness probe
 func GetLivenessEndpoint(response http.ResponseWriter, req *http.Request) {
 	render.Status(req, http.StatusOK)
 	render.JSON(response, req, Msg{
@@ -97,9 +89,7 @@ func GetLivenessEndpoint(response http.ResponseWriter, req *http.Request) {
 	})
 }
 
-/*
-GetReadinessEndpoint is this service ready for taking requests, e.g. formaly known as health checks
-*/
+// GetReadinessEndpoint is this service ready for taking requests, e.g. formaly known as health checks
 func GetReadinessEndpoint(response http.ResponseWriter, req *http.Request) {
 	t := time.Now()
 	if t.Sub(lastChecked) > (time.Second * time.Duration(2*period)) {
@@ -124,9 +114,7 @@ func GetReadinessEndpoint(response http.ResponseWriter, req *http.Request) {
 	}
 }
 
-/*
-sendMessage sending a span message to tracer
-*/
+// sendMessage sending a span message to tracer
 func sendMessage(tracer opentracing.Tracer, message string) {
 	span := tracer.StartSpan("say-hello")
 	println(message)

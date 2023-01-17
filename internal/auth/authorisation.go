@@ -7,14 +7,17 @@ import (
 	"github.com/willie68/GoBlobStore/internal/api"
 )
 
+// JWTRoleChecker checking a user role against the configuration
 type JWTRoleChecker struct {
 	Config JWTAuthConfig
 }
 
+// JWTTntChecker checking a user tenant against the configuration
 type JWTTntChecker struct {
 	Config JWTAuthConfig
 }
 
+// CheckRole checking the user role against the given in the REST Api route
 func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) bool {
 	if !j.Config.Active || !j.Config.RoleActive {
 		return true
@@ -38,6 +41,7 @@ func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) 
 	return false
 }
 
+// CheckTenant checking the user tenant against the given in the REST Api route
 func (j JWTTntChecker) CheckTenant(ctx context.Context, tenant string) bool {
 	if !j.Config.Active {
 		return true
@@ -50,10 +54,9 @@ func (j JWTTntChecker) CheckTenant(ctx context.Context, tenant string) bool {
 		jwtTenant, ok := claims[j.Config.TenantClaim].(string)
 		if ok {
 			return strings.EqualFold(tenant, jwtTenant)
-		} else {
-			if j.Config.Strict {
-				return false
-			}
+		}
+		if j.Config.Strict {
+			return false
 		}
 	}
 	return false

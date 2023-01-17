@@ -8,16 +8,19 @@ import (
 	"strings"
 )
 
+// DecodeBytes decode json byte array
 func DecodeBytes(b []byte, v interface{}) error {
 	rd := bytes.NewReader(b)
 	return DecodeJSON(rd, v)
 }
 
+// DecodeString decode json string
 func DecodeString(str string, v interface{}) error {
 	rd := strings.NewReader(str)
 	return DecodeJSON(rd, v)
 }
 
+// DecodeJSON decode from reader interface
 func DecodeJSON(r io.Reader, v interface{}) error {
 	defer io.Copy(ioutil.Discard, r)
 	d := json.NewDecoder(r)
@@ -25,7 +28,8 @@ func DecodeJSON(r io.Reader, v interface{}) error {
 	return d.Decode(v)
 }
 
-func ConvertJson2Map(src map[string]interface{}) (dst map[string]interface{}) {
+// ConvertJSON2Map convert into a flatted map
+func ConvertJSON2Map(src map[string]interface{}) (dst map[string]interface{}) {
 	if src == nil {
 		return nil
 	}
@@ -45,7 +49,7 @@ func ConvertJson2Map(src map[string]interface{}) (dst map[string]interface{}) {
 				}
 			}
 		case map[string]interface{}:
-			dst[key] = ConvertJson2Map(v)
+			dst[key] = ConvertJSON2Map(v)
 		default:
 			dst[key] = value
 		}

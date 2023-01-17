@@ -1,3 +1,4 @@
+// Package migration this package holds a async service for doing some tenant related migration tasks, like backup, restore, check
 package migration
 
 import (
@@ -10,6 +11,7 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
+// BackupCheck the struct for doing a backup
 type BackupCheck struct {
 	Tenant string
 }

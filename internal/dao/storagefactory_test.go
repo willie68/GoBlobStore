@@ -32,7 +32,7 @@ var (
 	main    interfaces.BlobStorageDao
 )
 
-func initTest(t *testing.T) {
+func initTest(_ *testing.T) {
 	config := config.Engine{
 		RetentionManager: "SingleRetention",
 		Tenantautoadd:    true,
@@ -48,7 +48,7 @@ func initTest(t *testing.T) {
 	Init(config)
 }
 
-func clear(t *testing.T) {
+func clear(_ *testing.T) {
 	removeContents(rootFilePrefix)
 }
 

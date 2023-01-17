@@ -26,46 +26,46 @@ import (
 // BlobStore the blobstorage implementation to use
 var BlobStore interfaces.BlobStorageDao
 
+// BlobRoutes getting a router with all blob routes active
 func BlobRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_CREATOR})).Post("/", PostBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/", GetBlobs)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/{id}", GetBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/{id}/info", GetBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Put("/{id}/info", PutBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Delete("/{id}", DeleteBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Get("/{id}/resetretention", GetBlobResetRetention)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Get("/{id}/check", GetBlobCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Post("/{id}/check", PostBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectCreator})).Post("/", PostBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Get("/", GetBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Get("/{id}", GetBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Get("/{id}/info", GetBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Put("/{id}/info", PutBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Delete("/{id}", DeleteBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Get("/{id}/resetretention", GetBlobResetRetention)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Get("/{id}/check", GetBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Post("/{id}/check", PostBlobCheck)
 	return BaseURL + blobsSubpath, router
 }
 
+// SearchRoutes getting a router with all routes for searching
 func SearchRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Post("/", SearchBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Post("/", SearchBlobs)
 	return BaseURL + searchSubpath, router
 }
 
-/*
-StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
-*/
+// TenantStoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
 func TenantStoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_CREATOR}), api.TenantCheck()).Post(tenantURL("/"), PostBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/"), GetBlobs)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/{id}"), GetBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/{id}/info"), GetBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Put(tenantURL("/{id}/info"), PutBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Delete(tenantURL("/{id}"), DeleteBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Get(tenantURL("/{id}/resetretention"), GetBlobResetRetention)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Get(tenantURL("/{id}/check"), GetBlobCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Post(tenantURL("/{id}/check"), PostBlobCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Post(fmt.Sprintf("/{%s}%s", api.URL_PARAM_TENANT_ID, searchSubpath), SearchBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectCreator}), api.TenantCheck()).Post(tenantURL("/"), PostBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Get(tenantURL("/"), GetBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Get(tenantURL("/{id}"), GetBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Get(tenantURL("/{id}/info"), GetBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Put(tenantURL("/{id}/info"), PutBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Delete(tenantURL("/{id}"), DeleteBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Get(tenantURL("/{id}/resetretention"), GetBlobResetRetention)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Get(tenantURL("/{id}/check"), GetBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Post(tenantURL("/{id}/check"), PostBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Post(fmt.Sprintf("/{%s}%s", api.URLParamTenantID, searchSubpath), SearchBlobs)
 	return BaseURL + storesSubpath, router
 }
 
 func tenantURL(subpath string) string {
-	return fmt.Sprintf("/{%s}%s%s", api.URL_PARAM_TENANT_ID, blobsSubpath, subpath)
+	return fmt.Sprintf("/{%s}%s%s", api.URLParamTenantID, blobsSubpath, subpath)
 }
 
 func getBlobLocation(blobid string) string {
@@ -355,9 +355,7 @@ func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, blobs)
 }
 
-/*
-PostBlobsEndpoint creating a new blob in the storage for the tenant.
-*/
+// PostBlob creating a new blob in the storage for the tenant.
 func PostBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -410,7 +408,7 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 	}
 
 	// retention given via headers
-	var retentionTime int64 = 0
+	var retentionTime int64
 	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
 	if ok {
 		retention := request.Header.Get(RetentionHeader)

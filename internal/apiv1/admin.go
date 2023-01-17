@@ -19,10 +19,10 @@ AdminRoutes getting all routes for the admin endpoint
 */
 func AdminRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/check", GetCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Post("/check", PostCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/restore", GetRestore)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Post("/restore", PostRestore)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/check", GetCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Post("/check", PostCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/restore", GetRestore)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Post("/restore", PostRestore)
 	return BaseURL + adminSubpath, router
 }
 

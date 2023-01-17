@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// BlobDescription model for a blob description
 type BlobDescription struct {
 	StoreID       string `yaml:"storeid" json:"storeid"`
 	ContentLength int64  `yaml:"contentLength" json:"contentLength"`
@@ -23,6 +24,7 @@ type BlobDescription struct {
 	sm            sync.Mutex
 }
 
+// Check model for the info objects for  check, backup ...
 type Check struct {
 	Store   *CheckInfo `yaml:"store,omitempty" json:"store,omitempty"`
 	Backup  *CheckInfo `yaml:"backup,omitempty" json:"backup,omitempty"`
@@ -30,14 +32,16 @@ type Check struct {
 	Message string     `yaml:"message,omitempty" json:"message,omitempty"`
 }
 
+// CheckInfo model
 type CheckInfo struct {
 	LastCheck *time.Time `yaml:"lastCheck,omitempty" json:"lastCheck,omitempty"`
 	Healthy   bool       `yaml:"healthy,omitempty" json:"healthy,omitempty"`
 	Message   string     `yaml:"message,omitempty" json:"message,omitempty"`
 }
 
-func (b BlobDescription) Map() map[string]interface{} {
-	mymap := make(map[string]interface{})
+// Map converting the blob description to a simple map
+func (b BlobDescription) Map() map[string]any {
+	mymap := make(map[string]any)
 	mymap["storeid"] = b.StoreID
 	mymap["contentLength"] = b.ContentLength
 	mymap["contentType"] = b.ContentType
@@ -60,10 +64,12 @@ func (b BlobDescription) Map() map[string]interface{} {
 	return mymap
 }
 
+// MarshalJSON marshall this to JSON
 func (b BlobDescription) MarshalJSON() ([]byte, error) {
 	return json.Marshal(b.Map())
 }
 
+// UnmarshalJSON unmarshall this from JSON
 func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 	blob := struct {
 		StoreID       string `yaml:"storeid" json:"storeid"`

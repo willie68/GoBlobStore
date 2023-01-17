@@ -40,7 +40,7 @@ func setup(t *testing.T) {
 	}
 }
 
-func close(t *testing.T) {
+func closeTest(_ *testing.T) {
 	tntDao.RemoveTenant(tenant)
 }
 
@@ -66,7 +66,7 @@ func TestS3Init(t *testing.T) {
 	ast.Nil(err)
 	ast.NotNil(dao)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestCheckUnknownBlob(t *testing.T) {
@@ -82,7 +82,7 @@ func TestCheckUnknownBlob(t *testing.T) {
 	ast.Nil(err)
 	ast.False(ok)
 
-	close(t)
+	closeTest(t)
 }
 func TestCheckEmptyTenant(t *testing.T) {
 	t.SkipNow()
@@ -99,7 +99,7 @@ func TestCheckEmptyTenant(t *testing.T) {
 
 	ast.NotNil(err)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestCRUDBlob(t *testing.T) {
@@ -181,7 +181,7 @@ func TestCRUDBlob(t *testing.T) {
 	ast.Nil(err)
 	ast.False(ok)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestRetentionStorage(t *testing.T) {
@@ -234,7 +234,7 @@ func TestRetentionStorage(t *testing.T) {
 	err = dao.DeleteRetention(blobID)
 	ast.Nil(err)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestCRUDBlobWID(t *testing.T) {
@@ -320,5 +320,5 @@ func TestCRUDBlobWID(t *testing.T) {
 	ast.Nil(err)
 	ast.False(ok)
 
-	close(t)
+	closeTest(t)
 }

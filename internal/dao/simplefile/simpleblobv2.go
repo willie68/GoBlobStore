@@ -17,7 +17,7 @@ import (
 
 func (s *SimpleFileBlobStorageDao) getBlobsV2(callback func(id string) bool) error {
 	err := filepath.Walk(s.filepath, func(path string, info os.FileInfo, err error) error {
-		if !strings.Contains(path, RETENTION_PATH) && strings.HasSuffix(path, DESCRIPTION_EXT) {
+		if !strings.Contains(path, RetentionPath) && strings.HasSuffix(path, DescriptionExt) {
 			id := info.Name()[:len(info.Name())-5]
 			ok := callback(id)
 			if !ok {
@@ -42,12 +42,12 @@ func (s *SimpleFileBlobStorageDao) hasBlobV2(id string) bool {
 }
 
 func (s *SimpleFileBlobStorageDao) getBinV2(id string) string {
-	file, _ := s.buildFilenameV2(id, BINARY_EXT)
+	file, _ := s.buildFilenameV2(id, BinaryExt)
 	return file
 }
 
 func (s *SimpleFileBlobStorageDao) getDescV2(id string) string {
-	file, _ := s.buildFilenameV2(id, DESCRIPTION_EXT)
+	file, _ := s.buildFilenameV2(id, DescriptionExt)
 	return file
 }
 
@@ -77,8 +77,8 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV2(id string) (*model.BlobD
 }
 
 // updating the blob description
-func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV2(id string, b *model.BlobDescription) error {
-	err := s.writeJsonFileV2(b)
+func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV2(_ string, b *model.BlobDescription) error {
+	err := s.writeJSONFileV2(b)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV2(id string, b *model.B
 }
 
 func (s *SimpleFileBlobStorageDao) getBlobV2(id string, w io.Writer) error {
-	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
+	binFile, err := s.buildFilenameV2(id, BinaryExt)
 	if err != nil {
 		log.Logger.Errorf("error building filename: %v", err)
 		return err
@@ -125,7 +125,7 @@ func (s *SimpleFileBlobStorageDao) storeBlobV2(b *model.BlobDescription, f io.Re
 		return "", fmt.Errorf("wrong content length %d=%d", b.ContentLength, size)
 	}
 	b.ContentLength = size
-	err = s.writeJsonFileV2(b)
+	err = s.writeJSONFileV2(b)
 	if err != nil {
 		s.deleteFilesV2(b.BlobID)
 		return "", err
@@ -152,7 +152,7 @@ func (s *SimpleFileBlobStorageDao) buildHash(id string) {
 	}
 	d.Hash = fmt.Sprintf("sha-256:%x", h.Sum(nil))
 
-	err = s.writeJsonFileV2(d)
+	err = s.writeJSONFileV2(d)
 	if err != nil {
 		log.Logger.Errorf("buildHash: error writing description for: %s\r\n%v", id, err)
 		return
@@ -163,7 +163,7 @@ func (s *SimpleFileBlobStorageDao) buildHash(id string) {
 }
 
 func (s *SimpleFileBlobStorageDao) writeBinFileV2(id string, r io.Reader) (int64, error) {
-	binFile, err := s.buildFilenameV2(id, BINARY_EXT)
+	binFile, err := s.buildFilenameV2(id, BinaryExt)
 	if err != nil {
 		return 0, err
 	}
@@ -200,8 +200,8 @@ func (s *SimpleFileBlobStorageDao) deleteFilesV2(id string) error {
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) writeJsonFileV2(b *model.BlobDescription) error {
-	jsonFile, err := s.buildFilenameV2(b.BlobID, DESCRIPTION_EXT)
+func (s *SimpleFileBlobStorageDao) writeJSONFileV2(b *model.BlobDescription) error {
+	jsonFile, err := s.buildFilenameV2(b.BlobID, DescriptionExt)
 	if err != nil {
 		return err
 	}

@@ -18,14 +18,21 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
-const STGCLASS_SIMPLE_FILE = "simplefile"
-const STGCLASS_S3 = "s3storage"
-const STGCLASS_FASTCACHE = "fastcache"
-const STGCLASS_SFMV = "sfmv"
+// name of storage classes
+const (
+	STGClassSimpleFile = "simplefile"
+	STGClassS3         = "s3storage"
+	STGClassFastcache  = "fastcache"
+	STGClassSFMV       = "sfmv"
+)
 
+// ErrNoStg defined error
 var ErrNoStg = errors.New("no storage class given")
+
+// just to check interface compatibility
 var _ interfaces.StorageFactory = &DefaultStorageFactory{}
 
+// DefaultStorageFactory the struct for the default storage factory
 type DefaultStorageFactory struct {
 	TenantDao    interfaces.TenantDao
 	RtnMgr       interfaces.RetentionManager
@@ -34,6 +41,7 @@ type DefaultStorageFactory struct {
 	cnfg         config.Engine
 }
 
+// Init initialise the factory
 func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.RetentionManager) error {
 	d.tenantStores = sync.Map{}
 	d.cnfg = storage
@@ -63,6 +71,7 @@ func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobSto
 	return *storageDao, nil
 }
 
+// RemoveStorageDao reomves a tenant storage dao from the cache
 func (d *DefaultStorageFactory) RemoveStorageDao(tenant string) error {
 	dao, ok := d.tenantStores.Load(tenant)
 	if ok {
@@ -153,7 +162,7 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 		s := stg.Storageclass
 		s = strings.ToLower(s)
 		switch s {
-		case bluge.BLUGE_INDEX:
+		case bluge.BlugeIndex:
 			dao = &bluge.Index{
 				Tenant: tenant,
 			}
@@ -161,7 +170,7 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 			if err != nil {
 				return nil, err
 			}
-		case mongodb.MONGO_INDEX:
+		case mongodb.MongoIndex:
 			dao = &mongodb.Index{
 				Tenant: tenant,
 			}
@@ -184,7 +193,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 	var err error
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
-	case STGCLASS_SFMV:
+	case STGClassSFMV:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
 			return nil, err
@@ -197,7 +206,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-	case STGCLASS_SIMPLE_FILE:
+	case STGClassSimpleFile:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
 			return nil, err
@@ -210,7 +219,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-	case STGCLASS_S3:
+	case STGClassS3:
 		dao, err = d.getS3Storage(stg, tenant)
 		if err != nil {
 			return nil, err
@@ -219,7 +228,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-	case STGCLASS_FASTCACHE:
+	case STGClassFastcache:
 		dao, err = d.getFastcache(stg, tenant)
 		if err != nil {
 			return nil, err
@@ -271,7 +280,7 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 	}, nil
 }
 
-func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
+func (d *DefaultStorageFactory) getFastcache(stg config.Storage, _ string) (interfaces.BlobStorageDao, error) {
 	// as cache there will be always the same instance delivered
 	if d.CchDao == nil {
 
@@ -294,7 +303,7 @@ func (d *DefaultStorageFactory) getFastcache(stg config.Storage, tenant string) 
 		d.CchDao = &fastcache.FastCache{
 			RootPath:          rootpath,
 			MaxCount:          maxcount,
-			MaxRamSize:        ramusage,
+			MaxRAMSize:        ramusage,
 			MaxFileSizeForRAM: mffrs,
 		}
 		err = d.CchDao.Init()
@@ -310,14 +319,15 @@ func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
 	s := cnfg.Storageclass
 	s = strings.ToLower(s)
 	switch s {
-	case bluge.BLUGE_INDEX:
+	case bluge.BlugeIndex:
 		bluge.InitBluge(cnfg.Properties)
-	case mongodb.MONGO_INDEX:
+	case mongodb.MongoIndex:
 		mongodb.InitMongoDB(cnfg.Properties)
 	}
 	return nil
 }
 
+// Close colsing this default storage factory
 func (d *DefaultStorageFactory) Close() error {
 	d.tenantStores.Range(func(key, v any) bool {
 		tDao, ok := v.(*interfaces.BlobStorageDao)

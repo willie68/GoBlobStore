@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Servicename Name of the service
 const Servicename = "goblob-service"
 
 // Config our service configuration
@@ -42,11 +43,13 @@ type Config struct {
 	Metrics Metrics `yaml:"metrics"`
 }
 
+// Authentication configuration
 type Authentication struct {
 	Type       string                 `yaml:"type"`
 	Properties map[string]interface{} `yaml:"properties"`
 }
 
+// Engine configuration
 type Engine struct {
 	RetentionManager string  `yaml:"retentionManager"`
 	Tenantautoadd    bool    `yaml:"tenantautoadd"`
@@ -58,6 +61,7 @@ type Engine struct {
 	Index            Storage `yaml:"index"`
 }
 
+// Storage configuration
 type Storage struct {
 	Storageclass string                 `yaml:"storageclass"`
 	Properties   map[string]interface{} `yaml:"properties"`
@@ -68,7 +72,7 @@ type HealthCheck struct {
 	Period int `yaml:"period"`
 }
 
-// Logging configuration for the gelf logging
+// LoggingConfig configuration for the gelf logging
 type LoggingConfig struct {
 	Level    string `yaml:"level"`
 	Filename string `yaml:"filename"`
@@ -77,17 +81,20 @@ type LoggingConfig struct {
 	Gelfport int    `yaml:"gelf-port"`
 }
 
+// OpenTracing configuration
 type OpenTracing struct {
 	Host     string `yaml:"host"`
 	Endpoint string `yaml:"endpoint"`
 }
 
+// Metrics configuration
 type Metrics struct {
 	Enable bool `yaml:"enable"`
 }
 
 var defaultHeaderMapping = map[string]string{api.TenantHeaderKey: "X-tenant", api.RetentionHeaderKey: "X-retention", api.APIKeyHeaderKey: "X-apikey", api.FilenameKey: "X-filename", api.BlobIDHeaderKey: "X-blobid", api.HeaderPrefixKey: "X-"}
 
+// DefaultConfig default configuration
 var DefaultConfig = Config{
 	Port:       8000,
 	Sslport:    8443,
@@ -129,6 +136,7 @@ func GetDefaultConfigFolder() (string, error) {
 	return configFolder, nil
 }
 
+// ReplaceConfigdir replace the macro fon the config dir
 func ReplaceConfigdir(s string) (string, error) {
 	if strings.Contains(s, "${configdir}") {
 		configFolder, err := GetDefaultConfigFolder()

@@ -29,7 +29,7 @@ const (
 	bckPath        = rootFilePrefix + "bckstg"
 )
 
-type JsonResult struct {
+type JSONResult struct {
 	Tenant       string
 	Cache        []CheckResultLine
 	CacheCount   int
@@ -41,7 +41,7 @@ type JsonResult struct {
 
 var main *business.MainStorageDao
 
-func initChkTest(t *testing.T) {
+func initChkTest(_ *testing.T) {
 	stgDao := &simplefile.SimpleFileBlobStorageDao{
 		RootPath: blbPath,
 		Tenant:   tenant,
@@ -50,7 +50,7 @@ func initChkTest(t *testing.T) {
 	cchDao := &fastcache.FastCache{
 		RootPath:   cchPath,
 		MaxCount:   1000,
-		MaxRamSize: 1 * 1024 * 1024,
+		MaxRAMSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
 	bckDao := &simplefile.SimpleFileBlobStorageDao{
@@ -169,7 +169,7 @@ func prepare(ast *assert.Assertions) []string {
 	return blobs
 }
 
-func check(ast *assert.Assertions) JsonResult {
+func check(ast *assert.Assertions) JSONResult {
 	cctx := CheckContext{
 		TenantID: main.Tenant,
 		Primary:  main.StgDao,
@@ -183,7 +183,7 @@ func check(ast *assert.Assertions) JsonResult {
 
 	byteValue, err := ioutil.ReadFile(file)
 	ast.Nil(err)
-	var res JsonResult
+	var res JSONResult
 	err = json.Unmarshal(byteValue, &res)
 	ast.Nil(err)
 

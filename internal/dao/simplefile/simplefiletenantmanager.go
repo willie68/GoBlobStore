@@ -14,19 +14,23 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
+// SimpleFileTenantManager the tenant manager based on a simple file storage system
 type SimpleFileTenantManager struct {
 	RootPath    string // this is the root path for the file system storage
 	TenantInfos sync.Map
 	calcRunning bool
 }
 
+// TenantInfo entry for tenant list
 type TenantInfo struct {
 	ID   string
 	Size int64
 }
 
+// checking interface compatibility
 var _ interfaces.TenantDao = &SimpleFileTenantManager{}
 
+// Init intialise this tenant manager
 func (s *SimpleFileTenantManager) Init() error {
 	// checking the file system
 	err := os.MkdirAll(s.RootPath, os.ModePerm)
@@ -46,6 +50,7 @@ func (s *SimpleFileTenantManager) Init() error {
 	return nil
 }
 
+// GetTenants walk thru all tenants
 func (s *SimpleFileTenantManager) GetTenants(callback func(tenant string) bool) error {
 	infos, err := ioutil.ReadDir(s.RootPath)
 	if err != nil {
@@ -62,6 +67,7 @@ func (s *SimpleFileTenantManager) GetTenants(callback func(tenant string) bool) 
 	return nil
 }
 
+// AddTenant add a new tenant to the manager
 func (s *SimpleFileTenantManager) AddTenant(tenant string) error {
 
 	tenantPath := filepath.Join(s.RootPath, tenant)
@@ -74,6 +80,7 @@ func (s *SimpleFileTenantManager) AddTenant(tenant string) error {
 	return nil
 }
 
+// RemoveTenant remove a tenant from the service, delete all related data
 func (s *SimpleFileTenantManager) RemoveTenant(tenant string) (string, error) {
 	if !s.HasTenant(tenant) {
 		return "", errors.New("tenant not exists")
@@ -87,6 +94,7 @@ func (s *SimpleFileTenantManager) RemoveTenant(tenant string) (string, error) {
 	return "", nil
 }
 
+// HasTenant checking is a tenant is created
 func (s *SimpleFileTenantManager) HasTenant(tenant string) bool {
 	tenantPath := filepath.Join(s.RootPath, tenant)
 
@@ -135,6 +143,7 @@ func (s *SimpleFileTenantManager) getConfigName(tenant string) string {
 	return filepath.Join(s.RootPath, tenant, "_config", "config.json")
 }
 
+// GetSize getting the overall storage size for a tenant
 func (s *SimpleFileTenantManager) GetSize(tenant string) int64 {
 	if !s.HasTenant(tenant) {
 		return -1
@@ -176,7 +185,7 @@ func (s *SimpleFileTenantManager) calculateStorageSize(tenant string) int64 {
 		return 0
 	}
 
-	var dirSize int64 = 0
+	var dirSize int64
 	readSize := func(path string, file os.FileInfo, err error) error {
 		if !file.IsDir() {
 			dirSize += file.Size()
@@ -188,6 +197,7 @@ func (s *SimpleFileTenantManager) calculateStorageSize(tenant string) int64 {
 	return dirSize
 }
 
+// Close closing this dao
 func (s *SimpleFileTenantManager) Close() error {
 	return nil
 }

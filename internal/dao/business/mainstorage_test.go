@@ -33,7 +33,7 @@ var (
 	main    interfaces.BlobStorageDao
 )
 
-func initTest(t *testing.T) {
+func initTest(_ *testing.T) {
 	stgDao := &simplefile.SimpleFileBlobStorageDao{
 		RootPath: blbPath,
 		Tenant:   tenant,
@@ -42,7 +42,7 @@ func initTest(t *testing.T) {
 	cchDao := &fastcache.FastCache{
 		RootPath:   cchPath,
 		MaxCount:   blbcount,
-		MaxRamSize: 1 * 1024 * 1024,
+		MaxRAMSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
 	bckDao := &simplefile.SimpleFileBlobStorageDao{
@@ -61,7 +61,7 @@ func initTest(t *testing.T) {
 	main.Init()
 }
 
-func clear(t *testing.T) {
+func clear(_ *testing.T) {
 	removeContents(rootFilePrefix)
 }
 

@@ -28,7 +28,7 @@ type MockStorage struct {
 	mock.Mock
 }
 
-func initBckTest(t *testing.T) {
+func initBckTest(_ *testing.T) {
 	os.RemoveAll(rootpath)
 	os.MkdirAll(rootpath, os.ModePerm)
 

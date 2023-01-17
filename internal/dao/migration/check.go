@@ -12,6 +12,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/utils"
 )
 
+// CheckContext struct for the running check
 type CheckContext struct {
 	TenantID  string
 	CheckID   string
@@ -27,8 +28,10 @@ type CheckContext struct {
 	Message   string
 }
 
+// checking interface compatibility
 var _ interfaces.Running = &CheckContext{}
 
+// CheckResultLine on entry for the result of the check, usually converted into one report output line
 type CheckResultLine struct {
 	ID            string
 	Filename      string
@@ -41,6 +44,7 @@ type CheckResultLine struct {
 }
 
 // Admin functions
+
 // CheckStorage checks the storage to find inconsistencies.
 // It will write a audit file with a line for every blob in the storage, including name, hash, and state
 func (c *CheckContext) CheckStorage() (string, error) {
@@ -130,6 +134,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	return file.Name(), err
 }
 
+// IsRunning checking if this task is running
 func (c *CheckContext) IsRunning() bool {
 	return c.Running
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/serror"
 )
 
-// SysAPIKey defining a handler for checking system id and api key
+// SysAPIConfig defining a handler for checking system id and api key
 type SysAPIConfig struct {
 	Apikey           string
 	HeaderKeyMapping map[string]string

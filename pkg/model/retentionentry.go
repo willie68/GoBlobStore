@@ -1,5 +1,6 @@
 package model
 
+// RetentionEntry antry for the retention of a blob
 type RetentionEntry struct {
 	Filename      string `yaml:"filename" json:"filename"`
 	TenantID      string `yaml:"tenantID" json:"tenantID"`
@@ -9,6 +10,7 @@ type RetentionEntry struct {
 	RetentionBase int64  `yaml:"retentionBase" json:"retentionBase"`
 }
 
+// GetRetentionTimestampMS getting the time stamp in ms
 func (r *RetentionEntry) GetRetentionTimestampMS() int64 {
 	if r.RetentionBase > 0 {
 		return r.RetentionBase + r.Retention*60*1000
@@ -16,6 +18,7 @@ func (r *RetentionEntry) GetRetentionTimestampMS() int64 {
 	return r.CreationDate + r.Retention*60*1000
 }
 
+// RetentionEntryFromBlobDescription building a retention entry from a blobdescription
 func RetentionEntryFromBlobDescription(b BlobDescription) RetentionEntry {
 	return RetentionEntry{
 		BlobID:        b.BlobID,

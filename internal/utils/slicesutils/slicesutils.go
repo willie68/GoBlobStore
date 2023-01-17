@@ -1,3 +1,4 @@
+// Package slicesutils some convinient functions on slices
 package slicesutils
 
 /*
@@ -22,7 +23,7 @@ func Remove(s []string, i int) []string {
 }
 
 /*
-Remove removes the e entry from the s slice, if e is not present in the slice, nothing will happen
+RemoveString removes the e entry from the s slice, if e is not present in the slice, nothing will happen
 */
 func RemoveString(s []string, e string) []string {
 	index := Find(s, e)

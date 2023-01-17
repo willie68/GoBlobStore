@@ -6,6 +6,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/config"
 )
 
+// GetConfigResponse REST response for config request
 type GetConfigResponse struct {
 	TenantID string `json:"tenantid"`
 	// to be compatible
@@ -15,6 +16,7 @@ type GetConfigResponse struct {
 	Properties map[string]any `json:"properties"`
 }
 
+// MarshalJSON marshall this to JSON
 func (r GetConfigResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Type       string         `json:"type"`
@@ -33,11 +35,13 @@ func (r GetConfigResponse) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// CreateResponse REST response for create response
 type CreateResponse struct {
 	TenantID string `json:"tenantid"`
 	Backup   string `json:"backup"`
 }
 
+// MarshalJSON marshall this to JSON
 func (r CreateResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Type     string `json:"type"`
@@ -50,11 +54,13 @@ func (r CreateResponse) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// DeleteResponse REST response for delete response
 type DeleteResponse struct {
 	TenantID  string `json:"tenantid"`
 	ProcessID string `json:"processid"`
 }
 
+// MarshalJSON marshall this to JSON
 func (r DeleteResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Type      string `json:"type"`
@@ -67,11 +73,13 @@ func (r DeleteResponse) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// SizeResponse REST response for size response
 type SizeResponse struct {
 	TenantID string `json:"tenantid"`
 	Size     int64  `json:"size"`
 }
 
+// MarshalJSON marshall this to JSON
 func (r SizeResponse) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
 		Type     string `json:"type"`

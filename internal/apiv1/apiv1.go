@@ -2,9 +2,11 @@ package apiv1
 
 import "fmt"
 
-const ApiVersion = "1"
+// APIVersion the actual implemented api version
+const APIVersion = "1"
 
-var BaseURL = fmt.Sprintf("/api/v%s", ApiVersion)
+// BaseURL is the url all endpoints will be availble under
+var BaseURL = fmt.Sprintf("/api/v%s", APIVersion)
 
 //APIKey the apikey of this service
 var APIKey string

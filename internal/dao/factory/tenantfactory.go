@@ -10,11 +10,11 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 )
 
-// createTenantDao creating a new tenant dao depending on the configuration
+// CreateTenantDao creating a new tenant dao depending on the configuration
 func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
-	case STGCLASS_SFMV:
+	case STGClassSFMV:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "tenantpath")
 		if err != nil {
 			return nil, err
@@ -27,7 +27,7 @@ func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 			return nil, err
 		}
 		return dao, nil
-	case STGCLASS_SIMPLE_FILE:
+	case STGClassSimpleFile:
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
 			return nil, err
@@ -40,7 +40,7 @@ func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 			return nil, err
 		}
 		return dao, nil
-	case STGCLASS_S3:
+	case STGClassS3:
 		dao, err := getS3TenantManager(stg)
 		if err != nil {
 			return nil, err

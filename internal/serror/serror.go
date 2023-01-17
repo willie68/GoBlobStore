@@ -132,7 +132,7 @@ func Conflict(err ...error) *Serr {
 	}, first)
 }
 
-// Checks if the error is an service error of the given code
+// Is checks if the error is an service error of the given code
 func Is(err error, code int) bool {
 	if e, ok := err.(*Serr); ok {
 		return e.Code == code
