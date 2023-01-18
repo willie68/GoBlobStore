@@ -1,4 +1,4 @@
-// Package simplefile implemet a storage system on a mounted device with simple files as storage objects
+// Package simplefile implement a storage system on a mounted device with simple files as storage objects
 package simplefile
 
 import (
@@ -98,11 +98,20 @@ func (s *SimpleFileBlobStorageDao) buildRetentionFilename(id string) (string, er
 // TODO implement error handling
 func (s *SimpleFileBlobStorageDao) deleteFilesV1(id string) error {
 	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BinaryExt))
-	os.Remove(binFile)
+	err := os.Remove(binFile)
+	if err != nil {
+		return err
+	}
 	jsonFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DescriptionExt))
-	os.Remove(jsonFile)
+	err = os.Remove(jsonFile)
+	if err != nil {
+		return err
+	}
 	jsonFile, _ = s.buildRetentionFilename(id)
-	os.Remove(jsonFile)
+	err = os.Remove(jsonFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -112,14 +121,14 @@ func (s *SimpleFileBlobStorageDao) writeJSONFileV1(b *model.BlobDescription) err
 		return err
 	}
 
-	json, err := json.Marshal(b)
+	js, err := json.Marshal(b)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, json, os.ModePerm)
+	err = ioutil.WriteFile(jsonFile, js, os.ModePerm)
 	if err != nil {
-		os.Remove(jsonFile)
+		_ = os.Remove(jsonFile)
 		return err
 	}
 

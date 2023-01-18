@@ -13,7 +13,7 @@ var _ interfaces.IndexBatch = &IndexBatch{}
 type Index struct {
 }
 
-// IndexBatch NOP batchindexer
+// IndexBatch NOP batch indexer
 type IndexBatch struct {
 }
 
@@ -22,7 +22,7 @@ func (i *Index) Init() error {
 	return nil
 }
 
-// Search search for nochting
+// Search search for nothing
 func (i *Index) Search(_ string, _ func(id string) bool) error {
 	return nil
 }

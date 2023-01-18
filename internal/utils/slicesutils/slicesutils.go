@@ -1,4 +1,4 @@
-// Package slicesutils some convinient functions on slices
+// Package slicesutils some convenient functions on slices
 package slicesutils
 
 /*

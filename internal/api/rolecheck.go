@@ -8,7 +8,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/serror"
 )
 
-// Role definig a role
+// Role define a role
 type Role string
 
 // RoleChecker interface for checking roles

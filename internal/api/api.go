@@ -1,9 +1,9 @@
 package api
 
-// TenantHeaderKey in this header thr right tenant should be inserted
+// TenantHeaderKey in this header the right tenant should be inserted
 const TenantHeaderKey = "tenant"
 
-// APIKeyHeaderKey in this header thr right api key should be inserted
+// APIKeyHeaderKey in this header the right api key should be inserted
 const APIKeyHeaderKey = "apikey"
 
 // RetentionHeaderKey is the header for defining a retention time

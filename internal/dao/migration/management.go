@@ -15,7 +15,7 @@ import (
 // MigrationManagement this dao takes control over several async migration parts, as backup, checks ...
 type MigrationManagement struct {
 	StorageFactory interfaces.StorageFactory
-	cCtxs          map[string]interface{}
+	cCtxs          map[string]any
 }
 
 // MigrationResult is the result of a async migration task
@@ -32,7 +32,7 @@ type MigrationResult struct {
 
 // Init creates a new migration service
 func (m *MigrationManagement) Init() error {
-	m.cCtxs = make(map[string]interface{})
+	m.cCtxs = make(map[string]any)
 	return nil
 }
 
@@ -93,7 +93,9 @@ func (m *MigrationManagement) StartRestore(tenant string) (string, error) {
 
 func (m *MigrationManagement) doRestore(cCtx *RestoreContext) {
 	cCtx.Started = time.Now()
-	defer func() { cCtx.Finnished = time.Now() }()
+	defer func() {
+		cCtx.Finnished = time.Now()
+	}()
 	cCtx.Restore()
 }
 
@@ -141,7 +143,9 @@ func (m *MigrationManagement) StartCheck(tenant string) (string, error) {
 
 func (m *MigrationManagement) doCheck(cCtx *CheckContext) {
 	cCtx.Started = time.Now()
-	defer func() { cCtx.Finnished = time.Now() }()
+	defer func() {
+		cCtx.Finnished = time.Now()
+	}()
 	file, err := cCtx.CheckStorage()
 	if err != nil {
 		cCtx.Message = fmt.Sprintf("error checking tenant %s: %v", cCtx.TenantID, err)

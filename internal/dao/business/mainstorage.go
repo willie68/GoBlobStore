@@ -34,7 +34,7 @@ type MainStorageDao struct {
 	TntError    error
 }
 
-// Init initialise this dao
+// Init initialize this dao
 func (m *MainStorageDao) Init() error {
 	// all storages should be initialised before adding to this business class
 	// there for only specifig initialisation for this class is required
@@ -418,7 +418,7 @@ func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	return err
 }
 
-// GetRetention getting a single retention entry fromthe main storage
+// GetRetention getting a single retention entry from the main storage
 func (m *MainStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
 	return m.StgDao.GetRetention(id)
 }

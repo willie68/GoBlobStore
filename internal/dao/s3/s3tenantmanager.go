@@ -36,7 +36,7 @@ type S3TenantManager struct {
 	storelist   []S3StoreEntry
 }
 
-// Init intialise this tenant manager
+// Init initialize this tenant manager
 func (s *S3TenantManager) Init() error {
 	u, err := url.Parse(s.Endpoint)
 	if err != nil {
@@ -196,7 +196,7 @@ func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
 	return "", nil
 }
 
-// HasTenant chacking if a tenant is present
+// HasTenant checking if a tenant is present
 func (s *S3TenantManager) HasTenant(tenant string) bool {
 	tenant = strings.ToLower(tenant)
 	for _, store := range s.storelist {
@@ -263,7 +263,7 @@ func (s *S3TenantManager) getConfigName(tenant string) string {
 	return fmt.Sprintf("%s/%s/%s", tenant, "_config", "config.json")
 }
 
-// GetSize getting the overal storage size for a tenant, niy
+// GetSize getting the overall storage size for a tenant, niy
 func (s *S3TenantManager) GetSize(_ string) int64 {
 	return 0
 }

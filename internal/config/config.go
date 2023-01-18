@@ -136,7 +136,7 @@ func GetDefaultConfigFolder() (string, error) {
 	return configFolder, nil
 }
 
-// ReplaceConfigdir replace the macro fon the config dir
+// ReplaceConfigdir replace the configdir macro
 func ReplaceConfigdir(s string) (string, error) {
 	if strings.Contains(s, "${configdir}") {
 		configFolder, err := GetDefaultConfigFolder()

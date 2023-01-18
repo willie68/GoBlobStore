@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Version verion struct
+// Version version struct
 type Version struct {
 	Major   int
 	Minor   int
@@ -22,7 +22,7 @@ func (v *Version) String() string {
 	return versionStr
 }
 
-// ParseVersion parse a string into y version object
+// ParseVersion parse a string into a version object
 func ParseVersion(versionStr string) (Version, error) {
 	version := Version{
 		Major:   0,

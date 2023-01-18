@@ -44,7 +44,7 @@ type Msg struct {
 	LastCheck string `json:"lastCheck,omitempty"`
 }
 
-// InitHealthSystem initialise the complete health system
+// InitHealthSystem initialize the complete health system
 func InitHealthSystem(config CheckConfig, tracer opentracing.Tracer) {
 	period = config.Period
 	log.Logger.Infof("healthcheck starting with period: %d seconds", period)
@@ -89,7 +89,7 @@ func GetLivenessEndpoint(response http.ResponseWriter, req *http.Request) {
 	})
 }
 
-// GetReadinessEndpoint is this service ready for taking requests, e.g. formaly known as health checks
+// GetReadinessEndpoint is this service ready for taking requests, e.g. formerly known as health checks
 func GetReadinessEndpoint(response http.ResponseWriter, req *http.Request) {
 	t := time.Now()
 	if t.Sub(lastChecked) > (time.Second * time.Duration(2*period)) {

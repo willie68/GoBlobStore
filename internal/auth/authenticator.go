@@ -1,4 +1,4 @@
-// Package auth all things related to authentication and authorisation
+// Package auth all things related to authentication and authorization
 package auth
 
 import (
@@ -14,7 +14,7 @@ var (
 	ErrorCtxKey = &contextKey{"Error"}
 )
 
-// defining some commen errors
+// defining some common errors
 var (
 	ErrUnauthorized = errors.New("token is unauthorized")
 	ErrExpired      = errors.New("token is expired")
@@ -24,7 +24,7 @@ var (
 	ErrAlgoInvalid  = errors.New("algorithm mismatch")
 )
 
-// FromContext extract the JWT and a flatten claim structur from a context
+// FromContext extract the JWT and a flatten claim structure from a context
 func FromContext(ctx context.Context) (*JWT, map[string]interface{}, error) {
 	token, ok := ctx.Value(TokenCtxKey).(*JWT)
 
@@ -82,7 +82,7 @@ func Verify(ja *JWTAuth, findTokenFns ...func(r *http.Request) string) func(http
 	}
 }
 
-// VerifyRequest this request -> authorisation
+// VerifyRequest this request -> authorization
 func VerifyRequest(ja *JWTAuth, r *http.Request, findTokenFns ...func(r *http.Request) string) (*JWT, error) {
 	var tokenString string
 
@@ -102,7 +102,7 @@ func VerifyRequest(ja *JWTAuth, r *http.Request, findTokenFns ...func(r *http.Re
 	return VerifyToken(ja, tokenString)
 }
 
-// VerifyToken verify the bearer oken
+// VerifyToken verify the bearer token
 func VerifyToken(ja *JWTAuth, tokenString string) (*JWT, error) {
 	// Decode & verify the token
 	token, err := DecodeJWT(tokenString)
@@ -125,8 +125,8 @@ func NewContext(ctx context.Context, t *JWT, err error) context.Context {
 	return ctx
 }
 
-// TokenFromHeader tries to retreive the token string from the
-// "Authorization" reqeust header: "Authorization: BEARER T".
+// TokenFromHeader tries to retrieve the token string from the
+// "Authorization" request header: "Authorization: BEARER T".
 func TokenFromHeader(r *http.Request) string {
 	// Get token from authorization header.
 	bearer := r.Header.Get("Authorization")
@@ -136,22 +136,22 @@ func TokenFromHeader(r *http.Request) string {
 	return ""
 }
 
-// TokenFromQuery tries to retreive the token string from the "jwt" URI
+// TokenFromQuery tries to retrieve the token string from the "jwt" URI
 // query parameter.
 //
 // To use it, build our own middleware handler, such as:
 //
-// func Verifier(ja *JWTAuth) func(http.Handler) http.Handler {
-// 	return func(next http.Handler) http.Handler {
-// 		return Verify(ja, TokenFromQuery, TokenFromHeader, TokenFromCookie)(next)
-// 	}
-// }
+//	func Verifier(ja *JWTAuth) func(http.Handler) http.Handler {
+//		return func(next http.Handler) http.Handler {
+//			return Verify(ja, TokenFromQuery, TokenFromHeader, TokenFromCookie)(next)
+//		}
+//	}
 func TokenFromQuery(r *http.Request) string {
 	// Get token from query param named "jwt".
 	return r.URL.Query().Get("jwt")
 }
 
-// TokenFromCookie tries to retreive the token string from a cookie named
+// TokenFromCookie tries to retrieve the token string from a cookie named
 // "jwt".
 func TokenFromCookie(r *http.Request) string {
 	cookie, err := r.Cookie("jwt")

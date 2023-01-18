@@ -1,4 +1,4 @@
-// Package httputils some helper functions on the http protokoll
+// Package httputils some helper functions on the http protocol
 package httputils
 
 import (

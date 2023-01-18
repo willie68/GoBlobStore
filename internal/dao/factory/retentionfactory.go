@@ -7,7 +7,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/retentionmanager"
 )
 
-// CreateRetentionManager creates a new Retention manager depending o nthe configuration
+// CreateRetentionManager creates a new Retention manager depending ot he configuration
 func CreateRetentionManager(rtnMgrStr string, tenantDao interfaces.TenantDao) (interfaces.RetentionManager, error) {
 	switch rtnMgrStr {
 	//This is the single node retention manager

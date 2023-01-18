@@ -369,14 +369,14 @@ func (f *FastCache) rebuildBloomFilter() {
 	}
 }
 
-// SearchBlobs quering a single blob, niy
+// SearchBlobs querying a single blob, niy
 func (f *FastCache) SearchBlobs(_ string, _ func(id string) bool) error {
 	return errors.New("not implemented yet")
 }
 
-// Retentionrelated methods
+// Retention related methods
 
-// GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
+// GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returning a false
 func (f *FastCache) GetAllRetentions(_ func(r model.RetentionEntry) bool) error {
 	return errNotImplemented
 }

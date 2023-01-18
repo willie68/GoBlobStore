@@ -11,7 +11,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-// SimpleFileMultiVolumeDao ths dao takes multi volumes and treats them as a single file storage
+// SimpleFileMultiVolumeDao this dao takes multi volumes and treats them as a single file storage
 type SimpleFileMultiVolumeDao struct {
 	RootPath string // this is the root path for the file system storage
 	Tenant   string // this is the tenant, on which this dao will work
@@ -32,7 +32,7 @@ var (
 
 // ---- SimpleFileMultiVolumeDao
 
-// Init initialise this dao
+// Init initialize this dao
 func (s *SimpleFileMultiVolumeDao) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
@@ -103,7 +103,7 @@ func (s *SimpleFileMultiVolumeDao) GetBlobDescription(id string) (*model.BlobDes
 	return dao.GetBlobDescription(id)
 }
 
-// RetrieveBlob retriving the blob from the first dao holding the blob file
+// RetrieveBlob retrieving the blob from the first dao holding the blob file
 func (s *SimpleFileMultiVolumeDao) RetrieveBlob(id string, writer io.Writer) error {
 	dao, err := s.dao4id(id)
 	if err != nil {
@@ -135,7 +135,7 @@ func (s *SimpleFileMultiVolumeDao) SearchBlobs(_ string, _ func(id string) bool)
 	return ErrNotImplemented
 }
 
-// GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
+// GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returning a false
 func (s *SimpleFileMultiVolumeDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	for _, dao := range s.daos {
 		err := dao.GetAllRetentions(callback)

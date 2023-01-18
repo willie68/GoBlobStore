@@ -48,7 +48,7 @@ func SearchRoutes() (string, *chi.Mux) {
 	return BaseURL + searchSubpath, router
 }
 
-// TenantStoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
+// TenantStoresRoutes getting all routes for the stores endpoint, this is part of the new api. But mainly here only a new name.
 func TenantStoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.With(api.RoleCheck([]api.Role{api.RoleObjectCreator}), api.TenantCheck()).Post(tenantURL("/"), PostBlob)

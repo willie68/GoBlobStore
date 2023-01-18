@@ -50,7 +50,9 @@ func MigrateRestore(tenant string, stgf interfaces.StorageFactory) (*RestoreCont
 // Restore starting a full restore of a tenant
 func (r *RestoreContext) Restore() {
 	r.Running = true
-	defer func() { r.Running = false }()
+	defer func() {
+		r.Running = false
+	}()
 	r.cancel = false
 	log.Logger.Debugf("start restoring tenant \"%s\"", r.TenantID)
 	// restoring all blobs in backup storage
@@ -60,7 +62,10 @@ func (r *RestoreContext) Restore() {
 		err := r.Backup.GetBlobs(func(id string) bool {
 			// process only blobs that are not already in primary store
 			if ok, _ := r.Primary.HasBlob(id); !ok {
-				restore(id, r.Backup, r.Primary)
+				err := restore(id, r.Backup, r.Primary)
+				if err != nil {
+					log.Logger.Errorf("error restoring file from backup: %v", err)
+				}
 			}
 			count++
 			return true
