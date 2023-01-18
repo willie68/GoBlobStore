@@ -84,7 +84,7 @@ func apiRoutes() (*chi.Mux, error) {
 				return false
 				//return r.URL.Path == "/livez"
 			},
-			Tags: map[string]interface{}{
+			Tags: map[string]any{
 				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
 				// "_dd1.sr.eausr": 1, // datadog, event sample rate
 			},
@@ -176,7 +176,7 @@ func healthRoutes() *chi.Mux {
 			SkipFunc: func(r *http.Request) bool {
 				return false
 			},
-			Tags: map[string]interface{}{
+			Tags: map[string]any{
 				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
 				// "_dd1.sr.eausr": 1, // datadog, event sample rate
 			},

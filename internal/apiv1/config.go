@@ -77,7 +77,7 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		lastError = err
 	} else {
-		stgdao, err := stgfac.GetStorageDao(tenant)
+		stgdao, err := stgfac.GetStorage(tenant)
 		if err != nil {
 			lastError = err
 		} else {
@@ -163,7 +163,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
-		stf.RemoveStorageDao(tenant)
+		stf.RemoveStorage(tenant)
 		rsp.Backup = cfg.Storageclass
 	}
 

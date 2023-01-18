@@ -45,8 +45,8 @@ type Config struct {
 
 // Authentication configuration
 type Authentication struct {
-	Type       string                 `yaml:"type"`
-	Properties map[string]interface{} `yaml:"properties"`
+	Type       string         `yaml:"type"`
+	Properties map[string]any `yaml:"properties"`
 }
 
 // Engine configuration
@@ -63,8 +63,8 @@ type Engine struct {
 
 // Storage configuration
 type Storage struct {
-	Storageclass string                 `yaml:"storageclass"`
-	Properties   map[string]interface{} `yaml:"properties"`
+	Storageclass string         `yaml:"storageclass"`
+	Properties   map[string]any `yaml:"properties"`
 }
 
 // HealthCheck configuration for the health check system
@@ -114,7 +114,7 @@ var DefaultConfig = Config{
 		BackupSyncmode:   false,
 		Storage: Storage{
 			Storageclass: "SimpleFile",
-			Properties: map[string]interface{}{
+			Properties: map[string]any{
 				"rootpath": "./blbstg",
 			},
 		},

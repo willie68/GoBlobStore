@@ -16,7 +16,7 @@ func toBlugeQuery(q query.Query) (bluge.Query, error) {
 }
 
 // xToBdb converting a node/condition to a bluge string
-func xToBq(x interface{}) (bluge.Query, error) {
+func xToBq(x any) (bluge.Query, error) {
 	switch v := x.(type) {
 	case query.Condition:
 		return cToBq(v)

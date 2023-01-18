@@ -53,7 +53,7 @@ func TenantID(r *http.Request) (string, error) {
 }
 
 // Decode decodes and validates an object
-func Decode(r *http.Request, v interface{}) error {
+func Decode(r *http.Request, v any) error {
 	err := render.DefaultDecoder(r, v)
 	if err != nil {
 		return serror.BadRequest(err, "decode-body", "could not decode body")
@@ -75,7 +75,7 @@ func Param(r *http.Request, name string) (string, error) {
 }
 
 // Created object created
-func Created(w http.ResponseWriter, r *http.Request, id string, v interface{}) {
+func Created(w http.ResponseWriter, r *http.Request, id string, v any) {
 	// TODO add relative path to location
 	w.Header().Add("Location", fmt.Sprintf("%s", id))
 	render.Status(r, http.StatusCreated)

@@ -12,7 +12,7 @@ import (
 
 var (
 	rootFilePrefix = "../../../testdata/mv"
-	volumes        VolumeManager
+	volumes        Manager
 	vols           = []string{"mvn01", "mvn02"}
 )
 
@@ -153,22 +153,22 @@ func TestCalculate(t *testing.T) {
 	ast := assert.New(t)
 	v, err := NewVolumeManager(rootFilePrefix)
 	ast.Nil(err)
-	v.volumes = map[string]VolumeInfo{
-		"mvn01": VolumeInfo{
+	v.volumes = map[string]Info{
+		"mvn01": Info{
 			Name:  "mvn01",
 			ID:    "01",
 			Path:  "/mvn01",
 			Total: 20 * 1024 * 1024,
 			Used:  10 * 1024 * 1024,
 		},
-		"mvn02": VolumeInfo{
+		"mvn02": Info{
 			Name:  "mvn02",
 			ID:    "02",
 			Path:  "/mvn02",
 			Total: 100 * 1024 * 1024,
 			Used:  20 * 1024 * 1024,
 		},
-		"mvn03": VolumeInfo{
+		"mvn03": Info{
 			Name:  "mvn03",
 			ID:    "03",
 			Path:  "/mvn03",

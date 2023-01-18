@@ -5,7 +5,7 @@ import (
 )
 
 // GetConfigValueAsString getting a value as a string, if possible
-func GetConfigValueAsString(properties map[string]interface{}, key string) (string, error) {
+func GetConfigValueAsString(properties map[string]any, key string) (string, error) {
 	if _, ok := properties[key]; !ok {
 		return "", fmt.Errorf("missing config value for %s", key)
 	}
@@ -20,7 +20,7 @@ func GetConfigValueAsString(properties map[string]interface{}, key string) (stri
 }
 
 // GetConfigValueAsBool getting a value as a bool, if possible
-func GetConfigValueAsBool(properties map[string]interface{}, key string) (bool, error) {
+func GetConfigValueAsBool(properties map[string]any, key string) (bool, error) {
 	if _, ok := properties[key]; !ok {
 		return false, fmt.Errorf("missing config value for %s", key)
 	}
@@ -35,7 +35,7 @@ func GetConfigValueAsBool(properties map[string]interface{}, key string) (bool, 
 }
 
 // GetConfigValueAsInt getting a value as a int64, if possible
-func GetConfigValueAsInt(properties map[string]interface{}, key string) (int64, error) {
+func GetConfigValueAsInt(properties map[string]any, key string) (int64, error) {
 	if _, ok := properties[key]; !ok {
 		return 0, fmt.Errorf("missing config value for %s", key)
 	}

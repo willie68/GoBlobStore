@@ -35,7 +35,7 @@ type GenerateCertificate struct {
 	Ed25519Key   bool
 }
 
-func (gc *GenerateCertificate) publicKey(priv interface{}) interface{} {
+func (gc *GenerateCertificate) publicKey(priv any) any {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
 		return &k.PublicKey
@@ -50,7 +50,7 @@ func (gc *GenerateCertificate) publicKey(priv interface{}) interface{} {
 
 // GenerateTLSConfig generates the config
 func (gc *GenerateCertificate) GenerateTLSConfig() (*tls.Config, error) {
-	var priv interface{}
+	var priv any
 	var err error
 	switch gc.EcdsaCurve {
 	case "":

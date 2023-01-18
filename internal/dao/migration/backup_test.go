@@ -77,7 +77,7 @@ func initBckTest(_ *testing.T) {
 	}
 }
 
-func getBlobCount(stg interfaces.BlobStorageDao) (int, error) {
+func getBlobCount(stg interfaces.BlobStorage) (int, error) {
 	count := 0
 	err := stg.GetBlobs(func(id string) bool {
 		count++
@@ -86,7 +86,7 @@ func getBlobCount(stg interfaces.BlobStorageDao) (int, error) {
 	return count, err
 }
 
-func getRntCount(stg interfaces.BlobStorageDao) (int, error) {
+func getRntCount(stg interfaces.BlobStorage) (int, error) {
 	count := 0
 	err := stg.GetAllRetentions(func(r model.RetentionEntry) bool {
 		count++
@@ -99,7 +99,7 @@ func TestSyncForward(t *testing.T) {
 	initBckTest(t)
 
 	ast := assert.New(t)
-	mainStg := &simplefile.SimpleFileBlobStorageDao{
+	mainStg := &simplefile.BlobStorage{
 		RootPath: rootpath,
 		Tenant:   migTnt,
 	}
@@ -115,7 +115,7 @@ func TestSyncForward(t *testing.T) {
 	ast.Nil(err)
 	ast.Equal(7, count)
 
-	bckStg := &simplefile.SimpleFileBlobStorageDao{
+	bckStg := &simplefile.BlobStorage{
 		RootPath: bckpath,
 		Tenant:   migTnt,
 	}

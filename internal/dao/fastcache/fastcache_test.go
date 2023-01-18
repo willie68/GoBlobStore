@@ -125,7 +125,7 @@ func TestCRD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -242,7 +242,7 @@ func getBlobDescription(id string) *model.BlobDescription {
 		Filename:      id,
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -280,7 +280,7 @@ func TestSameUUID(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}

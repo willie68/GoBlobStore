@@ -30,7 +30,7 @@ type serviceLogger struct {
 	GelfURL    string
 	GelfPort   int
 	SystemID   string
-	Attrs      map[string]interface{}
+	Attrs      map[string]any
 	gelfActive bool
 	c          *golf.Client
 	Filename   string
@@ -97,7 +97,7 @@ func (s *serviceLogger) Debug(msg string) {
 }
 
 // Debugf log this message at debug level with formatting
-func (s *serviceLogger) Debugf(format string, va ...interface{}) {
+func (s *serviceLogger) Debugf(format string, va ...any) {
 	if s.LevelInt <= 0 {
 		if s.gelfActive {
 			golf.Dbgf(format, va...)
@@ -117,7 +117,7 @@ func (s *serviceLogger) Info(msg string) {
 }
 
 // Infof log this message at info level with formatting
-func (s *serviceLogger) Infof(format string, va ...interface{}) {
+func (s *serviceLogger) Infof(format string, va ...any) {
 	if s.LevelInt <= 1 {
 		if s.gelfActive {
 			golf.Infof(format, va...)
@@ -137,7 +137,7 @@ func (s *serviceLogger) Alert(msg string) {
 }
 
 // Alertf log this message at alert level with formatting.
-func (s *serviceLogger) Alertf(format string, va ...interface{}) {
+func (s *serviceLogger) Alertf(format string, va ...any) {
 	if s.LevelInt <= 2 {
 		if s.gelfActive {
 			golf.Alertf(format, va...)
@@ -157,7 +157,7 @@ func (s *serviceLogger) Fatal(msg string) {
 }
 
 // Fatalf logs a message at level Fatal on the standard logger with formatting.
-func (s *serviceLogger) Fatalf(format string, va ...interface{}) {
+func (s *serviceLogger) Fatalf(format string, va ...any) {
 	if s.LevelInt <= 4 {
 		if s.gelfActive {
 			golf.Critf(format, va...)
@@ -177,7 +177,7 @@ func (s *serviceLogger) Error(msg string) {
 }
 
 // Errorf logs a message at level Error on the standard logger with formatting.
-func (s *serviceLogger) Errorf(format string, va ...interface{}) {
+func (s *serviceLogger) Errorf(format string, va ...any) {
 	if s.LevelInt <= 3 {
 		if s.gelfActive {
 			golf.Errf(format, va...)

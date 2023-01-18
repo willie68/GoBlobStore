@@ -20,7 +20,7 @@ type BlobDescription struct {
 	BlobURL       string `yaml:"blobUrl" json:"blobUrl"`
 	Hash          string `yaml:"hash" json:"hash"`
 	Check         *Check `yaml:"check,omitempty" json:"check,omitempty"`
-	Properties    map[string]interface{}
+	Properties    map[string]any
 	sm            sync.Mutex
 }
 
@@ -90,7 +90,7 @@ func (b *BlobDescription) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	mymap := make(map[string]interface{})
+	mymap := make(map[string]any)
 	err = json.Unmarshal(data, &mymap)
 	if err != nil {
 		return err

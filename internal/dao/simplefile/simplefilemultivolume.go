@@ -11,18 +11,18 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-// SimpleFileMultiVolumeDao this dao takes multi volumes and treats them as a single file storage
-type SimpleFileMultiVolumeDao struct {
+// MultiVolumeStorage this dao takes multi volumes and treats them as a single file storage
+type MultiVolumeStorage struct {
 	RootPath string // this is the root path for the file system storage
 	Tenant   string // this is the tenant, on which this dao will work
-	volMan   volume.VolumeManager
-	daos     []SimpleFileBlobStorageDao
-	daoIdx   map[string]*SimpleFileBlobStorageDao
+	volMan   volume.Manager
+	daos     []BlobStorage
+	daoIdx   map[string]*BlobStorage
 	cm       sync.Mutex
 }
 
 // checking interface compatibility
-var _ interfaces.BlobStorageDao = &SimpleFileMultiVolumeDao{}
+var _ interfaces.BlobStorage = &MultiVolumeStorage{}
 
 // defining some error
 var (
@@ -33,7 +33,7 @@ var (
 // ---- SimpleFileMultiVolumeDao
 
 // Init initialize this dao
-func (s *SimpleFileMultiVolumeDao) Init() error {
+func (s *MultiVolumeStorage) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
 	}
@@ -43,8 +43,8 @@ func (s *SimpleFileMultiVolumeDao) Init() error {
 		return err
 	}
 	s.cm.Lock()
-	s.daos = make([]SimpleFileBlobStorageDao, 0)
-	s.daoIdx = make(map[string]*SimpleFileBlobStorageDao)
+	s.daos = make([]BlobStorage, 0)
+	s.daoIdx = make(map[string]*BlobStorage)
 	s.cm.Unlock()
 	s.volMan = volMan
 	s.volMan.AddCallback(func(name string) bool {
@@ -55,12 +55,12 @@ func (s *SimpleFileMultiVolumeDao) Init() error {
 }
 
 // GetTenant return the id of the tenant
-func (s *SimpleFileMultiVolumeDao) GetTenant() string {
+func (s *MultiVolumeStorage) GetTenant() string {
 	return s.Tenant
 }
 
 // GetBlobs walking thru all blobs of this tenant
-func (s *SimpleFileMultiVolumeDao) GetBlobs(callback func(id string) bool) error {
+func (s *MultiVolumeStorage) GetBlobs(callback func(id string) bool) error {
 	for _, dao := range s.daos {
 		err := dao.GetBlobs(callback)
 		if err != io.EOF {
@@ -71,7 +71,7 @@ func (s *SimpleFileMultiVolumeDao) GetBlobs(callback func(id string) bool) error
 }
 
 // StoreBlob storing a blob to the storage system
-func (s *SimpleFileMultiVolumeDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
+func (s *MultiVolumeStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	dao, err := s.selectDao()
 	if err != nil {
 		return "", err
@@ -81,12 +81,12 @@ func (s *SimpleFileMultiVolumeDao) StoreBlob(b *model.BlobDescription, f io.Read
 
 // UpdateBlobDescription updating the blob description
 // TODO implement this
-func (s *SimpleFileMultiVolumeDao) UpdateBlobDescription(_ string, _ *model.BlobDescription) error {
+func (s *MultiVolumeStorage) UpdateBlobDescription(_ string, _ *model.BlobDescription) error {
 	return ErrNotImplemented
 }
 
 // HasBlob checking if one dao has this blob
-func (s *SimpleFileMultiVolumeDao) HasBlob(id string) (bool, error) {
+func (s *MultiVolumeStorage) HasBlob(id string) (bool, error) {
 	_, err := s.dao4id(id)
 	if err != nil {
 		return false, err
@@ -95,7 +95,7 @@ func (s *SimpleFileMultiVolumeDao) HasBlob(id string) (bool, error) {
 }
 
 // GetBlobDescription getting the lob description from the dao holding the blob
-func (s *SimpleFileMultiVolumeDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
+func (s *MultiVolumeStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	dao, err := s.dao4id(id)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func (s *SimpleFileMultiVolumeDao) GetBlobDescription(id string) (*model.BlobDes
 }
 
 // RetrieveBlob retrieving the blob from the first dao holding the blob file
-func (s *SimpleFileMultiVolumeDao) RetrieveBlob(id string, writer io.Writer) error {
+func (s *MultiVolumeStorage) RetrieveBlob(id string, writer io.Writer) error {
 	dao, err := s.dao4id(id)
 	if err != nil {
 		return err
@@ -113,7 +113,7 @@ func (s *SimpleFileMultiVolumeDao) RetrieveBlob(id string, writer io.Writer) err
 }
 
 // DeleteBlob removing a blob from the storage system
-func (s *SimpleFileMultiVolumeDao) DeleteBlob(id string) error {
+func (s *MultiVolumeStorage) DeleteBlob(id string) error {
 	dao, err := s.dao4id(id)
 	if err != nil {
 		return err
@@ -122,7 +122,7 @@ func (s *SimpleFileMultiVolumeDao) DeleteBlob(id string) error {
 }
 
 // CheckBlob checking a single blob from the storage system
-func (s *SimpleFileMultiVolumeDao) CheckBlob(id string) (*model.CheckInfo, error) {
+func (s *MultiVolumeStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 	dao, err := s.dao4id(id)
 	if err != nil {
 		return nil, err
@@ -131,12 +131,12 @@ func (s *SimpleFileMultiVolumeDao) CheckBlob(id string) (*model.CheckInfo, error
 }
 
 // SearchBlobs is not implemented for this storage
-func (s *SimpleFileMultiVolumeDao) SearchBlobs(_ string, _ func(id string) bool) error {
+func (s *MultiVolumeStorage) SearchBlobs(_ string, _ func(id string) bool) error {
 	return ErrNotImplemented
 }
 
 // GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returning a false
-func (s *SimpleFileMultiVolumeDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
+func (s *MultiVolumeStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	for _, dao := range s.daos {
 		err := dao.GetAllRetentions(callback)
 		if err != nil {
@@ -147,7 +147,7 @@ func (s *SimpleFileMultiVolumeDao) GetAllRetentions(callback func(r model.Retent
 }
 
 // GetRetention getting a single retention entry
-func (s *SimpleFileMultiVolumeDao) GetRetention(id string) (model.RetentionEntry, error) {
+func (s *MultiVolumeStorage) GetRetention(id string) (model.RetentionEntry, error) {
 	dao, err := s.dao4id(id)
 	if err != nil {
 		return model.RetentionEntry{}, err
@@ -156,7 +156,7 @@ func (s *SimpleFileMultiVolumeDao) GetRetention(id string) (model.RetentionEntry
 }
 
 // AddRetention adding a retention entry to the storage
-func (s *SimpleFileMultiVolumeDao) AddRetention(r *model.RetentionEntry) error {
+func (s *MultiVolumeStorage) AddRetention(r *model.RetentionEntry) error {
 	dao, err := s.dao4id(r.BlobID)
 	if err != nil {
 		return err
@@ -165,7 +165,7 @@ func (s *SimpleFileMultiVolumeDao) AddRetention(r *model.RetentionEntry) error {
 }
 
 // DeleteRetention deletes the retention entry from the storage
-func (s *SimpleFileMultiVolumeDao) DeleteRetention(id string) error {
+func (s *MultiVolumeStorage) DeleteRetention(id string) error {
 	dao, err := s.dao4id(id)
 	if err != nil {
 		return err
@@ -174,7 +174,7 @@ func (s *SimpleFileMultiVolumeDao) DeleteRetention(id string) error {
 }
 
 // ResetRetention resets the retention for a blob
-func (s *SimpleFileMultiVolumeDao) ResetRetention(id string) error {
+func (s *MultiVolumeStorage) ResetRetention(id string) error {
 	r, err := s.GetRetention(id)
 	if err != nil {
 		return err
@@ -184,20 +184,20 @@ func (s *SimpleFileMultiVolumeDao) ResetRetention(id string) error {
 }
 
 // GetLastError returning the last error (niy)
-func (s *SimpleFileMultiVolumeDao) GetLastError() error {
+func (s *MultiVolumeStorage) GetLastError() error {
 	return ErrNotImplemented
 }
 
 // Close closing the storage
-func (s *SimpleFileMultiVolumeDao) Close() error {
+func (s *MultiVolumeStorage) Close() error {
 	for _, dao := range s.daos {
 		dao.Close()
 	}
-	s.daos = make([]SimpleFileBlobStorageDao, 0)
+	s.daos = make([]BlobStorage, 0)
 	return nil
 }
 
-func (s *SimpleFileMultiVolumeDao) selectDao() (*SimpleFileBlobStorageDao, error) {
+func (s *MultiVolumeStorage) selectDao() (*BlobStorage, error) {
 	rnd := s.volMan.Rnd()
 	name := s.volMan.SelectFree(rnd)
 	s.cm.Lock()
@@ -209,7 +209,7 @@ func (s *SimpleFileMultiVolumeDao) selectDao() (*SimpleFileBlobStorageDao, error
 	return dao, nil
 }
 
-func (s *SimpleFileMultiVolumeDao) dao4id(id string) (*SimpleFileBlobStorageDao, error) {
+func (s *MultiVolumeStorage) dao4id(id string) (*BlobStorage, error) {
 	for _, dao := range s.daos {
 		ok, _ := dao.HasBlob(id)
 		if ok {
@@ -219,7 +219,7 @@ func (s *SimpleFileMultiVolumeDao) dao4id(id string) (*SimpleFileBlobStorageDao,
 	return nil, ErrDaoNotFound
 }
 
-func (s *SimpleFileMultiVolumeDao) addVolume(name string) bool {
+func (s *MultiVolumeStorage) addVolume(name string) bool {
 	if !s.volMan.HasVolume(name) {
 		return false
 	}
@@ -227,7 +227,7 @@ func (s *SimpleFileMultiVolumeDao) addVolume(name string) bool {
 	if vi == nil {
 		return false
 	}
-	sfbd := &SimpleFileBlobStorageDao{
+	sfbd := &BlobStorage{
 		RootPath: vi.Path,
 		Tenant:   s.Tenant,
 	}

@@ -23,8 +23,8 @@ const (
 	fnStlst = "storelist.json"
 )
 
-// S3TenantManager the s3 based tenant manager
-type S3TenantManager struct {
+// TenantManager the s3 based tenant manager
+type TenantManager struct {
 	Endpoint    string
 	Insecure    bool // true for self signed certificates
 	Bucket      string
@@ -33,11 +33,11 @@ type S3TenantManager struct {
 	Password    string
 	minioClient minio.Client
 	usetls      bool
-	storelist   []S3StoreEntry
+	storelist   []StoreEntry
 }
 
 // Init initialize this tenant manager
-func (s *S3TenantManager) Init() error {
+func (s *TenantManager) Init() error {
 	u, err := url.Parse(s.Endpoint)
 	if err != nil {
 		return err
@@ -60,13 +60,6 @@ func (s *S3TenantManager) Init() error {
 		options = &minio.Options{
 			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
 			Secure: s.usetls,
-			//TODO: das muss hier wieder raus
-			Transport: &http.Transport{
-				MaxIdleConns:       10,
-				IdleConnTimeout:    30 * time.Second,
-				DisableCompression: true,
-				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
-			},
 		}
 	}
 	client, err := minio.New(endpoint, options)
@@ -91,7 +84,7 @@ func (s *S3TenantManager) Init() error {
 }
 
 // GetTenants walk thru all tenants
-func (s *S3TenantManager) GetTenants(callback func(tenant string) bool) error {
+func (s *TenantManager) GetTenants(callback func(tenant string) bool) error {
 	if s.storelist == nil {
 		err := s.readStorelist()
 		if err != nil {
@@ -104,7 +97,7 @@ func (s *S3TenantManager) GetTenants(callback func(tenant string) bool) error {
 	return nil
 }
 
-func (s *S3TenantManager) readStorelist() error {
+func (s *TenantManager) readStorelist() error {
 	ctx := context.Background()
 	_, err := s.minioClient.StatObject(ctx, s.Bucket, fnStlst, minio.StatObjectOptions{})
 	if err != nil {
@@ -121,7 +114,7 @@ func (s *S3TenantManager) readStorelist() error {
 	if err != nil {
 		return err
 	}
-	var storeEntries []S3StoreEntry
+	var storeEntries []StoreEntry
 	data, err := ioutil.ReadAll(reader)
 	if err == nil && data != nil {
 		err = json.Unmarshal(data, &storeEntries)
@@ -133,7 +126,7 @@ func (s *S3TenantManager) readStorelist() error {
 	return nil
 }
 
-func (s *S3TenantManager) writeStorelist() error {
+func (s *TenantManager) writeStorelist() error {
 	ctx := context.Background()
 
 	data, err := json.Marshal(s.storelist)
@@ -152,11 +145,11 @@ func (s *S3TenantManager) writeStorelist() error {
 }
 
 // AddTenant add a new tenant to the manager
-func (s *S3TenantManager) AddTenant(tenant string) error {
+func (s *TenantManager) AddTenant(tenant string) error {
 	if s.HasTenant(tenant) {
 		return errors.New("tenant already exists")
 	}
-	s.storelist = append(s.storelist, S3StoreEntry{
+	s.storelist = append(s.storelist, StoreEntry{
 		Tenant: strings.ToLower(tenant),
 	})
 	err := s.writeStorelist()
@@ -168,7 +161,7 @@ func (s *S3TenantManager) AddTenant(tenant string) error {
 }
 
 // RemoveTenant remove a tenant from the service, delete all related data
-func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
+func (s *TenantManager) RemoveTenant(tenant string) (string, error) {
 	if !s.HasTenant(tenant) {
 		return "", nil
 	}
@@ -197,7 +190,7 @@ func (s *S3TenantManager) RemoveTenant(tenant string) (string, error) {
 }
 
 // HasTenant checking if a tenant is present
-func (s *S3TenantManager) HasTenant(tenant string) bool {
+func (s *TenantManager) HasTenant(tenant string) bool {
 	tenant = strings.ToLower(tenant)
 	for _, store := range s.storelist {
 		if strings.EqualFold(store.Tenant, tenant) {
@@ -208,7 +201,7 @@ func (s *S3TenantManager) HasTenant(tenant string) bool {
 }
 
 // SetConfig writing a new config object for the tenant
-func (s *S3TenantManager) SetConfig(tenant string, config interfaces.TenantConfig) error {
+func (s *TenantManager) SetConfig(tenant string, config interfaces.TenantConfig) error {
 	ctx := context.Background()
 	cfnName := s.getConfigName(tenant)
 
@@ -228,7 +221,7 @@ func (s *S3TenantManager) SetConfig(tenant string, config interfaces.TenantConfi
 }
 
 // GetConfig reading the config object for the tenant
-func (s *S3TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
+func (s *TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
 	ctx := context.Background()
 	cfnName := s.getConfigName(tenant)
 
@@ -258,17 +251,17 @@ func (s *S3TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, er
 	return &cfn, nil
 }
 
-func (s *S3TenantManager) getConfigName(tenant string) string {
+func (s *TenantManager) getConfigName(tenant string) string {
 	tenant = strings.ToLower(tenant)
 	return fmt.Sprintf("%s/%s/%s", tenant, "_config", "config.json")
 }
 
 // GetSize getting the overall storage size for a tenant, niy
-func (s *S3TenantManager) GetSize(_ string) int64 {
+func (s *TenantManager) GetSize(_ string) int64 {
 	return 0
 }
 
-func (s *S3TenantManager) getEncryption() encrypt.ServerSide {
+func (s *TenantManager) getEncryption() encrypt.ServerSide {
 	if !s.usetls || s.Insecure {
 		return nil
 	}
@@ -276,6 +269,6 @@ func (s *S3TenantManager) getEncryption() encrypt.ServerSide {
 }
 
 // Close closing the manager
-func (s *S3TenantManager) Close() error {
+func (s *TenantManager) Close() error {
 	return nil
 }

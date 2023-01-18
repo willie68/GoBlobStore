@@ -30,11 +30,11 @@ var (
 	blbPath = filepath.Join(rootFilePrefix, "blbstg")
 	cchPath = filepath.Join(rootFilePrefix, "blbcch")
 	bckPath = filepath.Join(rootFilePrefix, "bckstg")
-	main    interfaces.BlobStorageDao
+	main    interfaces.BlobStorage
 )
 
 func initTest(_ *testing.T) {
-	stgDao := &simplefile.SimpleFileBlobStorageDao{
+	stgDao := &simplefile.BlobStorage{
 		RootPath: blbPath,
 		Tenant:   tenant,
 	}
@@ -45,13 +45,13 @@ func initTest(_ *testing.T) {
 		MaxRAMSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
-	bckDao := &simplefile.SimpleFileBlobStorageDao{
+	bckDao := &simplefile.BlobStorage{
 		RootPath: bckPath,
 		Tenant:   tenant,
 	}
 	bckDao.Init()
 
-	main = &MainStorageDao{
+	main = &MainStorage{
 		StgDao: stgDao,
 		CchDao: cchDao,
 		BckDao: bckDao,
@@ -94,7 +94,7 @@ func createBlobDescription(id string) model.BlobDescription {
 		Filename:      fmt.Sprintf("test_%s.txt", id),
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -159,7 +159,7 @@ func TestManyFiles(t *testing.T) {
 	})
 	ast.Nil(err)
 
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 
 	for _, id := range blobs {
 		found := false
@@ -226,7 +226,7 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	initTest(t)
 	ast := assert.New(t)
 	ast.NotNil(main)
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
 	CchDao := bMain.CchDao
@@ -274,7 +274,7 @@ func TestAutoRestoreByContent(t *testing.T) {
 	initTest(t)
 	ast := assert.New(t)
 	ast.NotNil(main)
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
 	CchDao := bMain.CchDao
@@ -322,7 +322,7 @@ func TestAutoRestoreByHasId(t *testing.T) {
 	initTest(t)
 	ast := assert.New(t)
 	ast.NotNil(main)
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
 	CchDao := bMain.CchDao

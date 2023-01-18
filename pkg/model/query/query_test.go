@@ -15,7 +15,7 @@ func TestQJson(t *testing.T) {
 		Sorting: []string{"field_1"},
 		Condition: Node{
 			Operator: NOOP,
-			Conditions: []interface{}{
+			Conditions: []any{
 				Condition{
 					Field:    "field_1",
 					Operator: EQ,
@@ -39,7 +39,7 @@ func TestQSearching(t *testing.T) {
 		{
 			n: Node{
 				Operator: NOOP,
-				Conditions: []interface{}{
+				Conditions: []any{
 					Condition{
 						Field:    "field1",
 						Operator: EQ,
@@ -52,7 +52,7 @@ func TestQSearching(t *testing.T) {
 		{
 			n: Node{
 				Operator: ANDOP,
-				Conditions: []interface{}{
+				Conditions: []any{
 					Condition{
 						Field:    "field1",
 						Operator: NO,
@@ -71,7 +71,7 @@ func TestQSearching(t *testing.T) {
 		{
 			n: Node{
 				Operator: ANDOP,
-				Conditions: []interface{}{
+				Conditions: []any{
 					Condition{
 						Field:    "field1",
 						Operator: NO,
@@ -90,10 +90,10 @@ func TestQSearching(t *testing.T) {
 		{
 			n: Node{
 				Operator: OROP,
-				Conditions: []interface{}{
+				Conditions: []any{
 					Node{
 						Operator: ANDOP,
-						Conditions: []interface{}{
+						Conditions: []any{
 							Condition{
 								Field:    "field1",
 								Operator: NO,
@@ -108,7 +108,7 @@ func TestQSearching(t *testing.T) {
 					},
 					Node{
 						Operator: ANDOP,
-						Conditions: []interface{}{
+						Conditions: []any{
 							Condition{
 								Field:    "field1",
 								Operator: NO,

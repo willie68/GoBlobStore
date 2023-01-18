@@ -12,10 +12,10 @@ import (
 
 const rootpath = "../../../testdata/blbstg/"
 
-var cnfg map[string]interface{}
+var cnfg map[string]any
 
 func InitT(ast *assert.Assertions) {
-	cnfg = make(map[string]interface{})
+	cnfg = make(map[string]any)
 	cnfg["rootpath"] = rootpath
 
 	os.RemoveAll(rootpath)
@@ -47,7 +47,7 @@ func TestBlugeConnect(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["x-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["x-retention"] = []int{123456}
@@ -196,7 +196,7 @@ func getBlobDescription(id string, num int) model.BlobDescription {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{num}

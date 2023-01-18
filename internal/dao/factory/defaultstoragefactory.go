@@ -34,26 +34,29 @@ var _ interfaces.StorageFactory = &DefaultStorageFactory{}
 
 // DefaultStorageFactory the struct for the default storage factory
 type DefaultStorageFactory struct {
-	TenantDao    interfaces.TenantDao
+	TenantMgr    interfaces.TenantManager
 	RtnMgr       interfaces.RetentionManager
-	CchDao       interfaces.BlobStorageDao
+	CchDao       interfaces.BlobStorage
 	tenantStores sync.Map
 	cnfg         config.Engine
 }
 
-// Init initialise the factory
+// Init initialize the factory
 func (d *DefaultStorageFactory) Init(storage config.Engine, rtnm interfaces.RetentionManager) error {
 	d.tenantStores = sync.Map{}
 	d.cnfg = storage
 	d.RtnMgr = rtnm
 	if d.cnfg.Index.Storageclass != "" {
-		d.initIndex(d.cnfg.Index)
+		err := d.initIndex(d.cnfg.Index)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-// GetStorageDao return the storage dao for the desired tenant
-func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobStorageDao, error) {
+// GetStorage return the storage for the desired tenant
+func (d *DefaultStorageFactory) GetStorage(tenant string) (interfaces.BlobStorage, error) {
 	dao, ok := d.tenantStores.Load(tenant)
 	if !ok {
 		storageDao, err := d.createStorage(tenant)
@@ -64,18 +67,18 @@ func (d *DefaultStorageFactory) GetStorageDao(tenant string) (interfaces.BlobSto
 		d.tenantStores.Store(tenant, &storageDao)
 		return storageDao, nil
 	}
-	storageDao, ok := dao.(*interfaces.BlobStorageDao)
+	storageDao, ok := dao.(*interfaces.BlobStorage)
 	if !ok {
 		return nil, fmt.Errorf("wrong type in map for tenant %s", tenant)
 	}
 	return *storageDao, nil
 }
 
-// RemoveStorageDao reomves a tenant storage dao from the cache
-func (d *DefaultStorageFactory) RemoveStorageDao(tenant string) error {
+// RemoveStorage removes a tenant storage from the cache
+func (d *DefaultStorageFactory) RemoveStorage(tenant string) error {
 	dao, ok := d.tenantStores.Load(tenant)
 	if ok {
-		storageDao, ok := dao.(*interfaces.BlobStorageDao)
+		storageDao, ok := dao.(*interfaces.BlobStorage)
 		if ok {
 			err := (*storageDao).Close()
 			if err != nil {
@@ -89,30 +92,29 @@ func (d *DefaultStorageFactory) RemoveStorageDao(tenant string) error {
 }
 
 // createStorage creating a new storage dao for the tenant depending on the configuration
-func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobStorageDao, error) {
-	if !d.TenantDao.HasTenant(tenant) {
-		if d.cnfg.Tenantautoadd {
-			d.TenantDao.AddTenant(tenant)
-		} else {
+func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobStorage, error) {
+	if !d.TenantMgr.HasTenant(tenant) {
+		if !d.cnfg.Tenantautoadd {
 			return nil, errors.New("tenant not exists")
 		}
+		d.TenantMgr.AddTenant(tenant)
 	}
-	dao, err := d.getImplStgDao(d.cnfg.Storage, tenant)
+	dao, err := d.getImplStg(d.cnfg.Storage, tenant)
 	if err != nil {
 		return nil, err
 	}
 
-	bckdao, err := d.getImplStgDao(d.cnfg.Backup, tenant)
+	bckdao, err := d.getImplStg(d.cnfg.Backup, tenant)
 	if err != nil && !errors.Is(err, ErrNoStg) {
 		return nil, err
 	}
 
-	cchdao, err := d.getImplStgDao(d.cnfg.Cache, "blbstg")
+	cchdao, err := d.getImplStg(d.cnfg.Cache, "blbstg")
 	if err != nil && !errors.Is(err, ErrNoStg) {
 		return nil, err
 	}
 
-	idxdao, err := d.getImplIdxDao(d.cnfg.Index, tenant)
+	idxdao, err := d.getImplIdx(d.cnfg.Index, tenant)
 	if err != nil {
 		return nil, err
 	}
@@ -121,24 +123,24 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 	// an error in this part should prevent the startup of the service,
 	// so the last error will be stored into the tenant main storage dao
 	var lasterror error
-	tntCfg, err := d.TenantDao.GetConfig(tenant)
+	tntCfg, err := d.TenantMgr.GetConfig(tenant)
 	if err != nil {
 		lasterror = err
 	}
 
-	var tntBckDao interfaces.BlobStorageDao
+	var tntBckDao interfaces.BlobStorage
 	if tntCfg != nil {
 		// we have to set a password and client side encryption is not supported
 		tntCfg.Backup.Properties["password"] = tenant
 		tntCfg.Backup.Properties["insecure"] = true
-		tntBckDao, err = d.getImplStgDao(tntCfg.Backup, tenant)
+		tntBckDao, err = d.getImplStg(tntCfg.Backup, tenant)
 		if err != nil {
 			log.Logger.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
 			lasterror = err
 		}
 	}
 
-	mdao := &business.MainStorageDao{
+	mdao := &business.MainStorage{
 		Bcksyncmode: d.cnfg.BackupSyncmode,
 		RtnMng:      d.RtnMgr,
 		StgDao:      dao,
@@ -156,7 +158,7 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 	return mdao, nil
 }
 
-func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string) (interfaces.Index, error) {
+func (d *DefaultStorageFactory) getImplIdx(stg config.Storage, tenant string) (interfaces.Index, error) {
 	var dao interfaces.Index
 	if stg.Storageclass != "" {
 		s := stg.Storageclass
@@ -188,8 +190,8 @@ func (d *DefaultStorageFactory) getImplIdxDao(stg config.Storage, tenant string)
 	return dao, nil
 }
 
-func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string) (interfaces.BlobStorageDao, error) {
-	var dao interfaces.BlobStorageDao
+func (d *DefaultStorageFactory) getImplStg(stg config.Storage, tenant string) (interfaces.BlobStorage, error) {
+	var dao interfaces.BlobStorage
 	var err error
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
@@ -198,7 +200,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-		dao = &simplefile.SimpleFileMultiVolumeDao{
+		dao = &simplefile.MultiVolumeStorage{
 			RootPath: rootpath,
 			Tenant:   tenant,
 		}
@@ -211,7 +213,7 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-		dao = &simplefile.SimpleFileBlobStorageDao{
+		dao = &simplefile.BlobStorage{
 			RootPath: rootpath,
 			Tenant:   tenant,
 		}
@@ -233,15 +235,14 @@ func (d *DefaultStorageFactory) getImplStgDao(stg config.Storage, tenant string)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if dao == nil {
+	default:
 		return nil, fmt.Errorf("no storage class implementation for \"%s\" found. %w", stg.Storageclass, ErrNoStg)
 	}
+
 	return dao, nil
 }
 
-func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) (*s3.S3BlobStorage, error) {
+func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) (*s3.BlobStorage, error) {
 	endpoint, err := config.GetConfigValueAsString(stg.Properties, "endpoint")
 	if err != nil {
 		return nil, err
@@ -269,7 +270,7 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 			return nil, err
 		}
 	}
-	return &s3.S3BlobStorage{
+	return &s3.BlobStorage{
 		Endpoint:  endpoint,
 		Insecure:  insecure,
 		Bucket:    bucket,
@@ -280,7 +281,7 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 	}, nil
 }
 
-func (d *DefaultStorageFactory) getFastcache(stg config.Storage, _ string) (interfaces.BlobStorageDao, error) {
+func (d *DefaultStorageFactory) getFastcache(stg config.Storage, _ string) (interfaces.BlobStorage, error) {
 	// as cache there will be always the same instance delivered
 	if d.CchDao == nil {
 
@@ -330,7 +331,7 @@ func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
 // Close colsing this default storage factory
 func (d *DefaultStorageFactory) Close() error {
 	d.tenantStores.Range(func(key, v any) bool {
-		tDao, ok := v.(*interfaces.BlobStorageDao)
+		tDao, ok := v.(*interfaces.BlobStorage)
 		if ok {
 			err := (*tDao).Close()
 			if err != nil {

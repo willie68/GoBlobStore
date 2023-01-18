@@ -34,7 +34,6 @@ warningCode = 0
 [rule.error-strings]
 [rule.errorf]
 [rule.exported]
-  arguments =["disableStutteringCheck"]
 #[rule.file-header]
 #[rule.flag-parameter]
 #[rule.function-result-limit]

@@ -24,7 +24,7 @@ func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) 
 	}
 	_, claims, _ := FromContext(ctx)
 	if claims != nil {
-		userroles, ok := claims[j.Config.RoleClaim].([]interface{})
+		userroles, ok := claims[j.Config.RoleClaim].([]any)
 		if !ok {
 			return false
 		}

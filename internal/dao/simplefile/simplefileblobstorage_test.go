@@ -14,8 +14,8 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-func getSFStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
-	dao := SimpleFileBlobStorageDao{
+func getSFStoreageDao(t *testing.T) BlobStorage {
+	dao := BlobStorage{
 		RootPath: rootpath,
 		Tenant:   tenant,
 	}
@@ -27,14 +27,14 @@ func getSFStoreageDao(t *testing.T) SimpleFileBlobStorageDao {
 }
 func TestTenanthandling(t *testing.T) {
 	// Tenant nil
-	dao := SimpleFileBlobStorageDao{
+	dao := BlobStorage{
 		RootPath: rootpath,
 	}
 	err := dao.Init()
 	assert.NotNil(t, err)
 
 	// Tenant empty
-	dao = SimpleFileBlobStorageDao{
+	dao = BlobStorage{
 		RootPath: rootpath,
 		Tenant:   "",
 	}
@@ -125,7 +125,7 @@ func TestCRUD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -177,7 +177,7 @@ func TestRetentionStorage(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -268,7 +268,7 @@ func TestCRUDWithGivenID(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}

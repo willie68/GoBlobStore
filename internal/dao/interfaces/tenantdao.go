@@ -8,9 +8,9 @@ type TenantConfig struct {
 	Properties map[string]any `yaml:"properties" json:"properties"`
 }
 
-// TenantDao is the part of the daos which will adminitrate the tenant part of a storage system
-type TenantDao interface {
-	Init() error // initialise this dao
+// TenantManager is the part of the service which will administrate the tenant part of a storage system
+type TenantManager interface {
+	Init() error // initialize this dao
 
 	GetTenants(callback func(tenant string) bool) error // walk thru all configured tenants and get the id back
 
@@ -18,8 +18,8 @@ type TenantDao interface {
 	RemoveTenant(tenant string) (string, error) // removing a tenant, deleting all data async, return the processid for this
 	HasTenant(tenant string) bool               // checking if a tenant is present
 
-	SetConfig(tenant string, config TenantConfig) error // setting a new config object
-	GetConfig(tenant string) (*TenantConfig, error)     // getting the config object
+	SetConfig(tenant string, cnfg TenantConfig) error // setting a new config object
+	GetConfig(tenant string) (*TenantConfig, error)   // getting the config object
 
 	GetSize(tenant string) int64 // getting the overall storage size for this tenant, if tenant not present -1 is returned
 

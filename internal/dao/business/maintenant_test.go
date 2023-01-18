@@ -11,7 +11,7 @@ import (
 
 // testing the tenant managment business part
 var (
-	dao MainTenantDao
+	dao MainTenant
 )
 
 func initTntTest(ast *assert.Assertions) {
@@ -25,13 +25,13 @@ func initTntTest(ast *assert.Assertions) {
 		ast.Nil(err)
 	}
 
-	sfTnt := &simplefile.SimpleFileTenantManager{
+	sfTnt := &simplefile.TenantManager{
 		RootPath: blbPath,
 	}
-	bkTnt := &simplefile.SimpleFileTenantManager{
+	bkTnt := &simplefile.TenantManager{
 		RootPath: bckPath,
 	}
-	dao = MainTenantDao{
+	dao = MainTenant{
 		TntDao: sfTnt,
 		BckDao: bkTnt,
 	}
@@ -112,7 +112,7 @@ func TestUnknownTenant(t *testing.T) {
 func TestNilTntDao(t *testing.T) {
 	ast := assert.New(t)
 
-	dao := MainTenantDao{}
+	dao := MainTenant{}
 
 	err := dao.Init()
 	ast.NotNil(err)

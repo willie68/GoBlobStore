@@ -17,8 +17,8 @@ type RestoreContext struct {
 	ID        string
 	Started   time.Time
 	Finnished time.Time
-	Primary   interfaces.BlobStorageDao
-	Backup    interfaces.BlobStorageDao
+	Primary   interfaces.BlobStorage
+	Backup    interfaces.BlobStorage
 	Running   bool
 	cancel    bool
 }
@@ -28,12 +28,12 @@ var _ interfaces.Running = &RestoreContext{}
 
 // MigrateRestore migrates all blobs in the backup storage for a tenant into the main storage, if not already present
 func MigrateRestore(tenant string, stgf interfaces.StorageFactory) (*RestoreContext, error) {
-	d, err := stgf.GetStorageDao(tenant)
+	d, err := stgf.GetStorage(tenant)
 	if err != nil {
 		return nil, err
 	}
 
-	main, ok := d.(*business.MainStorageDao)
+	main, ok := d.(*business.MainStorage)
 	if !ok {
 		return nil, errors.New("wrong storage class for check")
 	}
@@ -82,7 +82,7 @@ func (r *RestoreContext) IsRunning() bool {
 }
 
 // restore migrates a file from the backup storage of the tenant to the primary storage
-func restore(id string, src interfaces.BlobStorageDao, dst interfaces.BlobStorageDao) error {
+func restore(id string, src interfaces.BlobStorage, dst interfaces.BlobStorage) error {
 	found, err := src.HasBlob(id)
 	if err != nil {
 		log.Logger.Errorf("error checking blob: %s\n%v", id, err)

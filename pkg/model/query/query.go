@@ -8,8 +8,8 @@ import (
 
 // Query holding the parsed query
 type Query struct {
-	Sorting   []string    // sorting the result of the query
-	Condition interface{} // the condition or a Node
+	Sorting   []string // sorting the result of the query
+	Condition any      // the condition or a Node
 }
 
 // NodeOperator defining as type
@@ -25,7 +25,7 @@ const (
 // Node a implementation of a single node
 type Node struct {
 	Operator   NodeOperator
-	Conditions []interface{} // could be a node or a condition
+	Conditions []any // could be a node or a condition
 }
 
 // FieldOperator as type
@@ -46,7 +46,7 @@ const (
 type Condition struct {
 	Field    string
 	Operator FieldOperator
-	Value    interface{}
+	Value    any
 	Invert   bool
 }
 

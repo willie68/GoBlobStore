@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	tntDao S3TenantManager
+	tntDao TenantManager
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 
 // TODO all tests are skipped
 func setup(t *testing.T) {
-	tntDao = S3TenantManager{
+	tntDao = TenantManager{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -44,8 +44,8 @@ func closeTest(_ *testing.T) {
 	tntDao.RemoveTenant(tenant)
 }
 
-func createDao() (S3BlobStorage, error) {
-	dao := S3BlobStorage{
+func createDao() (BlobStorage, error) {
+	dao := BlobStorage{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -88,7 +88,7 @@ func TestCheckEmptyTenant(t *testing.T) {
 	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
-	dao := S3BlobStorage{
+	dao := BlobStorage{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -121,7 +121,7 @@ func TestCRUDBlob(t *testing.T) {
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,
 		Retention:     0,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-tenant"] = "MCS"
 
@@ -258,7 +258,7 @@ func TestCRUDBlobWID(t *testing.T) {
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,
 		Retention:     0,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-tenant"] = "MCS"
 

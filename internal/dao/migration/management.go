@@ -12,14 +12,14 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-// MigrationManagement this dao takes control over several async migration parts, as backup, checks ...
-type MigrationManagement struct {
+// Management this dao takes control over several async migration parts, as backup, checks ...
+type Management struct {
 	StorageFactory interfaces.StorageFactory
 	cCtxs          map[string]any
 }
 
-// MigrationResult is the result of a async migration task
-type MigrationResult struct {
+// Result is the result of a async migration task
+type Result struct {
 	ID        string
 	Startet   time.Time
 	Finnished time.Time
@@ -31,13 +31,13 @@ type MigrationResult struct {
 // management functions
 
 // Init creates a new migration service
-func (m *MigrationManagement) Init() error {
+func (m *Management) Init() error {
 	m.cCtxs = make(map[string]any)
 	return nil
 }
 
 // IsRunning checking if a migration task is running for a tenant
-func (m *MigrationManagement) IsRunning(tenant string) bool {
+func (m *Management) IsRunning(tenant string) bool {
 	if it, ok := m.cCtxs[tenant]; ok {
 		if r, ok := it.(interfaces.Running); ok {
 			if r.IsRunning() {
@@ -49,11 +49,11 @@ func (m *MigrationManagement) IsRunning(tenant string) bool {
 }
 
 // GetResult getting the result of the last migration task
-func (m *MigrationManagement) GetResult(tenant string) (MigrationResult, error) {
+func (m *Management) GetResult(tenant string) (Result, error) {
 	if i, ok := m.cCtxs[tenant]; ok {
 		switch v := i.(type) {
 		case *CheckContext:
-			res := MigrationResult{
+			res := Result{
 				ID:        v.CheckID,
 				Running:   v.Running,
 				Startet:   v.Started,
@@ -62,7 +62,7 @@ func (m *MigrationManagement) GetResult(tenant string) (MigrationResult, error) 
 			}
 			return res, nil
 		case *RestoreContext:
-			res := MigrationResult{
+			res := Result{
 				ID:        v.ID,
 				Running:   v.Running,
 				Startet:   v.Started,
@@ -72,11 +72,11 @@ func (m *MigrationManagement) GetResult(tenant string) (MigrationResult, error) 
 			return res, nil
 		}
 	}
-	return MigrationResult{}, errors.New("no process running for tenant")
+	return Result{}, errors.New("no process running for tenant")
 }
 
 // StartRestore starting a restore task for a tenant
-func (m *MigrationManagement) StartRestore(tenant string) (string, error) {
+func (m *Management) StartRestore(tenant string) (string, error) {
 	if m.IsRunning(tenant) {
 		return "", errors.New("process already running for tenant")
 	}
@@ -91,7 +91,7 @@ func (m *MigrationManagement) StartRestore(tenant string) (string, error) {
 	return cCtx.ID, nil
 }
 
-func (m *MigrationManagement) doRestore(cCtx *RestoreContext) {
+func (m *Management) doRestore(cCtx *RestoreContext) {
 	cCtx.Started = time.Now()
 	defer func() {
 		cCtx.Finnished = time.Now()
@@ -99,12 +99,12 @@ func (m *MigrationManagement) doRestore(cCtx *RestoreContext) {
 	cCtx.Restore()
 }
 
-func (m *MigrationManagement) getRestoreDao(tenant string) (*RestoreContext, error) {
-	d, err := m.StorageFactory.GetStorageDao(tenant)
+func (m *Management) getRestoreDao(tenant string) (*RestoreContext, error) {
+	d, err := m.StorageFactory.GetStorage(tenant)
 	if err != nil {
 		return nil, err
 	}
-	main, ok := d.(*business.MainStorageDao)
+	main, ok := d.(*business.MainStorage)
 	if !ok {
 		return nil, errors.New("wrong storage class for restore")
 	}
@@ -120,14 +120,14 @@ func (m *MigrationManagement) getRestoreDao(tenant string) (*RestoreContext, err
 }
 
 // Close closing this service
-func (m *MigrationManagement) Close() error {
+func (m *Management) Close() error {
 	return nil
 }
 
 // management functions
 
 // StartCheck starting a check of all blob for a tenant
-func (m *MigrationManagement) StartCheck(tenant string) (string, error) {
+func (m *Management) StartCheck(tenant string) (string, error) {
 	if m.IsRunning(tenant) {
 		return "", errors.New("process already running for tenant")
 	}
@@ -141,7 +141,7 @@ func (m *MigrationManagement) StartCheck(tenant string) (string, error) {
 	return cCtx.CheckID, nil
 }
 
-func (m *MigrationManagement) doCheck(cCtx *CheckContext) {
+func (m *Management) doCheck(cCtx *CheckContext) {
 	cCtx.Started = time.Now()
 	defer func() {
 		cCtx.Finnished = time.Now()
@@ -151,7 +151,7 @@ func (m *MigrationManagement) doCheck(cCtx *CheckContext) {
 		cCtx.Message = fmt.Sprintf("error checking tenant %s: %v", cCtx.TenantID, err)
 		return
 	}
-	d, err := m.StorageFactory.GetStorageDao(cCtx.TenantID)
+	d, err := m.StorageFactory.GetStorage(cCtx.TenantID)
 	if err != nil {
 		cCtx.Message = fmt.Sprintf("error getting storage for tenant %s: %v", cCtx.TenantID, err)
 		return
@@ -180,12 +180,12 @@ func (m *MigrationManagement) doCheck(cCtx *CheckContext) {
 	cCtx.BlobID = id
 }
 
-func (m *MigrationManagement) getCheckDao(tenant string) (*CheckContext, error) {
-	d, err := m.StorageFactory.GetStorageDao(tenant)
+func (m *Management) getCheckDao(tenant string) (*CheckContext, error) {
+	d, err := m.StorageFactory.GetStorage(tenant)
 	if err != nil {
 		return nil, err
 	}
-	main, ok := d.(*business.MainStorageDao)
+	main, ok := d.(*business.MainStorage)
 	if !ok {
 		return nil, errors.New("wrong storage class for check")
 	}

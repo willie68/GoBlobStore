@@ -39,10 +39,10 @@ type JSONResult struct {
 	BackupCount  int
 }
 
-var main *business.MainStorageDao
+var main *business.MainStorage
 
 func initChkTest(_ *testing.T) {
-	stgDao := &simplefile.SimpleFileBlobStorageDao{
+	stgDao := &simplefile.BlobStorage{
 		RootPath: blbPath,
 		Tenant:   tenant,
 	}
@@ -53,13 +53,13 @@ func initChkTest(_ *testing.T) {
 		MaxRAMSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
-	bckDao := &simplefile.SimpleFileBlobStorageDao{
+	bckDao := &simplefile.BlobStorage{
 		RootPath: bckPath,
 		Tenant:   tenant,
 	}
 	bckDao.Init()
 
-	main = &business.MainStorageDao{
+	main = &business.MainStorage{
 		StgDao:      stgDao,
 		CchDao:      cchDao,
 		BckDao:      bckDao,
@@ -89,7 +89,7 @@ func createBlobDescription(id string) model.BlobDescription {
 		Filename:      fmt.Sprintf("test_%s.txt", id),
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}

@@ -25,21 +25,19 @@ var (
 )
 
 // FromContext extract the JWT and a flatten claim structure from a context
-func FromContext(ctx context.Context) (*JWT, map[string]interface{}, error) {
+func FromContext(ctx context.Context) (*JWT, map[string]any, error) {
 	token, ok := ctx.Value(TokenCtxKey).(*JWT)
 
 	var err error
-	var claims map[string]interface{}
+	var claims map[string]any
 
-	if ok && (token != nil) {
-		claims = token.Payload
-	} else {
-		claims = map[string]interface{}{}
+	if !ok || (token == nil) {
+		claims = map[string]any{}
 		return token, claims, errors.New("token not present")
 	}
 
+	claims = token.Payload
 	err, _ = ctx.Value(ErrorCtxKey).(error)
-
 	return token, claims, err
 }
 
@@ -162,7 +160,7 @@ func TokenFromCookie(r *http.Request) string {
 }
 
 // contextKey is a value for use with context.WithValue. It's used as
-// a pointer so it fits in an interface{} without allocation. This technique
+// a pointer so it fits in an any without allocation. This technique
 // for defining context keys was copied from Go 1.7's new use of context in net/http.
 type contextKey struct {
 	name string

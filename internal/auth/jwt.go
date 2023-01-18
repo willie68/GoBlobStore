@@ -25,8 +25,8 @@ type JWTAuthConfig struct {
 // JWT struct for the decoded jwt token
 type JWT struct {
 	Token     string
-	Header    map[string]interface{}
-	Payload   map[string]interface{}
+	Header    map[string]any
+	Payload   map[string]any
 	Signature string
 	IsValid   bool
 }
@@ -79,7 +79,7 @@ func ParseJWTConfig(cfg config.Authentication) (JWTAuthConfig, error) {
 	jwtcfg.RoleMapping[string(api.RoleTenantAdmin)] = "tenant-admin"
 	jwtcfg.RoleMapping[string(api.RoleAdmin)] = "admin"
 
-	vm, ok := cfg.Properties["rolemapping"].(map[string]interface{})
+	vm, ok := cfg.Properties["rolemapping"].(map[string]any)
 	if ok {
 		v, err := config.GetConfigValueAsString(vm, "object-reader")
 		if err == nil && v != "" {
@@ -146,8 +146,8 @@ func DecodeJWT(token string) (JWT, error) {
 	return jwt, nil
 }
 
-func jwtDecodePart(payload string) (map[string]interface{}, error) {
-	var result map[string]interface{}
+func jwtDecodePart(payload string) (map[string]any, error) {
+	var result map[string]any
 	payloadData, err := base64.URLEncoding.WithPadding(base64.NoPadding).DecodeString(payload)
 	if err != nil {
 		err = fmt.Errorf("token payload can't be decoded: %v", err)

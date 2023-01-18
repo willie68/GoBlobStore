@@ -24,7 +24,7 @@ import (
 )
 
 // BlobStore the blobstorage implementation to use
-var BlobStore interfaces.BlobStorageDao
+var BlobStore interfaces.BlobStorage
 
 // BlobRoutes getting a router with all blob routes active
 func BlobRoutes() (string, *chi.Mux) {
@@ -92,7 +92,7 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -169,7 +169,7 @@ func GetBlobInfo(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -213,7 +213,7 @@ func PutBlobInfo(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -275,7 +275,7 @@ func GetBlobResetRetention(response http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -322,7 +322,7 @@ func GetBlobs(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -422,7 +422,7 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		blobid = request.Header.Get(BlobIDHeader)
 	}
 
-	metadata := make(map[string]interface{})
+	metadata := make(map[string]any)
 	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
 	if ok {
 		headerPrefix = strings.ToLower(headerPrefix)
@@ -451,7 +451,7 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -501,7 +501,7 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -553,7 +553,7 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -615,7 +615,7 @@ func GetBlobCheck(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -671,7 +671,7 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return

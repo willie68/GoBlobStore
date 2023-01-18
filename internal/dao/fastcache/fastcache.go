@@ -47,7 +47,7 @@ type FastCache struct {
 }
 
 // Checking interface compatibility
-var _ interfaces.BlobStorageDao = &FastCache{}
+var _ interfaces.BlobStorage = &FastCache{}
 
 // Init initialise this dao
 func (f *FastCache) Init() error {

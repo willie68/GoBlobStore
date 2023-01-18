@@ -29,23 +29,24 @@ var (
 	blbPath = filepath.Join(rootFilePrefix, "blbstg")
 	cchPath = filepath.Join(rootFilePrefix, "blbcch")
 	bckPath = filepath.Join(rootFilePrefix, "bckstg")
-	main    interfaces.BlobStorageDao
+	main    interfaces.BlobStorage
 )
 
-func initTest(_ *testing.T) {
-	config := config.Engine{
+func initTest(t *testing.T) {
+	cnfg := config.Engine{
 		RetentionManager: "SingleRetention",
 		Tenantautoadd:    true,
 		BackupSyncmode:   false,
 		AllowTntBackup:   false,
 		Storage: config.Storage{
 			Storageclass: "SimpleFile",
-			Properties: map[string]interface{}{
+			Properties: map[string]any{
 				"rootpath": blbPath,
 			},
 		},
 	}
-	Init(config)
+	err := Init(cnfg)
+	assert.Nil(t, err)
 }
 
 func clear(_ *testing.T) {
@@ -81,7 +82,7 @@ func createBlobDescription(id string, tenant string) model.BlobDescription {
 		Filename:      fmt.Sprintf("test_%s.txt", id),
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -117,7 +118,7 @@ func TestManyTenants(t *testing.T) {
 		tnt := tnts[rand.Intn(len(tnts))]
 		bd := createBlobDescription(strconv.Itoa(i), tnt)
 		r := strings.NewReader("this is a blob content")
-		dao, err := stgf.GetStorageDao(tnt)
+		dao, err := stgf.GetStorage(tnt)
 		ast.Nil(err)
 		ast.NotNil(dao)
 		id, err := dao.StoreBlob(&bd, r)
@@ -128,7 +129,7 @@ func TestManyTenants(t *testing.T) {
 
 	fmt.Println("check blobs")
 	for id, tnt := range ids {
-		dao, err := stgf.GetStorageDao(tnt)
+		dao, err := stgf.GetStorage(tnt)
 		ast.Nil(err)
 		ast.NotNil(dao)
 		ok, err := dao.HasBlob(id)

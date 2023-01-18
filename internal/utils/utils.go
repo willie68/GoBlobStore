@@ -20,7 +20,7 @@ func GenerateID() string {
 }
 
 // BuildHash building a hash string of the binaries of a blob, using sha256
-func BuildHash(id string, stg interfaces.BlobStorageDao) (string, error) {
+func BuildHash(id string, stg interfaces.BlobStorage) (string, error) {
 	h := sha256.New()
 	err := stg.RetrieveBlob(id, h)
 	if err != nil {
@@ -30,7 +30,7 @@ func BuildHash(id string, stg interfaces.BlobStorageDao) (string, error) {
 }
 
 // CheckBlob checking the blob with the hash function
-func CheckBlob(id string, s interfaces.BlobStorageDao) (*model.CheckInfo, error) {
+func CheckBlob(id string, s interfaces.BlobStorage) (*model.CheckInfo, error) {
 	ok, err := s.HasBlob(id)
 	if !ok {
 		err = os.ErrNotExist

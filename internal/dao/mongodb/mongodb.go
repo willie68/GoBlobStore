@@ -68,7 +68,7 @@ var (
 )
 
 // InitMongoDB initialise the mongo db for usage in this service
-func InitMongoDB(p map[string]interface{}) error {
+func InitMongoDB(p map[string]any) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
 		log.Logger.Errorf("%v", err)
@@ -343,7 +343,7 @@ func nToMdb(n query.Node) string {
 }
 
 // xsToMdb converting an array of nodes/conditions to a mongo json string
-func xsToMdb(xs []interface{}) string {
+func xsToMdb(xs []any) string {
 	var b strings.Builder
 	for i, x := range xs {
 		if i > 0 {
@@ -355,7 +355,7 @@ func xsToMdb(xs []interface{}) string {
 }
 
 // xToMdb converting a node/condition to a mongo json string
-func xToMdb(x interface{}) string {
+func xToMdb(x any) string {
 	switch v := x.(type) {
 	case query.Condition:
 		return cToMdb(v)

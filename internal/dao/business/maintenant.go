@@ -10,22 +10,22 @@ import (
 )
 
 // this type is doing all the stuff for managing different tenants in the system.
-// It will use the underlying tenant daos for the storage part.
+// It will use the underlying tenant services for the storage part.
 
-// cecking interface compatibility
-var _ interfaces.TenantDao = &MainTenantDao{}
+// checking interface compatibility
+var _ interfaces.TenantManager = &MainTenant{}
 
-// MainTenantDao the business object for doing all tenant based operations
-type MainTenantDao struct {
-	TntDao  interfaces.TenantDao
-	BckDao  interfaces.TenantDao
+// MainTenant the business object for doing all tenant based operations
+type MainTenant struct {
+	TntDao  interfaces.TenantManager
+	BckDao  interfaces.TenantManager
 	hasBck  bool
 	rmTnt   []string
 	rmtSync sync.Mutex
 }
 
-// Init initialise this dao
-func (m *MainTenantDao) Init() error {
+// Init initialize this dao
+func (m *MainTenant) Init() error {
 	var err error
 	if m.TntDao == nil {
 		return errors.New("tenant dao should not be nil")
@@ -40,7 +40,7 @@ func (m *MainTenantDao) Init() error {
 }
 
 // GetTenants walk thru all configured tenants and get the id back
-func (m *MainTenantDao) GetTenants(callback func(tenant string) bool) error {
+func (m *MainTenant) GetTenants(callback func(tenant string) bool) error {
 	return m.TntDao.GetTenants(func(t string) bool {
 		if !slicesutils.Contains(m.rmTnt, t) {
 			callback(t)
@@ -50,7 +50,7 @@ func (m *MainTenantDao) GetTenants(callback func(tenant string) bool) error {
 }
 
 // AddTenant adding a new tenant
-func (m *MainTenantDao) AddTenant(tenant string) error {
+func (m *MainTenant) AddTenant(tenant string) error {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return errors.New("can't add tenant, it's in removal state")
 	}
@@ -61,8 +61,8 @@ func (m *MainTenantDao) AddTenant(tenant string) error {
 	return err
 }
 
-// RemoveTenant removing a tenant, deleting all data async, return the processid for this
-func (m *MainTenantDao) RemoveTenant(tenant string) (string, error) {
+// RemoveTenant removing a tenant, deleting all data async, return the process id for this
+func (m *MainTenant) RemoveTenant(tenant string) (string, error) {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return "", errors.New("tenant is already in removal state")
 	}
@@ -79,7 +79,7 @@ func (m *MainTenantDao) RemoveTenant(tenant string) (string, error) {
 	return "", nil
 }
 
-func (m *MainTenantDao) removeTnt(tenant string) {
+func (m *MainTenant) removeTnt(tenant string) {
 	_, err := m.TntDao.RemoveTenant(tenant)
 	if err != nil {
 		log.Logger.Errorf("error removing tenant %s: %v", tenant, err)
@@ -90,7 +90,7 @@ func (m *MainTenantDao) removeTnt(tenant string) {
 }
 
 // HasTenant checking if a tenant is present
-func (m *MainTenantDao) HasTenant(tenant string) bool {
+func (m *MainTenant) HasTenant(tenant string) bool {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return false
 	}
@@ -98,7 +98,7 @@ func (m *MainTenantDao) HasTenant(tenant string) bool {
 }
 
 // SetConfig writing a new config object for the tenant
-func (m *MainTenantDao) SetConfig(tenant string, config interfaces.TenantConfig) error {
+func (m *MainTenant) SetConfig(tenant string, config interfaces.TenantConfig) error {
 	err := m.TntDao.SetConfig(tenant, config)
 	if m.hasBck {
 		m.BckDao.SetConfig(tenant, config)
@@ -107,7 +107,7 @@ func (m *MainTenantDao) SetConfig(tenant string, config interfaces.TenantConfig)
 }
 
 // GetConfig reading the config object for the tenant
-func (m *MainTenantDao) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
+func (m *MainTenant) GetConfig(tenant string) (*interfaces.TenantConfig, error) {
 	cfn, err := m.TntDao.GetConfig(tenant)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (m *MainTenantDao) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 }
 
 // GetSize getting the overall storage size for this tenant
-func (m *MainTenantDao) GetSize(tenant string) int64 {
+func (m *MainTenant) GetSize(tenant string) int64 {
 	if slicesutils.Contains(m.rmTnt, tenant) {
 		return -1
 	}
@@ -130,7 +130,7 @@ func (m *MainTenantDao) GetSize(tenant string) int64 {
 }
 
 // Close closing the dao
-func (m *MainTenantDao) Close() error {
+func (m *MainTenant) Close() error {
 	var err error
 	if m.TntDao != nil {
 		err = m.TntDao.Close()

@@ -10,8 +10,8 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 )
 
-// CreateTenantDao creating a new tenant dao depending on the configuration
-func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
+// CreateTenantManager creating a new tenant dao depending on the configuration
+func CreateTenantManager(stg config.Storage) (interfaces.TenantManager, error) {
 	stgcl := strings.ToLower(stg.Storageclass)
 	switch stgcl {
 	case STGClassSFMV:
@@ -19,7 +19,7 @@ func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 		if err != nil {
 			return nil, err
 		}
-		dao := &simplefile.SimpleFileTenantManager{
+		dao := &simplefile.TenantManager{
 			RootPath: rootpath,
 		}
 		err = dao.Init()
@@ -32,7 +32,7 @@ func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 		if err != nil {
 			return nil, err
 		}
-		dao := &simplefile.SimpleFileTenantManager{
+		dao := &simplefile.TenantManager{
 			RootPath: rootpath,
 		}
 		err = dao.Init()
@@ -54,7 +54,7 @@ func CreateTenantDao(stg config.Storage) (interfaces.TenantDao, error) {
 	return nil, fmt.Errorf("no tenantmanager class implementation for \"%s\" found", stg.Storageclass)
 }
 
-func getS3TenantManager(stg config.Storage) (*s3.S3TenantManager, error) {
+func getS3TenantManager(stg config.Storage) (*s3.TenantManager, error) {
 	endpoint, err := config.GetConfigValueAsString(stg.Properties, "endpoint")
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func getS3TenantManager(stg config.Storage) (*s3.S3TenantManager, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &s3.S3TenantManager{
+	return &s3.TenantManager{
 		Endpoint:  endpoint,
 		Insecure:  insecure,
 		Bucket:    bucket,

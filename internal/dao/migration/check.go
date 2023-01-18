@@ -18,9 +18,9 @@ type CheckContext struct {
 	CheckID   string
 	Started   time.Time
 	Finnished time.Time
-	Cache     interfaces.BlobStorageDao
-	Primary   interfaces.BlobStorageDao
-	Backup    interfaces.BlobStorageDao
+	Cache     interfaces.BlobStorage
+	Primary   interfaces.BlobStorage
+	Backup    interfaces.BlobStorage
 	Running   bool
 	Filename  string
 	BlobID    string

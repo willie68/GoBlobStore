@@ -41,8 +41,8 @@ func clear(t *testing.T) {
 	os.MkdirAll(sfmvRootPath, os.ModePerm)
 }
 
-func getSFMVStoreageDao(t *testing.T) SimpleFileMultiVolumeDao {
-	dao := SimpleFileMultiVolumeDao{
+func getSFMVStoreageDao(t *testing.T) MultiVolumeStorage {
+	dao := MultiVolumeStorage{
 		RootPath: sfmvRootPath,
 		Tenant:   tenant,
 	}
@@ -55,7 +55,7 @@ func getSFMVStoreageDao(t *testing.T) SimpleFileMultiVolumeDao {
 
 func TestSimpleFileMultiVolumeDaoNoTenant(t *testing.T) {
 	ast := assert.New(t)
-	dao := SimpleFileMultiVolumeDao{
+	dao := MultiVolumeStorage{
 		RootPath: sfmvRootPath,
 	}
 
@@ -118,7 +118,7 @@ func TestSFMVDaoStoreOneBlobCRUD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -175,7 +175,7 @@ func TestSFMVDaoStoreOneBlobExtend(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -222,7 +222,7 @@ func TestSFMVDaoRetentionCRUD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -297,7 +297,7 @@ func TestSFMVDaoStoreMultiBlobs(t *testing.T) {
 			Filename:      "test.txt",
 			LastAccess:    time.Now().UnixMilli(),
 			Retention:     1,
-			Properties:    make(map[string]interface{}),
+			Properties:    make(map[string]any),
 		}
 		b.Properties["X-count"] = i
 		b.Properties["X-user"] = []string{"Hallo", "Hallo2"}

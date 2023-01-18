@@ -31,8 +31,8 @@ const (
 	blobDescription = "Blobdescription"
 )
 
-// S3BlobStorage service for storing blob files into a S3 compatible storage
-type S3BlobStorage struct {
+// BlobStorage service for storing blob files into a S3 compatible storage
+type BlobStorage struct {
 	Endpoint    string
 	Insecure    bool
 	Bucket      string
@@ -44,12 +44,12 @@ type S3BlobStorage struct {
 	usetls      bool
 }
 
-var _ interfaces.BlobStorageDao = &S3BlobStorage{}
+var _ interfaces.BlobStorage = &BlobStorage{}
 
 // S3 Blob Storage
 
 // Init initialise this dao
-func (s *S3BlobStorage) Init() error {
+func (s *BlobStorage) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
 	}
@@ -75,13 +75,6 @@ func (s *S3BlobStorage) Init() error {
 		options = &minio.Options{
 			Creds:  credentials.NewStaticV4(s.AccessKey, s.SecretKey, ""),
 			Secure: s.usetls,
-			//TODO muss auch wieder weg
-			Transport: &http.Transport{
-				MaxIdleConns:       10,
-				IdleConnTimeout:    30 * time.Second,
-				DisableCompression: true,
-				TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
-			},
 		}
 	}
 	client, err := minio.New(endpoint, options)
@@ -107,12 +100,12 @@ func (s *S3BlobStorage) Init() error {
 }
 
 // GetTenant return the id of the tenant
-func (s *S3BlobStorage) GetTenant() string {
+func (s *BlobStorage) GetTenant() string {
 	return s.Tenant
 }
 
 // GetBlobs getting a list of blob from the storage
-func (s *S3BlobStorage) GetBlobs(callback func(id string) bool) error {
+func (s *BlobStorage) GetBlobs(callback func(id string) bool) error {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	defer cancel()
@@ -141,7 +134,7 @@ func (s *S3BlobStorage) GetBlobs(callback func(id string) bool) error {
 // CRUD operation on the blob files
 
 // StoreBlob storing a blob to the storage system
-func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
+func (s *BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	ctx := context.Background()
 	if b.BlobID == "" {
 		uuid := utils.GenerateID()
@@ -167,7 +160,7 @@ func (s *S3BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string
 }
 
 // UpdateBlobDescription updating the blob description
-func (s *S3BlobStorage) UpdateBlobDescription(_ string, b *model.BlobDescription) error {
+func (s *BlobStorage) UpdateBlobDescription(_ string, b *model.BlobDescription) error {
 	metadatastr, err := json.Marshal(b)
 	if err != nil {
 		return err
@@ -201,7 +194,7 @@ func (s *S3BlobStorage) UpdateBlobDescription(_ string, b *model.BlobDescription
 }
 
 // HasBlob checking, if a blob is present
-func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
+func (s *BlobStorage) HasBlob(id string) (bool, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
 	_, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
@@ -217,7 +210,7 @@ func (s *S3BlobStorage) HasBlob(id string) (bool, error) {
 }
 
 // GetBlobDescription getting the description of the file
-func (s *S3BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
+func (s *BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
 	stat, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
@@ -243,7 +236,7 @@ func (s *S3BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, e
 }
 
 // RetrieveBlob retrieving the binary data from the storage system
-func (s *S3BlobStorage) RetrieveBlob(id string, w io.Writer) error {
+func (s *BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
 	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{})
@@ -264,7 +257,7 @@ func (s *S3BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 }
 
 // DeleteBlob removing a blob from the storage system
-func (s *S3BlobStorage) DeleteBlob(id string) error {
+func (s *BlobStorage) DeleteBlob(id string) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
 	err := s.minioClient.RemoveObject(ctx, s.Bucket, filename, minio.RemoveObjectOptions{})
@@ -280,12 +273,12 @@ func (s *S3BlobStorage) DeleteBlob(id string) error {
 }
 
 // CheckBlob checking a single blob from the storage system
-func (s *S3BlobStorage) CheckBlob(id string) (*model.CheckInfo, error) {
+func (s *BlobStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 	return utils.CheckBlob(id, s)
 }
 
 // SearchBlobs quering a single blob, niy
-func (s *S3BlobStorage) SearchBlobs(_ string, _ func(id string) bool) error {
+func (s *BlobStorage) SearchBlobs(_ string, _ func(id string) bool) error {
 	return errors.New("not implemented yet")
 }
 
@@ -293,7 +286,7 @@ func (s *S3BlobStorage) SearchBlobs(_ string, _ func(id string) bool) error {
 
 // GetAllRetentions for every retention entry for this tenant we call the callback function,
 // you can stop the walk by returning a false in the callback
-func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
+func (s *BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	filename := s.tntrp()
 	ctx := context.Background()
 	objectCh := s.minioClient.ListObjects(ctx, s.Bucket, minio.ListObjectsOptions{
@@ -317,7 +310,7 @@ func (s *S3BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) b
 }
 
 // AddRetention adding a retention entry to the storage
-func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
+func (s *BlobStorage) AddRetention(r *model.RetentionEntry) error {
 	filename := s.id2rf(r.BlobID)
 	ctx := context.Background()
 	jsonstr, err := json.Marshal(r)
@@ -336,13 +329,13 @@ func (s *S3BlobStorage) AddRetention(r *model.RetentionEntry) error {
 }
 
 // GetRetention getting a single retention entry
-func (s *S3BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
+func (s *BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
 	r, err := s.getRetention(id)
 	return *r, err
 }
 
 // DeleteRetention deletes the retention entry from the storage
-func (s *S3BlobStorage) DeleteRetention(id string) error {
+func (s *BlobStorage) DeleteRetention(id string) error {
 	filename := s.id2rf(id)
 	ctx := context.Background()
 	err := s.minioClient.RemoveObject(ctx, s.Bucket, filename, minio.RemoveObjectOptions{})
@@ -358,7 +351,7 @@ func (s *S3BlobStorage) DeleteRetention(id string) error {
 }
 
 // ResetRetention resets the retention for a blob
-func (s *S3BlobStorage) ResetRetention(id string) error {
+func (s *BlobStorage) ResetRetention(id string) error {
 	r, err := s.getRetention(id)
 	if err != nil {
 		return err
@@ -368,23 +361,23 @@ func (s *S3BlobStorage) ResetRetention(id string) error {
 }
 
 // GetLastError returning the last error (niy)
-func (s *S3BlobStorage) GetLastError() error {
+func (s *BlobStorage) GetLastError() error {
 	return nil
 }
 
 // Close closing the storage
-func (s *S3BlobStorage) Close() error {
+func (s *BlobStorage) Close() error {
 	return nil
 }
 
 // getting the retention entry for a id
-func (s *S3BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
+func (s *BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
 	filename := s.id2rf(id)
 	return s.getRetentionByFile(filename)
 }
 
 // getRetentionByFile get a retention entry for filename
-func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry, error) {
+func (s *BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry, error) {
 	ctx := context.Background()
 	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{
 		ServerSideEncryption: s.getEncryption(),
@@ -405,7 +398,7 @@ func (s *S3BlobStorage) getRetentionByFile(filename string) (*model.RetentionEnt
 }
 
 // getEncryption here you get the ServerSide encryption for the tenant
-func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
+func (s *BlobStorage) getEncryption() encrypt.ServerSide {
 	if !s.usetls || s.Insecure {
 		return nil
 	}
@@ -414,16 +407,16 @@ func (s *S3BlobStorage) getEncryption() encrypt.ServerSide {
 }
 
 // id2f getting the blob file path and name to the payload
-func (s *S3BlobStorage) id2f(id string) string {
+func (s *BlobStorage) id2f(id string) string {
 	return fmt.Sprintf("%s/%s.bin", s.Tenant, id)
 }
 
 // id2rf getting the retention file path and name for an id
-func (s *S3BlobStorage) id2rf(id string) string {
+func (s *BlobStorage) id2rf(id string) string {
 	return fmt.Sprintf("%s/retention/%s.json", s.Tenant, id)
 }
 
 // tntrp getting the path to the retention files
-func (s *S3BlobStorage) tntrp() string {
+func (s *BlobStorage) tntrp() string {
 	return fmt.Sprintf("%s/retention/", s.Tenant)
 }

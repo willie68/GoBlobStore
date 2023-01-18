@@ -29,7 +29,7 @@ func (ns *NodeStack) Reset() {
 // Query generating a query from this nodestack
 func (ns *NodeStack) Query() Query {
 	log.Logger.Info("get query")
-	var c interface{}
+	var c any
 	c = ns.currentNode
 	if ns.currentNode == nil {
 		c = ns.currentCondition
@@ -48,7 +48,7 @@ func (ns *NodeStack) NewNode() *Node {
 	log.Logger.Info("new node")
 	n := Node{
 		Operator:   NOOP,
-		Conditions: make([]interface{}, 0),
+		Conditions: make([]any, 0),
 	}
 	if ns.currentNode != nil {
 		ns.currentNode.Conditions = append(ns.currentNode.Conditions, ns.currentCondition)
