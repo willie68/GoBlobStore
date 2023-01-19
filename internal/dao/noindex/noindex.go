@@ -5,6 +5,9 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// NoIndexName name of the noindex index service
+const NoIndexName = "noindex"
+
 // checking interface compatibility
 var _ interfaces.Index = &Index{}
 var _ interfaces.IndexBatch = &IndexBatch{}

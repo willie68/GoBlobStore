@@ -171,6 +171,8 @@ func (d *DefaultStorageFactory) getImplIdx(stg config.Storage, tenant string) (i
 			if err != nil {
 				return nil, err
 			}
+		case noindex.NoIndexName:
+			dao = &noindex.Index{}
 		}
 	} else {
 		dao = &noindex.Index{}
@@ -331,7 +333,7 @@ func (d *DefaultStorageFactory) getFastcache(stg config.Storage, _ string) (inte
 }
 
 func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
-	//TODO initialise the index storage
+	//TODO initialize the index storage
 	s := cnfg.Storageclass
 	s = strings.ToLower(s)
 	switch s {
@@ -339,11 +341,13 @@ func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
 		bluge.InitBluge(cnfg.Properties)
 	case mongodb.MongoIndex:
 		mongodb.InitMongoDB(cnfg.Properties)
+	case noindex.NoIndexName:
+		// nothing to do here
 	}
 	return nil
 }
 
-// Close colsing this default storage factory
+// Close closing this default storage factory
 func (d *DefaultStorageFactory) Close() error {
 	d.tenantStores.Range(func(key, v any) bool {
 		tDao, ok := v.(*interfaces.BlobStorage)
