@@ -145,21 +145,21 @@ func (m *Index) Init() error {
 }
 
 // Search doing a search against the mongodb
-func (m *Index) Search(query string, callback func(id string) bool) error {
+func (m *Index) Search(qry string, callback func(id string) bool) error {
 	var bd bson.M
 
-	if !strings.HasPrefix(query, "#") {
+	if !strings.HasPrefix(qry, "#") {
 		// parse query string to Mongo query
-		q, err := m.buildAST(query)
+		q, err := m.buildAST(qry)
 		if err != nil {
 			return err
 		}
-		query = ToMongoQuery(*q)
+		qry = ToMongoQuery(*q)
 	}
 
-	query = strings.TrimPrefix(query, "#")
-	query = strings.TrimSpace(query)
-	err := bson.UnmarshalExtJSON([]byte(query), true, &bd)
+	qry = strings.TrimPrefix(qry, "#")
+	qry = strings.TrimSpace(qry)
+	err := bson.UnmarshalExtJSON([]byte(qry), true, &bd)
 	if err != nil {
 		return err
 	}

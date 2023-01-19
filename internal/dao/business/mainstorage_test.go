@@ -215,10 +215,10 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	err = main.RetrieveBlob(b.BlobID, &buf)
 	ast.Nil(err)
 
-	json, err := json.Marshal(b)
+	jsn, err := json.Marshal(b)
 	ast.Nil(err)
 
-	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", jsn))
 }
 
 func TestAutoRestoreByDescription(t *testing.T) {

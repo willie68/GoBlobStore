@@ -206,14 +206,14 @@ func (s *BlobStorage) writeJSONFileV2(b *model.BlobDescription) error {
 		return err
 	}
 
-	json, err := json.Marshal(b)
+	jsn, err := json.Marshal(b)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, json, os.ModePerm)
+	err = ioutil.WriteFile(jsonFile, jsn, os.ModePerm)
 	if err != nil {
-		os.Remove(jsonFile)
+		_ = os.Remove(jsonFile)
 		return err
 	}
 
@@ -226,14 +226,14 @@ func (s *BlobStorage) writeRetentionFile(b *model.BlobDescription) error {
 		return err
 	}
 
-	json, err := json.Marshal(b)
+	jsn, err := json.Marshal(b)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, json, os.ModePerm)
+	err = ioutil.WriteFile(jsonFile, jsn, os.ModePerm)
 	if err != nil {
-		os.Remove(jsonFile)
+		_ = os.Remove(jsonFile)
 		return err
 	}
 

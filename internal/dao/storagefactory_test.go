@@ -19,10 +19,10 @@ import (
 )
 
 const (
-	rootFilePrefix = "R:/mainstg"
-	//rootFilePrefix = "../../testdata/main"
-	tntcount = 1000
-	blbcount = tntcount * 10
+	//rootFilePrefix = "R:/mainstg"
+	rootFilePrefix = "../../testdata/main"
+	tntcount       = 1000
+	blbcount       = tntcount * 10
 )
 
 var (

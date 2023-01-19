@@ -26,7 +26,7 @@ const (
 	STGClassSFMV       = "sfmv"
 )
 
-// ErrNoStg defined error
+// ErrNoStg error for no storage class given
 var ErrNoStg = errors.New("no storage class given")
 
 // just to check interface compatibility
@@ -97,7 +97,10 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		if !d.cnfg.Tenantautoadd {
 			return nil, errors.New("tenant not exists")
 		}
-		d.TenantMgr.AddTenant(tenant)
+		err := d.TenantMgr.AddTenant(tenant)
+		if err != nil {
+			return nil, err
+		}
 	}
 	dao, err := d.getImplStg(d.cnfg.Storage, tenant)
 	if err != nil {
@@ -119,25 +122,13 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		return nil, err
 	}
 
-	// creating the tenant specifig backup storage
+	// creating the tenant specific backup storage
 	// an error in this part should prevent the startup of the service,
 	// so the last error will be stored into the tenant main storage dao
 	var lasterror error
-	tntCfg, err := d.TenantMgr.GetConfig(tenant)
+	tntBckDao, err := d.getTntBck(tenant)
 	if err != nil {
 		lasterror = err
-	}
-
-	var tntBckDao interfaces.BlobStorage
-	if tntCfg != nil {
-		// we have to set a password and client side encryption is not supported
-		tntCfg.Backup.Properties["password"] = tenant
-		tntCfg.Backup.Properties["insecure"] = true
-		tntBckDao, err = d.getImplStg(tntCfg.Backup, tenant)
-		if err != nil {
-			log.Logger.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
-			lasterror = err
-		}
 	}
 
 	mdao := &business.MainStorage{
@@ -188,6 +179,30 @@ func (d *DefaultStorageFactory) getImplIdx(stg config.Storage, tenant string) (i
 		return nil, fmt.Errorf("no searcher indexer class implementation for \"%s\" found. %w", stg.Storageclass, ErrNoStg)
 	}
 	return dao, nil
+}
+
+func (d *DefaultStorageFactory) getTntBck(tenant string) (interfaces.BlobStorage, error) {
+	tntCfg, err := d.TenantMgr.GetConfig(tenant)
+	if err != nil {
+		return nil, err
+	}
+
+	var lasterror error
+	var tntBckDao interfaces.BlobStorage
+	if tntCfg != nil {
+		// we have to set a password and client side encryption is not supported
+		tntCfg.Backup.Properties["password"] = tenant
+		tntCfg.Backup.Properties["insecure"] = true
+		tntBckDao, err = d.getImplStg(tntCfg.Backup, tenant)
+		if err != nil {
+			log.Logger.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
+			lasterror = err
+		}
+	}
+	if lasterror != nil {
+		return nil, lasterror
+	}
+	return tntBckDao, nil
 }
 
 func (d *DefaultStorageFactory) getImplStg(stg config.Storage, tenant string) (interfaces.BlobStorage, error) {

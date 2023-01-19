@@ -78,18 +78,18 @@ func (m *Index) Init() error {
 }
 
 // Search doing a search for a tenant
-func (m *Index) Search(query string, callback func(id string) bool) error {
+func (m *Index) Search(qry string, callback func(id string) bool) error {
 	var bq bluge.Query
 	var err error
-	if strings.HasPrefix(query, "#") {
-		query = strings.TrimPrefix(query, "#")
-		bq, err = querystr.ParseQueryString(query, querystr.DefaultOptions())
+	if strings.HasPrefix(qry, "#") {
+		qry = strings.TrimPrefix(qry, "#")
+		bq, err = querystr.ParseQueryString(qry, querystr.DefaultOptions())
 		if err != nil {
 			return err
 		}
 	} else {
 		// parse query string to Mongo query
-		q, err := m.buildAST(query)
+		q, err := m.buildAST(qry)
 		if err != nil {
 			return err
 		}

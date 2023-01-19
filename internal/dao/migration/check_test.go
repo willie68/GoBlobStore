@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -214,6 +215,21 @@ func TestCheck(t *testing.T) {
 	// prepare tests
 	blobs := prepare(ast)
 
+	// Check if all blobs are present
+	for _, id := range blobs {
+		ok, err := main.StgDao.HasBlob(id)
+		ast.Nil(err)
+		ast.True(ok, "Main Check")
+
+		ok, err = main.BckDao.HasBlob(id)
+		ast.Nil(err)
+		ast.True(ok, "Main Check")
+
+		ok, err = main.CchDao.HasBlob(id)
+		ast.Nil(err)
+		ast.True(ok, "Main Check")
+	}
+
 	// Test1: Delete Blob only from primary storage
 	Test1ID := blobs[0]
 	main.StgDao.DeleteBlob(Test1ID)
@@ -244,13 +260,15 @@ func TestCheck(t *testing.T) {
 
 	// Test5: Delete Blob only from cache
 	Test5ID := blobs[4]
-	main.CchDao.DeleteBlob(Test5ID)
+	err = main.CchDao.DeleteBlob(Test5ID)
+	ast.Nil(err)
 
 	time.Sleep(1 * time.Second)
 	// checking
 	res := check(ast)
 
 	// nominal
+	writeFiles(blobs)
 	ast.Equal(99, res.CacheCount, "cache count")
 	ast.Equal(99, res.PrimaryCount, "primary count")
 	ast.Equal(99, res.BackupCount, "backup count")
@@ -315,4 +333,27 @@ func TestCheck(t *testing.T) {
 			ast.Equal(true, r.InBackup)
 		}
 	}
+}
+
+func writeFiles(blobs []string) error {
+	f, err := os.OpenFile(filepath.Join(rootFilePrefix, "results.txt"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, _ = f.WriteString(fmt.Sprintf("counts\nm: %d\nb: %d\nc: %d\n", getCount(main.StgDao), getCount(main.BckDao), getCount(main.CchDao)))
+	_, _ = f.WriteString("i\tid \tm\tb\tc\n")
+	for x, id := range blobs {
+		_, _ = f.WriteString(fmt.Sprintf("%d\t%s \t %s\t %s\t %s\n", x, id, "x", "x", "x"))
+	}
+	return nil
+}
+
+func getCount(stg interfaces.BlobStorage) int {
+	count := 0
+	_ = stg.GetBlobs(func(id string) bool {
+		count++
+		return true
+	})
+	return count
 }
