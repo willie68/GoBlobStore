@@ -64,32 +64,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 
 	// checking all blobs in cache
 	if c.Cache != nil {
-		count := 0
-		log.Logger.Debug("checking cache")
-		_, _ = file.WriteString(",\r\n\"Cache\": [")
-		err := c.Cache.GetBlobs(func(id string) bool {
-			// checking if the blob belongs to the tenant
-			b, err := c.Cache.GetBlobDescription(id)
-			if (err == nil) && (b.TenantID == c.TenantID) {
-				msg := "ok"
-				ip, _ := c.Primary.HasBlob(id)
-				if !ip {
-					msg = "cache inconsistent"
-				}
-				if count > 0 {
-					_, _ = file.WriteString(",\r\n")
-				}
-				_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
-				count++
-			}
-			return true
-		})
-
-		_, _ = file.WriteString("]")
-		if err != nil {
-			log.Logger.Errorf("check: error checking cache. %v", err)
-		}
-		_, _ = file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
+		c.checkCache(file)
 	}
 	// checking all blobs in main storage
 	count := 0
@@ -110,30 +85,63 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	}
 	// checking all blobs in backup storage
 	if c.Backup != nil {
-		log.Logger.Debug("checking backup")
-		count := 0
-		first := true
-		_, _ = file.WriteString(",\r\n\"Backup\": [\r\n")
-		err := c.Backup.GetBlobs(func(id string) bool {
-			// only check blobs that are not already checked in primary
-			if ok, _ := c.Primary.HasBlob(id); !ok {
-				if !first {
-					_, _ = file.WriteString(",\r\n")
-				}
-				_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
-				first = false
-			}
-			count++
-			return true
-		})
-		if err != nil {
-			log.Logger.Errorf("check: error checking backup. %v", err)
-		}
-		_, _ = file.WriteString("]")
-		_, _ = file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
+		c.checkBackup(file)
 	}
 	_, _ = file.WriteString("\r\n}")
 	return file.Name(), err
+}
+
+func (c *CheckContext) checkBackup(file *os.File) {
+	log.Logger.Debug("checking backup")
+	count := 0
+	first := true
+	_, _ = file.WriteString(",\r\n\"Backup\": [\r\n")
+	err := c.Backup.GetBlobs(func(id string) bool {
+		// only check blobs that are not already checked in primary
+		if ok, _ := c.Primary.HasBlob(id); !ok {
+			if !first {
+				_, _ = file.WriteString(",\r\n")
+			}
+			_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
+			first = false
+		}
+		count++
+		return true
+	})
+	if err != nil {
+		log.Logger.Errorf("check: error checking backup. %v", err)
+	}
+	_, _ = file.WriteString("]")
+	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
+}
+
+func (c *CheckContext) checkCache(file *os.File) {
+	count := 0
+	log.Logger.Debug("checking cache")
+	_, _ = file.WriteString(",\r\n\"Cache\": [")
+	err := c.Cache.GetBlobs(func(id string) bool {
+		// checking if the blob belongs to the tenant
+		b, err := c.Cache.GetBlobDescription(id)
+		if (err == nil) && (b.TenantID == c.TenantID) {
+			msg := "ok"
+			ip, _ := c.Primary.HasBlob(id)
+			if !ip {
+				msg = "cache inconsistent"
+			}
+			if count > 0 {
+				_, _ = file.WriteString(",\r\n")
+			}
+			_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
+			count++
+		}
+		return true
+	})
+
+	_, _ = file.WriteString("]")
+	if err != nil {
+		log.Logger.Errorf("check: error checking cache. %v", err)
+	}
+	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
 }
 
 // IsRunning checking if this task is running
