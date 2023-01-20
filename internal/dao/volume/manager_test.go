@@ -1,7 +1,6 @@
 package volume
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -22,13 +21,13 @@ func clear(t *testing.T) {
 		err := os.RemoveAll(rootFilePrefix)
 		assert.Nil(t, err)
 	}
-	os.MkdirAll(rootFilePrefix, os.ModePerm)
+	_ = os.MkdirAll(rootFilePrefix, os.ModePerm)
 }
 
 func initTest(t *testing.T) {
-	fmt.Printf("using file path: %s", rootFilePrefix)
+	t.Logf("using file path: %s", rootFilePrefix)
 	for _, v := range vols {
-		os.MkdirAll(filepath.Join(rootFilePrefix, v), fs.ModePerm)
+		_ = os.MkdirAll(filepath.Join(rootFilePrefix, v), fs.ModePerm)
 	}
 	var err error
 	volumes, err = NewVolumeManager(rootFilePrefix)

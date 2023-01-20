@@ -95,7 +95,6 @@ func (s *BlobStorage) buildRetentionFilename(id string) (string, error) {
 	return filepath.Join(fp, fmt.Sprintf("%s%s", id, RetentionExt)), nil
 }
 
-// TODO implement error handling
 func (s *BlobStorage) deleteFilesV1(id string) error {
 	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BinaryExt))
 	err := os.Remove(binFile)

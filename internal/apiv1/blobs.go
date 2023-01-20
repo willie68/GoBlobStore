@@ -125,9 +125,9 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 	}
 
 	response.Header().Add("Location", idStr)
-	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	retentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
 	if ok {
-		response.Header().Add(RetentionHeader, strconv.FormatInt(int64(b.Retention), 10))
+		response.Header().Add(retentionHeader, strconv.FormatInt(int64(b.Retention), 10))
 	}
 	response.Header().Set("Content-Type", b.ContentType)
 	if b.ContentLength > 0 {
@@ -394,9 +394,9 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		cntLength = -1
 		filename = "data.bin"
 
-		FilenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
+		filenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
 		if ok {
-			filename = request.Header.Get(FilenameHeader)
+			filename = request.Header.Get(filenameHeader)
 			header, _, err := httpheader.DecodeExtValue(filename)
 			if err != nil {
 				httputils.Err(response, request, serror.InternalServerError(err))
@@ -409,17 +409,17 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 
 	// retention given via headers
 	var retentionTime int64
-	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	retentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
 	if ok {
-		retention := request.Header.Get(RetentionHeader)
+		retention := request.Header.Get(retentionHeader)
 		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
 	}
 
 	// blobid given via headers
-	BlobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
+	blobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
 	blobid := ""
 	if ok {
-		blobid = request.Header.Get(BlobIDHeader)
+		blobid = request.Header.Get(blobIDHeader)
 	}
 
 	metadata := make(map[string]any)
@@ -477,7 +477,7 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 	location := getBlobLocation(b.BlobID)
 	b.BlobURL = location
 	response.Header().Add("Location", location)
-	response.Header().Add(RetentionHeader, strconv.FormatInt(retentionTime, 10))
+	response.Header().Add(retentionHeader, strconv.FormatInt(retentionTime, 10))
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, b)
 }

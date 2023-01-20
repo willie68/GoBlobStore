@@ -31,7 +31,6 @@ func (j JWTRoleChecker) CheckRole(ctx context.Context, allowedRoles []api.Role) 
 		for _, uri := range userroles {
 			ur := uri.(string)
 			for _, r := range allowedRoles {
-
 				if strings.EqualFold(ur, string(r)) {
 					return true
 				}

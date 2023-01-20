@@ -23,6 +23,8 @@ const (
 	BinaryExt = ".bin"
 	// Defaultmffrs this is the max size of a blob that will be stored into memory, if possible
 	Defaultmffrs = 100 * 1024
+	// DefaultTnt the default tenant. Because this storage isn't tenant specific
+	DefaultTnt = "n.n."
 )
 
 var (
@@ -49,7 +51,7 @@ type FastCache struct {
 // Checking interface compatibility
 var _ interfaces.BlobStorage = &FastCache{}
 
-// Init initialise this dao
+// Init initialize this dao
 func (f *FastCache) Init() error {
 	err := os.MkdirAll(f.RootPath, os.ModePerm)
 	if err != nil {
@@ -117,7 +119,7 @@ func (f *FastCache) removeContents(dir string) error {
 
 // GetTenant get the tenant id, niy
 func (f *FastCache) GetTenant() string {
-	return "n.n."
+	return DefaultTnt
 }
 
 // GetBlobs getting a list of blob from the storage
@@ -159,7 +161,10 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 	for {
 		id := f.entries.HandleContrains()
 		if id != "" {
-			f.DeleteBlob(id)
+			err = f.DeleteBlob(id)
+			if err != nil {
+				log.Logger.Errorf("cache: can't delete blob %s: %v", id, err)
+			}
 		} else {
 			break
 		}
@@ -202,11 +207,14 @@ func (f *FastCache) writeBinFile(id string, r io.Reader) (int64, []byte, error) 
 	}
 	size, err := w.ReadFrom(r)
 	if err != nil {
-		w.Close()
-		os.Remove(binFile)
+		_ = w.Close()
+		_ = os.Remove(binFile)
 		return 0, nil, err
 	}
-	w.Close()
+	err = w.Close()
+	if err != nil {
+		return 0, nil, err
+	}
 	if size < f.MaxFileSizeForRAM {
 		dat, err := os.ReadFile(binFile)
 		if err != nil {
@@ -371,7 +379,7 @@ func (f *FastCache) rebuildBloomFilter() {
 
 // SearchBlobs querying a single blob, niy
 func (f *FastCache) SearchBlobs(_ string, _ func(id string) bool) error {
-	return errors.New("not implemented yet")
+	return errNotImplemented
 }
 
 // Retention related methods

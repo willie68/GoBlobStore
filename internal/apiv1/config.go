@@ -189,16 +189,16 @@ func DeleteTenant(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	dao, err := dao.GetTenantDao()
+	stg, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if !dao.HasTenant(tenant) {
+	if !stg.HasTenant(tenant) {
 		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
 		return
 	}
-	process, err := dao.RemoveTenant(tenant)
+	process, err := stg.RemoveTenant(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -228,16 +228,16 @@ func GetTenantSize(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	dao, err := dao.GetTenantDao()
+	stg, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if !dao.HasTenant(tenant) {
+	if !stg.HasTenant(tenant) {
 		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
 		return
 	}
-	size := dao.GetSize(tenant)
+	size := stg.GetSize(tenant)
 	rsp := model.SizeResponse{
 		TenantID: tenant,
 		Size:     size,

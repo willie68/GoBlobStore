@@ -387,7 +387,10 @@ func (s *BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry
 	}
 	defer r.Close()
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
+	_, err = buf.ReadFrom(r)
+	if err != nil {
+		return nil, err
+	}
 
 	re := model.RetentionEntry{}
 	err = json.Unmarshal(buf.Bytes(), &re)

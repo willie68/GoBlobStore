@@ -20,8 +20,8 @@ import (
 
 const (
 	//rootFilePrefix = "R:/mainstg"
-	rootFilePrefix = "../../testdata/main"
-	tntcount       = 1000
+	rootFilePrefix = "../../testdata/sf"
+	tntcount       = 100
 	blbcount       = tntcount * 10
 )
 
@@ -49,8 +49,9 @@ func initTest(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func clear(_ *testing.T) {
-	removeContents(rootFilePrefix)
+func clear(t *testing.T) {
+	err := os.RemoveAll(rootFilePrefix)
+	assert.Nil(t, err)
 }
 
 func removeContents(dir string) error {
@@ -64,7 +65,7 @@ func removeContents(dir string) error {
 		return err
 	}
 	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
+		_ = os.RemoveAll(filepath.Join(dir, name))
 	}
 	return nil
 }

@@ -29,7 +29,6 @@ func initSFMVTest(t *testing.T) {
 		err := os.MkdirAll(filepath.Join(sfmvRootPath, v), os.ModePerm)
 		ast.Nil(err)
 	}
-
 }
 
 func clear(t *testing.T) {
@@ -38,7 +37,8 @@ func clear(t *testing.T) {
 		err := os.RemoveAll(sfmvRootPath)
 		assert.Nil(t, err)
 	}
-	os.MkdirAll(sfmvRootPath, os.ModePerm)
+	err := os.MkdirAll(sfmvRootPath, os.ModePerm)
+	assert.Nil(t, err)
 }
 
 func getSFMVStoreageDao(t *testing.T) MultiVolumeStorage {
@@ -87,7 +87,9 @@ func TestSFMVDaoGeneral(t *testing.T) {
 
 	dao := getSFMVStoreageDao(t)
 	ast.NotNil(dao)
-	ast.Equal(ErrNotImplemented, dao.SearchBlobs("", func(id string) bool { return true }), "search should not be implemented")
+	ast.Equal(ErrNotImplemented, dao.SearchBlobs("", func(id string) bool {
+		return true
+	}), "search should not be implemented")
 
 	err := dao.Close()
 	ast.Nil(err, "error closing dao")

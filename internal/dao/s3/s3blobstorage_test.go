@@ -36,12 +36,14 @@ func setup(t *testing.T) {
 
 	ok := tntDao.HasTenant(tenant)
 	if !ok {
-		tntDao.AddTenant(tenant)
+		err = tntDao.AddTenant(tenant)
+		assert.Nil(t, err)
 	}
 }
 
-func closeTest(_ *testing.T) {
-	tntDao.RemoveTenant(tenant)
+func closeTest(t *testing.T) {
+	_, err := tntDao.RemoveTenant(tenant)
+	assert.Nil(t, err)
 }
 
 func createDao() (BlobStorage, error) {
@@ -132,7 +134,8 @@ func TestCRUDBlob(t *testing.T) {
 	id, err := dao.StoreBlob(&b, r)
 	ast.Nil(err)
 	ast.NotNil(id)
-	r.Close()
+	err = r.Close()
+	ast.Nil(err)
 
 	fmt.Printf("blob id: %s", id)
 	ok, err := dao.HasBlob(id)
@@ -150,8 +153,10 @@ func TestCRUDBlob(t *testing.T) {
 
 	w, err := os.Create(testfile)
 	ast.Nil(err)
-	dao.RetrieveBlob(id, w)
-	w.Close()
+	err = dao.RetrieveBlob(id, w)
+	ast.Nil(err)
+	err = w.Close()
+	ast.Nil(err)
 
 	ok, err = readercomp.FilesEqual(pdffile, testfile)
 	ast.Nil(err)
@@ -208,10 +213,11 @@ func TestRetentionStorage(t *testing.T) {
 	ast.Nil(err)
 
 	rets := make([]model.RetentionEntry, 0)
-	dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+	err = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
 		rets = append(rets, r)
 		return true
 	})
+	ast.Nil(err)
 
 	ast.Equal(1, len(rets))
 	retDst := rets[0]
@@ -270,7 +276,8 @@ func TestCRUDBlobWID(t *testing.T) {
 	ast.Nil(err)
 	ast.NotNil(id)
 	ast.Equal(id, uuid)
-	r.Close()
+	err = r.Close()
+	ast.Nil(err)
 
 	fmt.Printf("blob id: %s", id)
 	ok, err := dao.HasBlob(uuid)
@@ -289,8 +296,10 @@ func TestCRUDBlobWID(t *testing.T) {
 
 	w, err := os.Create(testfile)
 	ast.Nil(err)
-	dao.RetrieveBlob(uuid, w)
-	w.Close()
+	err = dao.RetrieveBlob(uuid, w)
+	ast.Nil(err)
+	err = w.Close()
+	ast.Nil(err)
 
 	ok, err = readercomp.FilesEqual(pdffile, testfile)
 	ast.Nil(err)

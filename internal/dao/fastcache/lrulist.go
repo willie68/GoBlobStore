@@ -50,7 +50,9 @@ func (l *LRUList) Update(e LRUEntry) {
 	id := e.Description.BlobID
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
-	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
+	i := sort.Search(len(l.entries), func(i int) bool {
+		return l.entries[i].Description.BlobID >= id
+	})
 	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
 		e.LastAccess = time.Now()
 		l.entries[i] = e
@@ -61,7 +63,9 @@ func (l *LRUList) Update(e LRUEntry) {
 func (l *LRUList) UpdateAccess(id string) {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
-	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
+	i := sort.Search(len(l.entries), func(i int) bool {
+		return l.entries[i].Description.BlobID >= id
+	})
 	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
 		l.entries[i].LastAccess = time.Now()
 	}
@@ -106,7 +110,9 @@ func (l *LRUList) HandleContrains() string {
 func (l *LRUList) Has(id string) bool {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
-	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
+	i := sort.Search(len(l.entries), func(i int) bool {
+		return l.entries[i].Description.BlobID >= id
+	})
 	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
 		return true
 	}
@@ -117,7 +123,9 @@ func (l *LRUList) Has(id string) bool {
 func (l *LRUList) Get(id string) (LRUEntry, bool) {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
-	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
+	i := sort.Search(len(l.entries), func(i int) bool {
+		return l.entries[i].Description.BlobID >= id
+	})
 	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
 		l.entries[i].LastAccess = time.Now()
 		return l.entries[i], true
@@ -129,7 +137,9 @@ func (l *LRUList) Get(id string) (LRUEntry, bool) {
 func (l *LRUList) Delete(id string) string {
 	l.dmu.Lock()
 	defer l.dmu.Unlock()
-	i := sort.Search(len(l.entries), func(i int) bool { return l.entries[i].Description.BlobID >= id })
+	i := sort.Search(len(l.entries), func(i int) bool {
+		return l.entries[i].Description.BlobID >= id
+	})
 	if i < len(l.entries) && l.entries[i].Description.BlobID == id {
 		if l.entries[i].Data != nil {
 			l.ramsize -= int64(len(l.entries[i].Data))
@@ -165,7 +175,9 @@ func (l *LRUList) getOldestWithData() int {
 }
 
 func (l *LRUList) insertSorted(data []LRUEntry, v LRUEntry) []LRUEntry {
-	i := sort.Search(len(data), func(i int) bool { return data[i].Description.BlobID >= v.Description.BlobID })
+	i := sort.Search(len(data), func(i int) bool {
+		return data[i].Description.BlobID >= v.Description.BlobID
+	})
 	return l.insertEntryAt(data, i, v)
 }
 

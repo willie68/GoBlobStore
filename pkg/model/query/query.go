@@ -65,31 +65,30 @@ func (n *Node) String() string {
 	var b strings.Builder
 	cl := len(n.Conditions)
 	if cl > 1 {
-		b.WriteString("(")
+		_, _ = b.WriteString("(")
 	}
 	f := true
 	for _, c := range n.Conditions {
 		if !f {
-			b.WriteString(" ")
-			b.WriteString(string(n.Operator))
-			b.WriteString(" ")
+			_, _ = b.WriteString(" ")
+			_, _ = b.WriteString(string(n.Operator))
+			_, _ = b.WriteString(" ")
 		}
 		switch v := c.(type) {
 		case Condition:
-			b.WriteString(v.String())
+			_, _ = b.WriteString(v.String())
 		case *Condition:
-			b.WriteString(v.String())
+			_, _ = b.WriteString(v.String())
 		case Node:
-			b.WriteString(v.String())
+			_, _ = b.WriteString(v.String())
 		case *Node:
-			b.WriteString(v.String())
+			_, _ = b.WriteString(v.String())
 		default:
-
 		}
 		f = false
 	}
 	if cl > 1 {
-		b.WriteString(")")
+		_, _ = b.WriteString(")")
 	}
 	return b.String()
 }

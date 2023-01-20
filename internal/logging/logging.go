@@ -152,7 +152,7 @@ func (s *serviceLogger) Fatal(msg string) {
 		if s.gelfActive {
 			golf.Crit(msg)
 		}
-		log.Fatalf("Fatal: %s\n", msg)
+		log.Printf("Fatal: %s\n", msg)
 	}
 }
 
@@ -162,7 +162,7 @@ func (s *serviceLogger) Fatalf(format string, va ...any) {
 		if s.gelfActive {
 			golf.Critf(format, va...)
 		}
-		log.Fatalf("Fatal: %s\n", fmt.Sprintf(format, va...))
+		log.Printf("Fatal: %s\n", fmt.Sprintf(format, va...))
 	}
 }
 

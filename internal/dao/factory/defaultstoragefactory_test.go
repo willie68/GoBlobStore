@@ -4,16 +4,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"bitbucket.easy.de/dm/service-blobstorage-go/internal/config"
-	"bitbucket.easy.de/dm/service-blobstorage-go/internal/dao/interfaces"
-	"bitbucket.easy.de/dm/service-blobstorage-go/internal/dao/noindex"
-	"bitbucket.easy.de/dm/service-blobstorage-go/internal/dao/retentionmanager"
-	"bitbucket.easy.de/dm/service-blobstorage-go/internal/dao/simplefile"
 	"github.com/stretchr/testify/assert"
+	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
+	"github.com/willie68/GoBlobStore/internal/dao/noindex"
+	"github.com/willie68/GoBlobStore/internal/dao/retentionmanager"
+	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 )
 
 const (
-	rootFilePrefix = "../../../testdata/fac"
+	rootFilePrefix = "../../../testdata/dsf"
 	tenant         = "test"
 	blbcount       = 1000
 )
@@ -89,6 +89,12 @@ func TestTenantBckStg(t *testing.T) {
 	bs, err := stgf.GetStorage(tenant)
 	ast.Nil(err)
 	ast.NotNil(bs)
+
+	_, err = stgf.GetStorage("tnt2")
+	ast.Nil(err)
+
+	err = stgf.RemoveStorage("tnt2")
+	ast.Nil(err)
 
 	err = stgf.Close()
 	ast.Nil(err)

@@ -4,7 +4,6 @@ package bluge
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/blugelabs/bluge"
 	querystr "github.com/blugelabs/query_string"
 	"github.com/willie68/GoBlobStore/internal/api"
@@ -60,8 +60,8 @@ func InitBluge(p map[string]any) error {
 		log.Logger.Errorf("%v", err)
 		return err
 	}
-	json.Unmarshal(jsonStr, &bcnfg)
-	return nil
+	err = json.Unmarshal(jsonStr, &bcnfg)
+	return err
 }
 
 // CloseBluge just for the sake of completeness
@@ -72,9 +72,12 @@ func CloseBluge() {
 func (m *Index) Init() error {
 	m.Tenant = strings.ToLower(m.Tenant)
 	m.rootpath = filepath.Join(bcnfg.Rootpath, m.Tenant, "_idx")
-	os.MkdirAll(m.rootpath, os.ModePerm)
+	err := os.MkdirAll(m.rootpath, os.ModePerm)
+	if err != nil {
+		return errors.Wrap(err, "Error init bluge")
+	}
 	m.config = bluge.DefaultConfig(m.rootpath)
-	return nil
+	return err
 }
 
 // Search doing a search for a tenant
@@ -88,7 +91,7 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 			return err
 		}
 	} else {
-		// parse query string to Mongo query
+		// parse query string to bluge query
 		q, err := m.buildAST(qry)
 		if err != nil {
 			return err

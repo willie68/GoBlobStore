@@ -301,7 +301,6 @@ func (d *DefaultStorageFactory) getS3Storage(stg config.Storage, tenant string) 
 func (d *DefaultStorageFactory) getFastcache(stg config.Storage, _ string) (interfaces.BlobStorage, error) {
 	// as cache there will be always the same instance delivered
 	if d.CchDao == nil {
-
 		rootpath, err := config.GetConfigValueAsString(stg.Properties, "rootpath")
 		if err != nil {
 			return nil, err
@@ -333,7 +332,7 @@ func (d *DefaultStorageFactory) getFastcache(stg config.Storage, _ string) (inte
 }
 
 func (d *DefaultStorageFactory) initIndex(cnfg config.Storage) error {
-	//TODO initialize the index storage
+	// initialize the index storage
 	s := cnfg.Storageclass
 	s = strings.ToLower(s)
 	switch s {

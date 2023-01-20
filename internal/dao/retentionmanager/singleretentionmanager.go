@@ -9,7 +9,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-// SingleRetentionManagerName name of this retentionmananger
+// SingleRetentionManagerName name of this retention manager
 const SingleRetentionManagerName = "SingleRetention"
 
 // SingleRetentionManager is a single node retention manager
@@ -27,7 +27,7 @@ type SingleRetentionManager struct {
 // check interface compatibility
 var _ interfaces.RetentionManager = &SingleRetentionManager{}
 
-// Init initialise the retention manager, creating the list of retention entries
+// Init initialize the retention manager, creating the list of retention entries
 func (s *SingleRetentionManager) Init(stgf interfaces.StorageFactory) error {
 	s.stgf = stgf
 	s.retentionList = make([]model.RetentionEntry, 0)

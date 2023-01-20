@@ -36,8 +36,8 @@ type MainStorage struct {
 
 // Init initialize this dao
 func (m *MainStorage) Init() error {
-	// all storages should be initialised before adding to this business class
-	// there for only specifig initialisation for this class is required
+	// all storages should be initialized before adding to this business class
+	// there for only specific initialization for this class is required
 	m.hasIdx = m.IdxDao != nil
 	return nil
 }
@@ -439,7 +439,7 @@ func (m *MainStorage) ResetRetention(id string) error {
 	err := m.StgDao.ResetRetention(id)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.ResetRetention(id); err1 != nil {
-			log.Logger.Errorf("error reseting retention on backup:%s, %v", id, err1)
+			log.Logger.Errorf("error resetting retention on backup:%s, %v", id, err1)
 		}
 	}
 	return err

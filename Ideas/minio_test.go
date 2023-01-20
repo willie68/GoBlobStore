@@ -32,7 +32,7 @@ func TestMinio(t *testing.T) {
 		},
 	})
 	if err != nil {
-		log.Fatalln(err)
+		t.Fatal(err)
 	}
 
 	log.Printf("%#v\n", minioClient) // minioClient is now set up
@@ -48,7 +48,7 @@ func TestMinio(t *testing.T) {
 		if errBucketExists == nil && exists {
 			log.Printf("We already own %s\n", bucketName)
 		} else {
-			log.Fatalln(err)
+			t.Fatal(err)
 		}
 	} else {
 		log.Printf("Successfully created %s\n", bucketName)
@@ -62,7 +62,7 @@ func TestMinio(t *testing.T) {
 	// Upload the zip file with FPutObject
 	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
-		log.Fatalln(err)
+		t.Fatal(err)
 	}
 
 	log.Printf("Successfully uploaded %s of size %d\n", objectName, info.Size)

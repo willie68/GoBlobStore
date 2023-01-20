@@ -3,6 +3,7 @@ package simplefile
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -121,13 +122,13 @@ func (s *BlobStorage) storeBlobV2(b *model.BlobDescription, f io.Reader) (string
 		return "", err
 	}
 	if (b.ContentLength > 0) && b.ContentLength != size {
-		s.deleteFilesV2(b.BlobID)
+		_ = s.deleteFilesV2(b.BlobID)
 		return "", fmt.Errorf("wrong content length %d=%d", b.ContentLength, size)
 	}
 	b.ContentLength = size
 	err = s.writeJSONFileV2(b)
 	if err != nil {
-		s.deleteFilesV2(b.BlobID)
+		_ = s.deleteFilesV2(b.BlobID)
 		return "", err
 	}
 	s.cm.Lock()
@@ -140,7 +141,7 @@ func (s *BlobStorage) storeBlobV2(b *model.BlobDescription, f io.Reader) (string
 func (s *BlobStorage) buildHash(id string) {
 	d, err := s.getBlobDescriptionV2(id)
 	if err != nil {
-		log.Logger.Errorf("buildHash: error getting descritpion for: %s\r\n%v", id, err)
+		log.Logger.Errorf("buildHash: error getting description for: %s\r\n%v", id, err)
 		return
 	}
 
@@ -180,23 +181,32 @@ func (s *BlobStorage) writeBinFileV2(id string, r io.Reader) (int64, error) {
 	}
 	size, err := f.ReadFrom(r)
 	if err != nil {
-		f.Close()
-		os.Remove(binFile)
+		_ = f.Close()
+		_ = os.Remove(binFile)
 		return 0, err
 	}
-	f.Close()
+	err = f.Close()
 
-	return size, nil
+	return size, err
 }
 
 // TODO implement error handling
 func (s *BlobStorage) deleteFilesV2(id string) error {
 	binFile := s.getBinV2(id)
-	os.Remove(binFile)
+	err := os.Remove(binFile)
+	if err != nil {
+		return err
+	}
 	jsonFile := s.getDescV2(id)
-	os.Remove(jsonFile)
+	err = os.Remove(jsonFile)
+	if err != nil {
+		return err
+	}
 	jsonFile, _ = s.buildRetentionFilename(id)
-	os.Remove(jsonFile)
+	err = os.Remove(jsonFile)
+	if (err != nil) && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
 	return nil
 }
 
@@ -253,7 +263,7 @@ func (s *BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
 	r := model.RetentionEntry{}
 	err = json.Unmarshal(dat, &r)
 	if err != nil {
-		log.Logger.Errorf("GetRetention: error deserialising: %s\r\n%v", jsonFile, err)
+		log.Logger.Errorf("GetRetention: deserialization error: %s\r\n%v", jsonFile, err)
 		return nil, err
 	}
 	return &r, nil

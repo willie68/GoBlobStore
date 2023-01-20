@@ -112,7 +112,8 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 	err := dao.Init()
 	ast.Nil(err)
 
-	dao.AddTenant("MCS")
+	err = dao.AddTenant("MCS")
+	ast.Nil(err)
 	ast.True(dao.HasTenant("MCS"))
 
 	cfn, err := dao.GetConfig("MCS")

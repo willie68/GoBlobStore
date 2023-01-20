@@ -21,9 +21,9 @@ import (
 )
 
 const (
-	rootFilePrefix = "../../../testdata/main"
+	rootFilePrefix = "../../../testdata/mai"
 	tenant         = "test"
-	blbcount       = 1000
+	blbcount       = 100
 )
 
 var (
@@ -61,24 +61,9 @@ func initTest(_ *testing.T) {
 	main.Init()
 }
 
-func clear(_ *testing.T) {
-	removeContents(rootFilePrefix)
-}
-
-func removeContents(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
-	}
-	return nil
+func clear(t *testing.T) {
+	err := os.RemoveAll(rootFilePrefix)
+	assert.Nil(t, err)
 }
 
 func createBlobDescription(id string) model.BlobDescription {
@@ -135,7 +120,6 @@ func TestManyFiles(t *testing.T) {
 		ast.NotNil(b)
 
 		ids = append(ids, b)
-
 	}
 	fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
 	for i, b := range ids {
@@ -184,7 +168,6 @@ func TestManyFiles(t *testing.T) {
 		ast.Nil(err)
 		ast.False(ok)
 	}
-
 }
 
 func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error) {
@@ -229,9 +212,9 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
-	CchDao := bMain.CchDao
+	cchDao := bMain.CchDao
 	bMain.CchDao = nil
-	CchDao.Close()
+	cchDao.Close()
 
 	ast.Nil(bMain.CchDao)
 
@@ -277,9 +260,9 @@ func TestAutoRestoreByContent(t *testing.T) {
 	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
-	CchDao := bMain.CchDao
+	cchDao := bMain.CchDao
 	bMain.CchDao = nil
-	CchDao.Close()
+	cchDao.Close()
 
 	ast.Nil(bMain.CchDao)
 
@@ -325,9 +308,9 @@ func TestAutoRestoreByHasId(t *testing.T) {
 	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
-	CchDao := bMain.CchDao
+	cchDao := bMain.CchDao
 	bMain.CchDao = nil
-	CchDao.Close()
+	cchDao.Close()
 
 	ast.Nil(bMain.CchDao)
 

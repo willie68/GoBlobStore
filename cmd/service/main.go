@@ -363,9 +363,15 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 
-	srv.Shutdown(ctx)
+	err = srv.Shutdown(ctx)
+	if err != nil {
+		log.Logger.Errorf("shutdown http server error: %v", err)
+	}
 	if ssl {
-		sslsrv.Shutdown(ctx)
+		err = sslsrv.Shutdown(ctx)
+		if err != nil {
+			log.Logger.Errorf("shutdown https server error: %v", err)
+		}
 	}
 
 	log.Logger.Info("finished")
@@ -416,8 +422,7 @@ func initConfig() {
 	}
 }
 
-func initJaeger(servicename string, config config.OpenTracing) (opentracing.Tracer, io.Closer) {
-
+func initJaeger(servicename string, cnfg config.OpenTracing) (opentracing.Tracer, io.Closer) {
 	cfg := jaegercfg.Configuration{
 		ServiceName: servicename,
 		Sampler: &jaegercfg.SamplerConfig{
@@ -426,11 +431,11 @@ func initJaeger(servicename string, config config.OpenTracing) (opentracing.Trac
 		},
 		Reporter: &jaegercfg.ReporterConfig{
 			LogSpans:           true,
-			LocalAgentHostPort: config.Host,
-			CollectorEndpoint:  config.Endpoint,
+			LocalAgentHostPort: cnfg.Host,
+			CollectorEndpoint:  cnfg.Endpoint,
 		},
 	}
-	if (config.Endpoint == "") && (config.Host == "") {
+	if (cnfg.Endpoint == "") && (cnfg.Host == "") {
 		cfg.Disabled = true
 	}
 	tracer, closer, err := cfg.NewTracer(jaegercfg.Logger(jaeger.StdLogger))

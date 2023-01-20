@@ -10,7 +10,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const rootpath = "../../../testdata/blbstg/"
+const rootpath = "../../../testdata/bluge/"
 
 var cnfg map[string]any
 
@@ -18,14 +18,13 @@ func InitT(ast *assert.Assertions) {
 	cnfg = make(map[string]any)
 	cnfg["rootpath"] = rootpath
 
-	os.RemoveAll(rootpath)
+	_ = os.RemoveAll(rootpath)
 	err := InitBluge(cnfg)
 	ast.Nil(err)
 	ast.NotNil(bcnfg)
 }
 
 func TestBlugeConnect(t *testing.T) {
-
 	ast := assert.New(t)
 
 	InitT(ast)
@@ -33,7 +32,8 @@ func TestBlugeConnect(t *testing.T) {
 	idx := Index{
 		Tenant: "MCS",
 	}
-	idx.Init()
+	err := idx.Init()
+	ast.Nil(err)
 	ast.NotNil(idx.rootpath)
 	ast.NotNil(idx.config)
 
@@ -53,7 +53,7 @@ func TestBlugeConnect(t *testing.T) {
 	b.Properties["x-retention"] = []int{123456}
 	b.Properties["x-tenant"] = "MCS"
 
-	err := idx.Index("123456789", b)
+	err = idx.Index("123456789", b)
 	ast.Nil(err)
 
 	rets := make([]string, 0)
@@ -156,7 +156,8 @@ func TestQueryConvertion(t *testing.T) {
 	idx := Index{
 		Tenant: "MCS",
 	}
-	idx.Init()
+	err := idx.Init()
+	ast.Nil(err)
 	ast.NotNil(idx.rootpath)
 	ast.NotNil(idx.config)
 
@@ -168,7 +169,7 @@ func TestQueryConvertion(t *testing.T) {
 		ast.Nil(err, "adding to batch")
 	}
 
-	err := bt.Index()
+	err = bt.Index()
 	ast.Nil(err, "indexing")
 
 	for _, t := range tests {

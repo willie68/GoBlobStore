@@ -11,6 +11,7 @@ import (
 
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/sony/sonyflake"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"gopkg.in/yaml.v2"
 )
 
@@ -70,7 +71,10 @@ func (v *Manager) Init() error {
 	v.ticker = time.NewTicker(1 * time.Minute)
 	go func() {
 		for range v.ticker.C {
-			v.Rescan()
+			err := v.Rescan()
+			if err != nil {
+				log.Logger.Errorf("volume manager: error rescan volumes: %v", err)
+			}
 		}
 	}()
 	return err
@@ -111,8 +115,8 @@ func (v *Manager) Rescan() error {
 			}
 		}
 	}
-	v.CalculatePerMill()
-	return nil
+	err = v.CalculatePerMill()
+	return err
 }
 
 func (v *Manager) volInfo(name string) (*Info, error) {

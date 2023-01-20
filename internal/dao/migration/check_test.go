@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	rootFilePrefix = "../../../testdata/check/"
+	rootFilePrefix = "../../../testdata/chk/"
 	tenant         = "chktnt"
 	blbPath        = rootFilePrefix + "blbstg"
 	cchPath        = rootFilePrefix + "blbcch"
@@ -128,10 +128,10 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	err = main.RetrieveBlob(b.BlobID, &buf)
 	ast.Nil(err)
 
-	json, err := json.Marshal(b)
+	jsn, err := json.Marshal(b)
 	ast.Nil(err)
 
-	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", jsn))
 }
 
 func getResult(id string, res []CheckResultLine) (CheckResultLine, bool) {
@@ -231,16 +231,16 @@ func TestCheck(t *testing.T) {
 	}
 
 	// Test1: Delete Blob only from primary storage
-	Test1ID := blobs[0]
-	main.StgDao.DeleteBlob(Test1ID)
+	test1ID := blobs[0]
+	main.StgDao.DeleteBlob(test1ID)
 
 	// Test2: Delete Blob from backup storage
-	Test2ID := blobs[1]
-	main.BckDao.DeleteBlob(Test2ID)
+	test2ID := blobs[1]
+	main.BckDao.DeleteBlob(test2ID)
 
 	// Test3: Change Blob content in backup storage
-	Test3ID := blobs[2]
-	fp, err := buildFilename(bckPath, tenant, Test3ID, ".bin")
+	test3ID := blobs[2]
+	fp, err := buildFilename(bckPath, tenant, test3ID, ".bin")
 	ast.Nil(err)
 	_, err = os.Stat(fp)
 	ast.Nil(err)
@@ -249,8 +249,8 @@ func TestCheck(t *testing.T) {
 	ast.Nil(err)
 
 	// Test4: Change Blob content in primary storage
-	Test4ID := blobs[3]
-	fp, err = buildFilename(blbPath, tenant, Test4ID, ".bin")
+	test4ID := blobs[3]
+	fp, err = buildFilename(blbPath, tenant, test4ID, ".bin")
 	ast.Nil(err)
 	_, err = os.Stat(fp)
 	ast.Nil(err)
@@ -259,8 +259,8 @@ func TestCheck(t *testing.T) {
 	ast.Nil(err)
 
 	// Test5: Delete Blob only from cache
-	Test5ID := blobs[4]
-	err = main.CchDao.DeleteBlob(Test5ID)
+	test5ID := blobs[4]
+	err = main.CchDao.DeleteBlob(test5ID)
 	ast.Nil(err)
 
 	time.Sleep(1 * time.Second)
@@ -268,68 +268,70 @@ func TestCheck(t *testing.T) {
 	res := check(ast)
 
 	// nominal
-	writeFiles(blobs)
+	err = writeFiles(blobs)
+	ast.Nil(err)
+
 	ast.Equal(99, res.CacheCount, "cache count")
 	ast.Equal(99, res.PrimaryCount, "primary count")
 	ast.Equal(99, res.BackupCount, "backup count")
 
 	// Test 1: cache inconsistent
-	r, ok := getResult(Test1ID, res.Cache)
+	r, ok := getResult(test1ID, res.Cache)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 
 	// and Backup has the entry for this
-	r, ok = getResult(Test1ID, res.Backup)
+	r, ok = getResult(test1ID, res.Backup)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 
 	// Test 2: primary has InBackup false flag
-	r, ok = getResult(Test2ID, res.Primary)
+	r, ok = getResult(test2ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 	ast.Equal(false, r.InBackup)
 
 	// Test 3: primary has BackupHashOK false flag
-	r, ok = getResult(Test3ID, res.Primary)
+	r, ok = getResult(test3ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 	ast.Equal(false, r.BackupHashOK)
 	ast.Equal(true, r.PrimaryHashOK)
 
 	// Test 4: primary has PrimaryHashOK false flag
-	r, ok = getResult(Test4ID, res.Primary)
+	r, ok = getResult(test4ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 	ast.Equal(true, r.BackupHashOK)
 	ast.Equal(false, r.PrimaryHashOK)
 
 	// Test 5: primary has InCache false flag
-	r, ok = getResult(Test5ID, res.Primary)
+	r, ok = getResult(test5ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(false, r.HasError)
 	ast.Equal(false, r.InCache)
 
 	for _, id := range blobs {
-		if id == Test1ID {
+		if id == test1ID {
 			continue
 		}
 		r, ok = getResult(id, res.Primary)
 		ast.True(ok)
-		if id != Test2ID && id != Test3ID && id != Test4ID {
+		if id != test2ID && id != test3ID && id != test4ID {
 			ast.Equal(false, r.HasError)
 		}
-		if id != Test3ID {
+		if id != test3ID {
 			ast.Equal(true, r.BackupHashOK)
 		}
-		if id != Test4ID {
+		if id != test4ID {
 			ast.Equal(true, r.PrimaryHashOK)
 		}
 
-		if id != Test5ID {
+		if id != test5ID {
 			ast.Equal(true, r.InCache)
 		}
 
-		if id != Test2ID {
+		if id != test2ID {
 			ast.Equal(true, r.InBackup)
 		}
 	}

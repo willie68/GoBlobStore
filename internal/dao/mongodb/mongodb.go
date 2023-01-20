@@ -67,14 +67,18 @@ var (
 	ctx      context.Context
 )
 
-// InitMongoDB initialise the mongo db for usage in this service
+// InitMongoDB initialize the mongo db for usage in this service
 func InitMongoDB(p map[string]any) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
 		log.Logger.Errorf("%v", err)
 		return err
 	}
-	json.Unmarshal(jsonStr, &mcnfg)
+	err = json.Unmarshal(jsonStr, &mcnfg)
+	if err != nil {
+		log.Logger.Errorf("%v", err)
+		return err
+	}
 	if len(mcnfg.Hosts) == 0 {
 		return errors.New("no mongo hosts found. check config")
 	}
@@ -165,7 +169,6 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 	}
 
 	if bd != nil {
-
 		cur, err := m.col.Find(context.TODO(), bd, options.Find())
 		if err != nil {
 			return err
@@ -293,9 +296,9 @@ func (i *IndexBatch) Index() error {
 // ToMongoQuery converting a blobstorage query into a mango query
 func ToMongoQuery(q query.Query) string {
 	var b strings.Builder
-	b.WriteString("#")
+	_, _ = b.WriteString("#")
 	c := q.Condition
-	b.WriteString(xToMdb(c))
+	_, _ = b.WriteString(xToMdb(c))
 	return b.String()
 }
 
@@ -307,7 +310,7 @@ func cToMdb(c query.Condition) string {
 	if c.Invert {
 		cv = fmt.Sprintf(`{"$not": %s}`, cv)
 	}
-	b.WriteString(fmt.Sprintf(`{"%s": %s}`, f, cv))
+	_, _ = b.WriteString(fmt.Sprintf(`{"%s": %s}`, f, cv))
 	return b.String()
 }
 
@@ -338,7 +341,7 @@ func nToMdb(n query.Node) string {
 	var b strings.Builder
 	op := fmt.Sprintf("$%s", strings.ToLower(string(n.Operator)))
 	wh := xsToMdb(n.Conditions)
-	b.WriteString(fmt.Sprintf(`{"%s": [%s]}`, op, wh))
+	_, _ = b.WriteString(fmt.Sprintf(`{"%s": [%s]}`, op, wh))
 	return b.String()
 }
 
@@ -347,9 +350,9 @@ func xsToMdb(xs []any) string {
 	var b strings.Builder
 	for i, x := range xs {
 		if i > 0 {
-			b.WriteString(", ")
+			_, _ = b.WriteString(", ")
 		}
-		b.WriteString(xToMdb(x))
+		_, _ = b.WriteString(xToMdb(x))
 	}
 	return b.String()
 }

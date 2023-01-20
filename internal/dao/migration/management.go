@@ -57,7 +57,7 @@ func (m *Management) GetResult(tenant string) (Result, error) {
 				ID:        v.CheckID,
 				Running:   v.Running,
 				Startet:   v.Started,
-				Finnished: v.Finnished,
+				Finnished: v.Finished,
 				Command:   "Check",
 			}
 			return res, nil
@@ -144,7 +144,7 @@ func (m *Management) StartCheck(tenant string) (string, error) {
 func (m *Management) doCheck(cCtx *CheckContext) {
 	cCtx.Started = time.Now()
 	defer func() {
-		cCtx.Finnished = time.Now()
+		cCtx.Finished = time.Now()
 	}()
 	file, err := cCtx.CheckStorage()
 	if err != nil {

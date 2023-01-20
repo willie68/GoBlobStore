@@ -69,7 +69,6 @@ func (s *TenantManager) GetTenants(callback func(tenant string) bool) error {
 
 // AddTenant add a new tenant to the manager
 func (s *TenantManager) AddTenant(tenant string) error {
-
 	tenantPath := filepath.Join(s.RootPath, tenant)
 
 	err := os.MkdirAll(tenantPath, os.ModePerm)
@@ -162,8 +161,10 @@ func (s *TenantManager) GetSize(tenant string) int64 {
 func (s *TenantManager) calculateAllStorageSizes() {
 	log.Logger.Debug("calculating storage sizes of all tenants")
 	s.calcRunning = true
-	defer func() { s.calcRunning = false }()
-	s.GetTenants(func(tenant string) bool {
+	defer func() {
+		s.calcRunning = false
+	}()
+	err := s.GetTenants(func(tenant string) bool {
 		var tinfo TenantInfo
 		size := s.calculateStorageSize(tenant)
 		tinfo = TenantInfo{
@@ -173,6 +174,9 @@ func (s *TenantManager) calculateAllStorageSizes() {
 		s.TenantInfos.Store(tenant, tinfo)
 		return true
 	})
+	if err != nil {
+		log.Logger.Errorf("calculating all storage sizes error: %v", err)
+	}
 }
 
 func (s *TenantManager) calculateStorageSize(tenant string) int64 {
@@ -186,14 +190,16 @@ func (s *TenantManager) calculateStorageSize(tenant string) int64 {
 	}
 
 	var dirSize int64
-	readSize := func(path string, file os.FileInfo, err error) error {
+	err := filepath.Walk(tenantPath, func(path string, file os.FileInfo, err error) error {
 		if !file.IsDir() {
 			dirSize += file.Size()
 		}
 		return nil
+	})
+	if err != nil {
+		log.Logger.Errorf("sftm: error %v", err)
+		return 0
 	}
-
-	filepath.Walk(tenantPath, readSize)
 	return dirSize
 }
 

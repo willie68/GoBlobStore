@@ -115,9 +115,11 @@ func (s *BlobStorage) RetrieveBlob(id string, writer io.Writer) error {
 
 // DeleteBlob removing a blob from the storage system
 func (s *BlobStorage) DeleteBlob(id string) error {
-	s.deleteFilesV1(id)
-	s.deleteFilesV2(id)
-	return nil
+	err := s.deleteFilesV1(id)
+	if errors.Is(err, os.ErrNotExist) {
+		err = s.deleteFilesV2(id)
+	}
+	return err
 }
 
 // CheckBlob checking a single blob from the storage system
@@ -156,8 +158,8 @@ func (s *BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) boo
 		return nil
 	}
 	retPath := filepath.Join(s.filepath, RetentionPath)
-	filepath.Walk(retPath, retCbk)
-	return nil
+	err := filepath.Walk(retPath, retCbk)
+	return err
 }
 
 // GetRetention getting a single retention entry

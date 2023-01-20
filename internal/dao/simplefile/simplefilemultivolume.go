@@ -8,6 +8,7 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/volume"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
@@ -191,7 +192,10 @@ func (s *MultiVolumeStorage) GetLastError() error {
 // Close closing the storage
 func (s *MultiVolumeStorage) Close() error {
 	for _, dao := range s.daos {
-		dao.Close()
+		err := dao.Close()
+		if err != nil {
+			log.Logger.Errorf("error closing volume dao: %v", err)
+		}
 	}
 	s.daos = make([]BlobStorage, 0)
 	return nil

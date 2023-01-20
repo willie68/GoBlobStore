@@ -82,7 +82,8 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 	err := dao.Init()
 	ast.Nil(err)
 
-	dao.AddTenant("MCS")
+	err = dao.AddTenant("MCS")
+	ast.Nil(err)
 	ast.True(dao.HasTenant("MCS"))
 
 	cfn, err := dao.GetConfig("MCS")
@@ -109,5 +110,6 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 	ast.Equal(cfn.Backup.Storageclass, cfn2.Backup.Storageclass)
 	ast.Equal(cfn.Backup.Properties["accessKey"], cfn2.Backup.Properties["accessKey"])
 	ast.Equal(cfn.Backup.Properties["secretKey"], cfn2.Backup.Properties["secretKey"])
-	dao.RemoveTenant("MCS")
+	_, err = dao.RemoveTenant("MCS")
+	ast.Nil(err)
 }

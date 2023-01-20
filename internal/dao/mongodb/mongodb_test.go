@@ -43,7 +43,8 @@ func TestMongoConnect(t *testing.T) {
 	idx := Index{
 		Tenant: "MCS",
 	}
-	idx.Init()
+	err := idx.Init()
+	ast.Nil(err)
 	ast.NotNil(idx.col)
 
 	b := model.BlobDescription{
@@ -62,7 +63,7 @@ func TestMongoConnect(t *testing.T) {
 	b.Properties["X-retention"] = []int{123456}
 	b.Properties["X-tenant"] = "MCS"
 
-	err := idx.Index("123456789", b)
+	err = idx.Index("123456789", b)
 	ast.Nil(err)
 
 	rets := make([]string, 0)

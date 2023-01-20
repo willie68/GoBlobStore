@@ -61,9 +61,10 @@ func TestNotFound(t *testing.T) {
 func TestList(t *testing.T) {
 	initTest(t)
 	dao := getSFStoreageDao(t)
+	ast := assert.New(t)
 
 	srcPath, _ := filepath.Abs(filepath.Join(rootpath, tenant))
-	assert.Equal(t, srcPath, dao.filepath)
+	ast.Equal(srcPath, dao.filepath)
 
 	blobs := make([]string, 0)
 	err := dao.GetBlobs(func(id string) bool {
@@ -74,14 +75,15 @@ func TestList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, 7, len(blobs))
-	assert.True(t, slicesutils.Contains(blobs, "004b4987-42fb-43e4-8e13-d6994ce0e6f1"))
-	assert.True(t, slicesutils.Contains(blobs, "0000fc02-050a-418a-a701-efd814aa6b36"))
+	ast.Equal(7, len(blobs))
+	ast.True(slicesutils.Contains(blobs, "004b4987-42fb-43e4-8e13-d6994ce0e6f1"))
+	ast.True(slicesutils.Contains(blobs, "0000fc02-050a-418a-a701-efd814aa6b36"))
 
 	for _, blobid := range blobs {
 		fmt.Println(blobid)
 	}
-	dao.Close()
+	err = dao.Close()
+	ast.Nil(err)
 }
 
 func TestInfo(t *testing.T) {
@@ -109,7 +111,8 @@ func TestInfo(t *testing.T) {
 	}
 	ast.Equal("0000fc02-050a-418a-a701-efd814aa6b36", info.BlobID)
 
-	dao.Close()
+	err = dao.Close()
+	ast.Nil(err)
 }
 
 func TestCRUD(t *testing.T) {
@@ -159,7 +162,8 @@ func TestCRUD(t *testing.T) {
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)
 
-	dao.Close()
+	err = dao.Close()
+	ast.Nil(err)
 }
 
 func TestRetentionStorage(t *testing.T) {
@@ -203,10 +207,11 @@ func TestRetentionStorage(t *testing.T) {
 	ast.Nil(err)
 
 	rets := make([]model.RetentionEntry, 0)
-	dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+	err = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
 		rets = append(rets, r)
 		return true
 	})
+	ast.Nil(err)
 
 	ast.Equal(8, len(rets))
 	retDst, err := dao.GetRetention(id)
@@ -304,5 +309,6 @@ func TestCRUDWithGivenID(t *testing.T) {
 	err = dao.DeleteBlob(uuid)
 	ast.Nil(err)
 
-	dao.Close()
+	err = dao.Close()
+	ast.Nil(err)
 }

@@ -15,17 +15,16 @@
 # vendor/
 
 testdata/pdf_dst.pdf
-testdata/blbstg
-testdata/bckstg
-testdata/blbcch
-testdata/blobstorage
-testdata/bckstorage
-testdata/check
+testdata/bck
+testdata/bluge
+testdata/chk
+testdata/dsf
+testdata/fac
 testdata/main
 testdata/migration
 testdata/mv
-
+testdata/sfbs
+testdata/sf
 
 debug
-
 test.log

@@ -14,18 +14,18 @@ import (
 
 // CheckContext struct for the running check
 type CheckContext struct {
-	TenantID  string
-	CheckID   string
-	Started   time.Time
-	Finnished time.Time
-	Cache     interfaces.BlobStorage
-	Primary   interfaces.BlobStorage
-	Backup    interfaces.BlobStorage
-	Running   bool
-	Filename  string
-	BlobID    string
-	cancel    bool
-	Message   string
+	TenantID string
+	CheckID  string
+	Started  time.Time
+	Finished time.Time
+	Cache    interfaces.BlobStorage
+	Primary  interfaces.BlobStorage
+	Backup   interfaces.BlobStorage
+	Running  bool
+	Filename string
+	BlobID   string
+	cancel   bool
+	Message  string
 }
 
 // checking interface compatibility
@@ -60,13 +60,13 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	defer file.Close()
 	c.Filename = file.Name()
 	log.Logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
-	file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
+	_, _ = file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
 
 	// checking all blobs in cache
 	if c.Cache != nil {
 		count := 0
 		log.Logger.Debug("checking cache")
-		file.WriteString(",\r\n\"Cache\": [")
+		_, _ = file.WriteString(",\r\n\"Cache\": [")
 		err := c.Cache.GetBlobs(func(id string) bool {
 			// checking if the blob belongs to the tenant
 			b, err := c.Cache.GetBlobDescription(id)
@@ -77,34 +77,34 @@ func (c *CheckContext) CheckStorage() (string, error) {
 					msg = "cache inconsistent"
 				}
 				if count > 0 {
-					file.WriteString(",\r\n")
+					_, _ = file.WriteString(",\r\n")
 				}
-				file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
+				_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
 				count++
 			}
 			return true
 		})
 
-		file.WriteString("]")
+		_, _ = file.WriteString("]")
 		if err != nil {
 			log.Logger.Errorf("check: error checking cache. %v", err)
 		}
-		file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
+		_, _ = file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
 	}
 	// checking all blobs in main storage
 	count := 0
 	log.Logger.Debug("checking primary")
-	file.WriteString(",\r\n\"Primary\": [\r\n")
+	_, _ = file.WriteString(",\r\n\"Primary\": [\r\n")
 	err = c.Primary.GetBlobs(func(id string) bool {
 		if count > 0 {
-			file.WriteString(",\r\n")
+			_, _ = file.WriteString(",\r\n")
 		}
 		c.checkBlob(id, file)
 		count++
 		return true
 	})
-	file.WriteString("]")
-	file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
+	_, _ = file.WriteString("]")
+	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
 	if err != nil {
 		log.Logger.Errorf("check: error checking primary. %v", err)
 	}
@@ -113,14 +113,14 @@ func (c *CheckContext) CheckStorage() (string, error) {
 		log.Logger.Debug("checking backup")
 		count := 0
 		first := true
-		file.WriteString(",\r\n\"Backup\": [\r\n")
+		_, _ = file.WriteString(",\r\n\"Backup\": [\r\n")
 		err := c.Backup.GetBlobs(func(id string) bool {
 			// only check blobs that are not already checked in primary
 			if ok, _ := c.Primary.HasBlob(id); !ok {
 				if !first {
-					file.WriteString(",\r\n")
+					_, _ = file.WriteString(",\r\n")
 				}
-				file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
+				_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
 				first = false
 			}
 			count++
@@ -129,10 +129,10 @@ func (c *CheckContext) CheckStorage() (string, error) {
 		if err != nil {
 			log.Logger.Errorf("check: error checking backup. %v", err)
 		}
-		file.WriteString("]")
-		file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
+		_, _ = file.WriteString("]")
+		_, _ = file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
 	}
-	file.WriteString("\r\n}")
+	_, _ = file.WriteString("\r\n}")
 	return file.Name(), err
 }
 
@@ -191,7 +191,7 @@ func (c *CheckContext) checkBlob(id string, file *os.File) {
 	}
 	// writing a line of check results
 	js, _ := json.Marshal(r)
-	file.WriteString(string(js))
+	_, _ = file.WriteString(string(js))
 }
 
 func newResult() CheckResultLine {

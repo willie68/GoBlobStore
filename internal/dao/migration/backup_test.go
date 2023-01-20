@@ -19,8 +19,8 @@ import (
 const (
 	testdata = "../../../testdata"
 	zipfile  = testdata + "/mig.zip"
-	rootpath = testdata + "/migration/blobstorage"
-	bckpath  = testdata + "/migration/bckstorage"
+	rootpath = testdata + "/bck/blobstorage"
+	bckpath  = testdata + "/bck/bckstorage"
 	migTnt   = "migtnt"
 )
 
@@ -28,12 +28,16 @@ type MockStorage struct {
 	mock.Mock
 }
 
-func initBckTest(_ *testing.T) {
-	os.RemoveAll(rootpath)
-	os.MkdirAll(rootpath, os.ModePerm)
+func initBckTest(t *testing.T) {
+	err := os.RemoveAll(rootpath)
+	assert.Nil(t, err)
+	err = os.MkdirAll(rootpath, os.ModePerm)
+	assert.Nil(t, err)
 
-	os.RemoveAll(bckpath)
-	os.MkdirAll(bckpath, os.ModePerm)
+	err = os.RemoveAll(bckpath)
+	assert.Nil(t, err)
+	err = os.MkdirAll(bckpath, os.ModePerm)
+	assert.Nil(t, err)
 
 	// getting the zip file and extracting it into the file system
 	archive, err := zip.OpenReader(zipfile)
@@ -50,7 +54,8 @@ func initBckTest(_ *testing.T) {
 			return
 		}
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
+			err = os.MkdirAll(filePath, os.ModePerm)
+			assert.Nil(t, err)
 			continue
 		}
 
@@ -72,8 +77,10 @@ func initBckTest(_ *testing.T) {
 			panic(err)
 		}
 
-		dstFile.Close()
-		fileInArchive.Close()
+		err = dstFile.Close()
+		assert.Nil(t, err)
+		err = fileInArchive.Close()
+		assert.Nil(t, err)
 	}
 }
 
@@ -146,5 +153,4 @@ func TestSyncForward(t *testing.T) {
 	count, err = getRntCount(bckStg)
 	ast.Nil(err)
 	ast.Equal(7, count)
-
 }
