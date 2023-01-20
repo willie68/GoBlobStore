@@ -15,7 +15,7 @@ warningCode = 0
 #[rule.confusing-naming]
 #[rule.confusing-results]
 #[rule.cognitive-complexity]
-#  arguments = [15]
+#  arguments = [20]
 #[rule.comment-spacings] wanted but not supported by @latest
 #[rule.constant-logical-expr]
 #[rule.context-as-argument]

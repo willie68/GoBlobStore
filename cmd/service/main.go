@@ -109,7 +109,7 @@ func apiRoutes() (*chi.Mux, error) {
 	return router, nil
 }
 
-func setApikeyHandler(router *chi.Router) {
+func setApikeyHandler(router *chi.Mux) {
 	router.Use(
 		api.SysAPIHandler(api.SysAPIConfig{
 			Apikey:           apikey,
@@ -131,7 +131,7 @@ func setApikeyHandler(router *chi.Router) {
 	)
 }
 
-func setDefaultHandler(router *chi.Router) {
+func setDefaultHandler(router *chi.Mux) {
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
 		middleware.Logger,
@@ -343,7 +343,7 @@ func getDefaultConfigfile() (string, error) {
 	return configFolder + "/service.yaml", nil
 }
 
-func startHTTPSServer(router *chi.Router) {
+func startHTTPSServer(router *chi.Mux) {
 	gc := crypt.GenerateCertificate{
 		Organization: "MCS",
 		Host:         "127.0.0.1",
@@ -372,7 +372,7 @@ func startHTTPSServer(router *chi.Router) {
 	}()
 }
 
-func startHTTPServer(router *chi.Router) {
+func startHTTPServer(router *chi.Mux) {
 	// own http server for the healthchecks
 	srv = &http.Server{
 		Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Port),
