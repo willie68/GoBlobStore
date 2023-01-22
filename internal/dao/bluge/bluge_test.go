@@ -3,6 +3,7 @@ package bluge
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -10,24 +11,37 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const rootpath = "../../../testdata/bluge/"
+const blugefolder = "bluge"
 
-var cnfg map[string]any
+var (
+	testroot = os.Getenv("gotestroot")
+	cnfg     map[string]any
+	rootpath string
+)
 
-func InitT(ast *assert.Assertions) {
+func InitRoot(t *testing.T) {
+	rootpath = filepath.Join("../../../testdata/", blugefolder)
+	if testroot != "" {
+		rootpath = filepath.Join(testroot, blugefolder)
+		t.Logf("using base path %s", rootpath)
+	}
+}
+
+func InitT(t *testing.T) {
+	InitRoot(t)
 	cnfg = make(map[string]any)
 	cnfg["rootpath"] = rootpath
 
 	_ = os.RemoveAll(rootpath)
 	err := InitBluge(cnfg)
-	ast.Nil(err)
-	ast.NotNil(bcnfg)
+	assert.Nil(t, err)
+	assert.NotNil(t, bcnfg)
 }
 
 func TestBlugeConnect(t *testing.T) {
 	ast := assert.New(t)
 
-	InitT(ast)
+	InitT(t)
 
 	idx := Index{
 		Tenant: "MCS",
@@ -151,7 +165,7 @@ func TestQueryConvertion(t *testing.T) {
 	// The test intfield:!=1234 is throwing an error
 	ast := assert.New(t)
 
-	InitT(ast)
+	InitT(t)
 
 	idx := Index{
 		Tenant: "MCS",

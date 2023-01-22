@@ -22,9 +22,7 @@ func Remove(s []string, i int) []string {
 	return s[:len(s)-1]
 }
 
-/*
-RemoveString removes the e entry from the s slice, if e is not present in the slice, nothing will happen
-*/
+// RemoveString removes the e entry from the s slice, if e is not present in the slice, nothing will happen
 func RemoveString(s []string, e string) []string {
 	index := Find(s, e)
 	if index >= 0 {

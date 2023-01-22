@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -241,7 +242,6 @@ func main() {
 	config.File = configFile
 	log.Logger.Infof("using config file: %s", configFile)
 
-	// autorestart starts here...
 	if err := config.Load(); err != nil {
 		log.Logger.Alertf("can't load config file: %s", err.Error())
 		panic("can't load config file")
@@ -313,34 +313,24 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	<-c
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-
-	if err = srv.Shutdown(ctx); err != nil {
-		log.Logger.Errorf("shutdown http server error: %v", err)
-	}
-	if ssl {
-		if err = sslsrv.Shutdown(ctx); err != nil {
-			log.Logger.Errorf("shutdown https server error: %v", err)
-		}
-	}
-
+	shutdownServers()
 	log.Logger.Info("finished")
 
 	os.Exit(0)
 }
 
-func getDefaultConfigfile() (string, error) {
-	configFolder, err := config.GetDefaultConfigFolder()
-	if err != nil {
-		return "", errors.Wrap(err, "can't load config file")
+func shutdownServers() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Logger.Errorf("shutdown http server error: %v", err)
 	}
-	configFolder = fmt.Sprintf("%s/service/", configFolder)
-	err = os.MkdirAll(configFolder, os.ModePerm)
-	if err != nil {
-		return "", errors.Wrap(err, "can't load config file")
+	if ssl {
+		if err := sslsrv.Shutdown(ctx); err != nil {
+			log.Logger.Errorf("shutdown https server error: %v", err)
+		}
 	}
-	return configFolder + "/service.yaml", nil
 }
 
 func startHTTPSServer(router *chi.Mux) {
@@ -389,6 +379,20 @@ func startHTTPServer(router *chi.Mux) {
 	}()
 }
 
+func getDefaultConfigfile() (string, error) {
+	configFolder, err := config.GetDefaultConfigFolder()
+	if err != nil {
+		return "", errors.Wrap(err, "can't load config file")
+	}
+	configFolder = filepath.Join(configFolder, "service")
+	err = os.MkdirAll(configFolder, os.ModePerm)
+	if err != nil {
+		return "", errors.Wrap(err, "can't load config file")
+	}
+	return filepath.Join(configFolder, "service.yaml"), nil
+}
+
+// initLogging initialize the logging, especially the gelf logger
 func initLogging() {
 	log.Logger.SetLevel(serviceConfig.Logging.Level)
 	var err error
@@ -401,6 +405,7 @@ func initLogging() {
 	log.Logger.Init()
 }
 
+// initConfig override the configuration from the service.yaml with the given commandline parameters
 func initConfig() {
 	if port > 0 {
 		serviceConfig.Port = port
@@ -432,6 +437,7 @@ func initConfig() {
 	}
 }
 
+// initJaeger initialize the jaeger (opentracing) component
 func initJaeger(servicename string, cnfg config.OpenTracing) (opentracing.Tracer, io.Closer) {
 	cfg := jaegercfg.Configuration{
 		ServiceName: servicename,
@@ -455,6 +461,7 @@ func initJaeger(servicename string, cnfg config.OpenTracing) (opentracing.Tracer
 	return tracer, closer
 }
 
+// getApikey generate an apikey based on the service name
 func getApikey() string {
 	value := fmt.Sprintf("%s_%s", config.Servicename, "default")
 	apikey := fmt.Sprintf("%x", md5.Sum([]byte(value)))
