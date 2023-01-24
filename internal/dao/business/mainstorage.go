@@ -239,16 +239,14 @@ func (m *MainStorage) HasBlob(id string) (bool, error) {
 		}
 	}
 	ok, err := m.StgDao.HasBlob(id)
-	if err != nil || !ok {
-		if m.BckDao != nil {
-			bok, berr := m.BckDao.HasBlob(id)
-			if berr == nil && bok {
-				bb, berr := m.BckDao.GetBlobDescription(id)
-				if berr == nil {
-					go m.restoreFile(bb)
-				}
-				return true, nil
+	if (err != nil || !ok) && (m.BckDao != nil) {
+		bok, berr := m.BckDao.HasBlob(id)
+		if berr == nil && bok {
+			bb, berr := m.BckDao.GetBlobDescription(id)
+			if berr == nil {
+				go m.restoreFile(bb)
 			}
+			return true, nil
 		}
 	}
 	return ok, err
@@ -279,37 +277,46 @@ func (m *MainStorage) GetBlobDescription(id string) (*model.BlobDescription, err
 
 // RetrieveBlob retrieving the binary data from the storage system
 func (m *MainStorage) RetrieveBlob(id string, w io.Writer) error {
-	if m.CchDao != nil {
-		ok, _ := m.CchDao.HasBlob(id)
-		if ok {
-			b, err := m.CchDao.GetBlobDescription(id)
-			if err == nil {
-				if b.TenantID == m.Tenant {
-					err := m.CchDao.RetrieveBlob(id, w)
-					if err == nil {
-						return nil
-					}
-				}
-			}
-		}
+	// check cache
+	ok := m.retrieveFromCache(id, w)
+	if ok {
+		return nil
 	}
+
 	err := m.StgDao.RetrieveBlob(id, w)
-	if err != nil {
-		if m.BckDao != nil {
-			berr := m.BckDao.RetrieveBlob(id, w)
-			if berr == nil {
-				bb, berr := m.BckDao.GetBlobDescription(id)
-				if berr == nil {
-					go m.restoreFile(bb)
-				}
-				return nil
+	if err == nil {
+		go m.cacheFileByID(id)
+		return nil
+	}
+
+	if m.BckDao != nil {
+		berr := m.BckDao.RetrieveBlob(id, w)
+		if berr == nil {
+			if bb, berr := m.BckDao.GetBlobDescription(id); berr == nil {
+				go m.restoreFile(bb)
 			}
+			return nil
 		}
 		return err
 	}
 
 	go m.cacheFileByID(id)
 	return nil
+}
+
+func (m *MainStorage) retrieveFromCache(id string, w io.Writer) bool {
+	if m.CchDao != nil {
+		if ok, _ := m.CchDao.HasBlob(id); ok {
+			b, err := m.CchDao.GetBlobDescription(id)
+			if err == nil && b.TenantID == m.Tenant {
+				err := m.CchDao.RetrieveBlob(id, w)
+				if err == nil {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // DeleteBlob removing a blob from the storage system
@@ -366,40 +373,44 @@ func (m *MainStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 	bd.Check = &ri
 	// check blob on backup storage
 	if m.BckDao != nil {
-		bckDI, err := m.BckDao.CheckBlob(id)
-		if err != nil {
-			log.Logger.Errorf("error checking blob on backup: %v", err)
-		}
-		bckBd, err := m.StgDao.GetBlobDescription(id)
-		if err != nil {
-			log.Logger.Errorf("error getting blob description on backup: %v", err)
-		}
-		// merge stgCI and bckCI
-		ri.Backup = bckDI
-		ri.Healthy = ri.Healthy && bckDI.Healthy
-		msg := bckDI.Message
-		if ri.Message != "" && msg != "" {
-			msg = fmt.Sprintf("%s, %s", ri.Message, msg)
-		}
-		if msg != "" {
-			ri.Message = msg
-		}
-
-		// checking if both hashes are equal
-		if bd.Hash != bckBd.Hash {
-			ri.Healthy = false
-			msg := "hashes are not equal"
-			if ri.Message != "" {
-				msg = fmt.Sprintf("%s, %s", ri.Message, msg)
-			}
-			ri.Message = msg
-		}
-		bckBd.Check = &ri
-		m.BckDao.UpdateBlobDescription(id, bckBd)
+		m.checkBck(id, &ri, bd)
 	}
 	bd.Check = &ri
 	m.StgDao.UpdateBlobDescription(id, bd)
 	return stgCI, nil
+}
+
+func (m *MainStorage) checkBck(id string, ri *model.Check, bd *model.BlobDescription) {
+	bckDI, err := m.BckDao.CheckBlob(id)
+	if err != nil {
+		log.Logger.Errorf("error checking blob on backup: %v", err)
+	}
+	bckBd, err := m.BckDao.GetBlobDescription(id)
+	if err != nil {
+		log.Logger.Errorf("error getting blob description on backup: %v", err)
+	}
+	// merge stgCI and bckCI
+	ri.Backup = bckDI
+	ri.Healthy = ri.Healthy && bckDI.Healthy
+	msg := bckDI.Message
+	if ri.Message != "" && msg != "" {
+		msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+	}
+	if msg != "" {
+		ri.Message = msg
+	}
+
+	// checking if both hashes are equal
+	if bd.Hash != bckBd.Hash {
+		ri.Healthy = false
+		msg := "hashes are not equal"
+		if ri.Message != "" {
+			msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+		}
+		ri.Message = msg
+	}
+	bckBd.Check = ri
+	m.BckDao.UpdateBlobDescription(id, bckBd)
 }
 
 // GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returning a false

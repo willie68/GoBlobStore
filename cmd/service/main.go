@@ -314,6 +314,7 @@ func main() {
 	<-c
 
 	shutdownServers()
+
 	log.Logger.Info("finished")
 
 	os.Exit(0)

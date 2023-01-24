@@ -79,30 +79,36 @@ func ParseJWTConfig(cfg config.Authentication) (JWTAuthConfig, error) {
 	jwtcfg.RoleMapping[string(api.RoleTenantAdmin)] = "tenant-admin"
 	jwtcfg.RoleMapping[string(api.RoleAdmin)] = "admin"
 
-	vm, ok := cfg.Properties["rolemapping"].(map[string]any)
-	if ok {
-		v, err := config.GetConfigValueAsString(vm, "object-reader")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.RoleObjectReader)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "object-creator")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.RoleObjectCreator)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "object-admin")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.RoleObjectAdmin)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "tenant-admin")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.RoleTenantAdmin)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "admin")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.RoleAdmin)] = v
-		}
-	}
+	doMapping(&jwtcfg, cfg)
+
 	return jwtcfg, nil
+}
+
+func doMapping(jwtcfg *JWTAuthConfig, cfg config.Authentication) {
+	vm, ok := cfg.Properties["rolemapping"].(map[string]any)
+	if !ok {
+		return
+	}
+	v, _ := config.GetConfigValueAsString(vm, "object-reader")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleObjectReader)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "object-creator")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleObjectCreator)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "object-admin")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleObjectAdmin)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "tenant-admin")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleTenantAdmin)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "admin")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleAdmin)] = v
+	}
 }
 
 // DecodeJWT simple decode the jwt token string

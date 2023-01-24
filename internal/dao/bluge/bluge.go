@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/blugelabs/bluge"
 	querystr "github.com/blugelabs/query_string"
+	"github.com/pkg/errors"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
@@ -82,25 +82,9 @@ func (m *Index) Init() error {
 
 // Search doing a search for a tenant
 func (m *Index) Search(qry string, callback func(id string) bool) error {
-	var bq bluge.Query
-	var err error
-	if strings.HasPrefix(qry, "#") {
-		qry = strings.TrimPrefix(qry, "#")
-		bq, err = querystr.ParseQueryString(qry, querystr.DefaultOptions())
-		if err != nil {
-			return err
-		}
-	} else {
-		// parse query string to bluge query
-		q, err := m.buildAST(qry)
-		if err != nil {
-			return err
-		}
-
-		bq, err = toBlugeQuery(*q)
-		if err != nil {
-			return err
-		}
+	bq, err := m.buildQuery(qry)
+	if err != nil {
+		return err
 	}
 	reader, err := bluge.OpenReader(m.config)
 	if err != nil {
@@ -132,6 +116,30 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Index) buildQuery(qry string) (bluge.Query, error) {
+	var bq bluge.Query
+	var err error
+	if strings.HasPrefix(qry, "#") {
+		qry = strings.TrimPrefix(qry, "#")
+		bq, err = querystr.ParseQueryString(qry, querystr.DefaultOptions())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// parse query string to bluge query
+		q, err := m.buildAST(qry)
+		if err != nil {
+			return nil, err
+		}
+
+		bq, err = toBlugeQuery(*q)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return bq, nil
 }
 
 func (m *Index) buildAST(q string) (*query.Query, error) {

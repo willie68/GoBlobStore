@@ -392,49 +392,25 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 		cntLength = -1
-		filename = "data.bin"
-
-		filenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
-		if ok {
-			filename = request.Header.Get(filenameHeader)
-			header, _, err := httpheader.DecodeExtValue(filename)
-			if err != nil {
-				httputils.Err(response, request, serror.InternalServerError(err))
-				return
-			}
-			filename = header
+		filename, err = getFilename(request.Header)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
 		}
 		f = mpf
 	}
 
 	// retention given via headers
-	var retentionTime int64
-	retentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
-	if ok {
-		retention := request.Header.Get(retentionHeader)
-		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
-	}
+	retentionHeader, retentionTime := getRetention(request.Header)
 
-	// blobid given via headers
-	blobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
-	blobid := ""
-	if ok {
-		blobid = request.Header.Get(blobIDHeader)
-	}
+	// blobID given via headers
+	blobID := getBlobID(request.Header)
 
-	metadata := make(map[string]any)
-	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
-	if ok {
-		headerPrefix = strings.ToLower(headerPrefix)
-		for key := range request.Header {
-			if strings.HasPrefix(strings.ToLower(key), headerPrefix) {
-				metadata[key] = request.Header.Get(key)
-			}
-		}
-	}
+	// metadata from headers
+	metadata := getMetadata(request.Header)
 
 	b := model.BlobDescription{
-		BlobID:        blobid,
+		BlobID:        blobID,
 		StoreID:       tenant,
 		TenantID:      tenant,
 		ContentLength: cntLength,
@@ -445,29 +421,17 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		CreationDate:  time.Now().UnixMilli(),
 	}
 
-	stgf, err := dao.GetStorageFactory()
+	storage, err := getTenantStore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
-	storage, err := stgf.GetStorage(tenant)
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
+	serr := checkBlobID(blobID, storage)
+	if serr != nil {
+		httputils.Err(response, request, serr)
 	}
 
-	if blobid != "" {
-		ok, err = storage.HasBlob(blobid)
-		if err != nil {
-			httputils.Err(response, request, serror.InternalServerError(err))
-			return
-		}
-		if ok {
-			httputils.Err(response, request, serror.Conflict(fmt.Errorf(`blob with id "%s" already exists`, b.BlobID)))
-			return
-		}
-	}
 	_, err = storage.StoreBlob(&b, f)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
@@ -480,6 +444,67 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 	response.Header().Add(retentionHeader, strconv.FormatInt(retentionTime, 10))
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, b)
+}
+
+func checkBlobID(blobID string, storage interfaces.BlobStorage) *serror.Serr {
+	if blobID != "" {
+		ok, err := storage.HasBlob(blobID)
+		if err != nil {
+			return serror.InternalServerError(err)
+		}
+		if ok {
+			return serror.Conflict(fmt.Errorf(`blob with id "%s" already exists`, blobID))
+		}
+	}
+	return nil
+}
+
+func getBlobID(header http.Header) string {
+	blobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
+	blobID := ""
+	if ok {
+		blobID = header.Get(blobIDHeader)
+	}
+	return blobID
+}
+
+func getRetention(header http.Header) (string, int64) {
+	var retentionTime int64
+	retentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	if ok {
+		retention := header.Get(retentionHeader)
+		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
+	}
+	return retentionHeader, retentionTime
+}
+
+func getMetadata(header http.Header) map[string]any {
+	metadata := make(map[string]any)
+	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
+	if ok {
+		headerPrefix = strings.ToLower(headerPrefix)
+		for key := range header {
+			if strings.HasPrefix(strings.ToLower(key), headerPrefix) {
+				metadata[key] = header.Get(key)
+			}
+		}
+	}
+	return metadata
+}
+
+func getFilename(header http.Header) (string, error) {
+	filename := "data.bin"
+
+	filenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
+	if ok {
+		filename = header.Get(filenameHeader)
+		header, _, err := httpheader.DecodeExtValue(filename)
+		if err != nil {
+			return "", err
+		}
+		filename = header
+	}
+	return filename, nil
 }
 
 /*
@@ -665,13 +690,7 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 	idStr := chi.URLParam(request, "id")
 
 	log.Logger.Infof("do check for tenant %s on blob %s", tenant, idStr)
-	stgf, err := dao.GetStorageFactory()
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
-	}
-
-	storage, err := stgf.GetStorage(tenant)
+	storage, err := getTenantStore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -684,4 +703,17 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 	}
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, res)
+}
+
+func getTenantStore(tenant string) (interfaces.BlobStorage, error) {
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		return nil, err
+	}
+
+	storage, err := stgf.GetStorage(tenant)
+	if err != nil {
+		return nil, err
+	}
+	return storage, nil
 }

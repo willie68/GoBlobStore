@@ -90,13 +90,7 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		}
 		q = bluge.NewNumericRangeInclusiveQuery(bluge.MinNumeric, v, false, true).SetField(c.Field)
 	default:
-		if c.HasWildcard() {
-			cq := cToStr(c)
-			cq = strings.ToLower(cq)
-			q = bluge.NewWildcardQuery(cq).SetField(c.Field)
-		} else {
-			q = bluge.NewMatchQuery(cToStr(c)).SetField(c.Field)
-		}
+		q = processWildcard(c)
 	}
 	if c.Invert {
 		bq.AddMustNot(q)
@@ -104,6 +98,17 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		bq.AddMust(q)
 	}
 	return bq, nil
+}
+
+func processWildcard(c query.Condition) (q bluge.Query) {
+	if c.HasWildcard() {
+		cq := cToStr(c)
+		cq = strings.ToLower(cq)
+		q = bluge.NewWildcardQuery(cq).SetField(c.Field)
+	} else {
+		q = bluge.NewMatchQuery(cToStr(c)).SetField(c.Field)
+	}
+	return q
 }
 
 func cToFloat(c query.Condition) (float64, error) {

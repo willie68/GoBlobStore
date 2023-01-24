@@ -135,25 +135,23 @@ func (s *BlobStorage) SearchBlobs(_ string, _ func(id string) bool) error {
 // GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 func (s *BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	retCbk := func(path string, file os.FileInfo, err error) error {
-		if file != nil {
-			if !file.IsDir() {
-				dat, err := os.ReadFile(path)
-				if err != nil {
-					log.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
-					return nil
-				}
-				ety := model.RetentionEntry{}
-				err = json.Unmarshal(dat, &ety)
-				if err != nil {
-					log.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
-					return nil
-				}
-				ok := callback(ety)
-				if !ok {
-					return filepath.SkipDir
-				}
+		if file != nil && !file.IsDir() {
+			dat, err := os.ReadFile(path)
+			if err != nil {
+				log.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
 				return nil
 			}
+			ety := model.RetentionEntry{}
+			err = json.Unmarshal(dat, &ety)
+			if err != nil {
+				log.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
+				return nil
+			}
+			ok := callback(ety)
+			if !ok {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		return nil
 	}

@@ -152,18 +152,7 @@ func (m *Index) Init() error {
 func (m *Index) Search(qry string, callback func(id string) bool) error {
 	var bd bson.M
 
-	if !strings.HasPrefix(qry, "#") {
-		// parse query string to Mongo query
-		q, err := m.buildAST(qry)
-		if err != nil {
-			return err
-		}
-		qry = ToMongoQuery(*q)
-	}
-
-	qry = strings.TrimPrefix(qry, "#")
-	qry = strings.TrimSpace(qry)
-	err := bson.UnmarshalExtJSON([]byte(qry), true, &bd)
+	bd, err := m.buildQuery(qry)
 	if err != nil {
 		return err
 	}
@@ -199,6 +188,26 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 		return nil
 	}
 	return errors.New("no filter defined")
+}
+
+func (m *Index) buildQuery(qry string) (bson.M, error) {
+	var bd bson.M
+	if !strings.HasPrefix(qry, "#") {
+		// parse query string to Mongo query
+		q, err := m.buildAST(qry)
+		if err != nil {
+			return nil, err
+		}
+		qry = ToMongoQuery(*q)
+	}
+
+	qry = strings.TrimPrefix(qry, "#")
+	qry = strings.TrimSpace(qry)
+	err := bson.UnmarshalExtJSON([]byte(qry), true, &bd)
+	if err != nil {
+		return nil, err
+	}
+	return bd, nil
 }
 
 func (m *Index) buildAST(q string) (*query.Query, error) {
