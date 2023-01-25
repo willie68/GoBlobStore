@@ -20,3 +20,6 @@ const HeaderPrefixKey = "headerprefix"
 
 // URLParamTenantID url parameter for the tenant id
 const URLParamTenantID = "tntid"
+
+// MetricsEndpoint endpoint subpath  for metrics
+const MetricsEndpoint = "/metrics"

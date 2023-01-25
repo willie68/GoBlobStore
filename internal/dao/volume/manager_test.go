@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -107,6 +108,33 @@ func TestRescan(t *testing.T) {
 	ast.Nil(err)
 
 	ast.Equal(len(vols), count)
+}
+
+func TestAutoRescan(t *testing.T) {
+	ast := assert.New(t)
+	clear(t)
+	initTest(t)
+	ast.NotNil(volumes)
+	count := 0
+	volumes.AddCallback(func(id string) bool {
+		count++
+		return true
+	})
+
+	err := volumes.Init()
+	ast.Nil(err)
+
+	ast.Equal(len(vols), count)
+
+	newVol := "mvn03"
+
+	err = os.MkdirAll(filepath.Join(rootFilePrefix, newVol), fs.ModePerm)
+	ast.Nil(err)
+
+	// wait until the next auto rescan
+	time.Sleep(2 * time.Minute)
+
+	ast.Equal(len(vols)+1, count)
 }
 
 func TestAddVol(t *testing.T) {

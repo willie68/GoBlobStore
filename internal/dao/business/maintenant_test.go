@@ -2,6 +2,7 @@ package business
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,25 +12,27 @@ import (
 
 // testing the tenant managment business part
 var (
-	dao MainTenant
+	tntPath    = filepath.Join(rootFilePrefix, "tntstg")
+	tntbckPath = filepath.Join(rootFilePrefix, "tntbckstg")
+	dao        MainTenant
 )
 
 func initTntTest(ast *assert.Assertions) {
-	if _, err := os.Stat(blbPath); err == nil {
-		err := os.RemoveAll(blbPath)
+	if _, err := os.Stat(tntPath); err == nil {
+		err := os.RemoveAll(tntPath)
 		ast.Nil(err)
 	}
 
-	if _, err := os.Stat(bckPath); err == nil {
-		err := os.RemoveAll(bckPath)
+	if _, err := os.Stat(tntbckPath); err == nil {
+		err := os.RemoveAll(tntbckPath)
 		ast.Nil(err)
 	}
 
 	sfTnt := &simplefile.TenantManager{
-		RootPath: blbPath,
+		RootPath: tntPath,
 	}
 	bkTnt := &simplefile.TenantManager{
-		RootPath: bckPath,
+		RootPath: tntbckPath,
 	}
 	dao = MainTenant{
 		TntDao: sfTnt,

@@ -103,7 +103,7 @@ func apiRoutes() (*chi.Mux, error) {
 		r.Mount(apiv1.TenantStoresRoutes())
 		r.Mount("/", health.Routes())
 		if serviceConfig.Metrics.Enable {
-			r.Mount("/metrics", promhttp.Handler())
+			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
 
@@ -123,7 +123,7 @@ func setApikeyHandler(router *chi.Mux) {
 				if strings.HasSuffix(path, "/readyz") {
 					return true
 				}
-				if strings.HasSuffix(path, "/metrics") {
+				if strings.HasSuffix(path, api.MetricsEndpoint) {
 					return true
 				}
 				return false
@@ -206,7 +206,7 @@ func healthRoutes() *chi.Mux {
 	router.Route("/", func(r chi.Router) {
 		r.Mount("/", health.Routes())
 		if serviceConfig.Metrics.Enable {
-			r.Mount("/metrics", promhttp.Handler())
+			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
 	return router

@@ -347,7 +347,7 @@ func TestAutoRestoreByHasId(t *testing.T) {
 	ast.False(ok)
 
 	// getting blobdescription
-	ok, err = main.HasBlob(b.BlobID)
+	ok, err = main.HasBlob(id)
 	ast.Nil(err)
 	ast.True(ok)
 	time.Sleep(1 * time.Second)
