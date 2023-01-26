@@ -1,7 +1,6 @@
 package volume
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -10,7 +9,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
-	"github.com/sony/sonyflake"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"gopkg.in/yaml.v2"
 )
@@ -22,13 +20,13 @@ import (
 // It also provide a utilization in m% of all volumes.
 // The call back will be fired on every new mount of a volume in the monitored root folder.
 type Manager struct {
-	root      string
-	cm        sync.Mutex
-	volumes   map[string]Info
-	sonyflake sonyflake.Sonyflake
-	callbacks []Callback
-	ticker    *time.Ticker
-	rnd       *rand.Rand
+	root       string
+	tickertime time.Duration
+	cm         sync.Mutex
+	volumes    map[string]Info
+	callbacks  []Callback
+	ticker     *time.Ticker
+	rnd        *rand.Rand
 }
 
 // Callback a simple callback function
@@ -37,7 +35,6 @@ type Callback func(name string) bool
 // Info information about a volume
 type Info struct {
 	Name     string `yaml:"name",json:"name"`
-	ID       string `yaml:"id",json:"id"`
 	Free     uint64 `yaml:"free",json:"free"`
 	Used     uint64 `yaml:"used",json:"used"`
 	Total    uint64 `yaml:"total",json:"total"`
@@ -49,7 +46,8 @@ type Info struct {
 // NewVolumeManager creating a new NewVolumeManager with a root path
 func NewVolumeManager(rootpath string) (Manager, error) {
 	vs := Manager{
-		root: rootpath,
+		root:       rootpath,
+		tickertime: 1 * time.Minute,
 	}
 	return vs, nil
 }
@@ -64,11 +62,8 @@ func (v *Manager) Init() error {
 		v.ticker.Stop()
 	}
 	v.volumes = make(map[string]Info)
-	var st sonyflake.Settings
-	st.StartTime = time.Now()
-	v.sonyflake = *sonyflake.NewSonyflake(st)
 	err := v.Rescan()
-	v.ticker = time.NewTicker(1 * time.Minute)
+	v.ticker = time.NewTicker(v.tickertime)
 	go func() {
 		for range v.ticker.C {
 			err := v.Rescan()
@@ -126,14 +121,8 @@ func (v *Manager) volInfo(name string) (*Info, error) {
 
 	_, err := os.Stat(volInfoFile)
 	if os.IsNotExist(err) {
-		id, err := v.sonyflake.NextID()
-		if err != nil {
-			return nil, err
-		}
-		sid := fmt.Sprintf("%x", id)
 		vi = Info{
 			Name: name,
-			ID:   sid,
 		}
 	} else {
 		in, err := os.ReadFile(volInfoFile)
@@ -174,17 +163,6 @@ func (v *Manager) Info(name string) *Info {
 		return &vi
 	}
 	return nil
-}
-
-// ID return the ID of a named volume
-func (v *Manager) ID(name string) string {
-	v.cm.Lock()
-	defer v.cm.Unlock()
-	vi, ok := v.volumes[name]
-	if ok {
-		return vi.ID
-	}
-	return ""
 }
 
 // CalculatePerMill calculates the volume utilization in /1000

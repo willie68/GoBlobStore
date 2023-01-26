@@ -115,6 +115,9 @@ func (s *BlobStorage) RetrieveBlob(id string, writer io.Writer) error {
 
 // DeleteBlob removing a blob from the storage system
 func (s *BlobStorage) DeleteBlob(id string) error {
+	s.cm.Lock()
+	delete(s.bdCch, id)
+	s.cm.Unlock()
 	err := s.deleteFilesV1(id)
 	if errors.Is(err, os.ErrNotExist) {
 		err = s.deleteFilesV2(id)

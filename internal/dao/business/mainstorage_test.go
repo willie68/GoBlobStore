@@ -210,6 +210,13 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", jsn))
 }
 
+func TestMaster(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		t.Logf("%d test iteration", i)
+		TestAutoRestoreByDescription(t)
+	}
+}
+
 func TestAutoRestoreByDescription(t *testing.T) {
 	clear(t)
 	initTest(t)
@@ -236,8 +243,9 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	ast.True(ok)
 
 	// remove it from primary storage
-	bMain.StgDao.DeleteBlob(id)
-	time.Sleep(1 * time.Second)
+	err = bMain.StgDao.DeleteBlob(id)
+	ast.Nil(err)
+	time.Sleep(1 * time.Millisecond)
 	ok, err = bMain.StgDao.HasBlob(id)
 	ast.Nil(err)
 	ast.False(ok)
@@ -250,9 +258,9 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	bd, err = main.GetBlobDescription(id)
 	ast.Nil(err)
 	ast.NotNil(bd)
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Millisecond)
 
-	// checking if present in primstorage
+	// checking if present in prime storage
 	ok, err = bMain.StgDao.HasBlob(id)
 	ast.Nil(err)
 	ast.True(ok)

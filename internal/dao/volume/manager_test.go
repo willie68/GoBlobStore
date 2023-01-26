@@ -59,9 +59,6 @@ func TestFileInfo(t *testing.T) {
 		_, err := os.Stat(infoDir)
 		ast.Nil(err)
 
-		id := volumes.ID(v)
-		ast.NotNil(id)
-
 		infoFile := filepath.Join(infoDir, ".volumeinfo")
 		_, err = os.Stat(infoFile)
 		ast.Nil(err)
@@ -70,22 +67,6 @@ func TestFileInfo(t *testing.T) {
 		ast.NotNil(volInfo)
 		ast.Equal(v, volInfo.Name)
 	}
-}
-
-func TestIDs(t *testing.T) {
-	ast := assert.New(t)
-	clear(t)
-	initTest(t)
-	ast.NotNil(volumes)
-
-	err := volumes.Init()
-	ast.Nil(err)
-
-	id := volumes.ID("mvn01")
-	ast.NotEqual("", id)
-
-	id = volumes.ID("mvn04")
-	ast.Equal("", id)
 }
 
 func TestRescan(t *testing.T) {
@@ -113,7 +94,17 @@ func TestRescan(t *testing.T) {
 func TestAutoRescan(t *testing.T) {
 	ast := assert.New(t)
 	clear(t)
-	initTest(t)
+
+	t.Logf("using file path: %s", rootFilePrefix)
+	for _, v := range vols {
+		_ = os.MkdirAll(filepath.Join(rootFilePrefix, v), fs.ModePerm)
+	}
+	volumes = Manager{
+		root:       rootFilePrefix,
+		tickertime: 10 * time.Second,
+	}
+	assert.NotNil(t, volumes)
+
 	ast.NotNil(volumes)
 	count := 0
 	volumes.AddCallback(func(id string) bool {
@@ -132,7 +123,7 @@ func TestAutoRescan(t *testing.T) {
 	ast.Nil(err)
 
 	// wait until the next auto rescan
-	time.Sleep(2 * time.Minute)
+	time.Sleep(20 * time.Second)
 
 	ast.Equal(len(vols)+1, count)
 }
@@ -168,9 +159,6 @@ func TestAddVol(t *testing.T) {
 	_, err = os.Stat(infoDir)
 	ast.Nil(err)
 
-	id := volumes.ID(newVol)
-	ast.NotNil(id)
-
 	infoFile := filepath.Join(infoDir, ".volumeinfo")
 	_, err = os.Stat(infoFile)
 	ast.Nil(err)
@@ -183,21 +171,18 @@ func TestCalculate(t *testing.T) {
 	v.volumes = map[string]Info{
 		"mvn01": Info{
 			Name:  "mvn01",
-			ID:    "01",
 			Path:  "/mvn01",
 			Total: 20 * 1024 * 1024,
 			Used:  10 * 1024 * 1024,
 		},
 		"mvn02": Info{
 			Name:  "mvn02",
-			ID:    "02",
 			Path:  "/mvn02",
 			Total: 100 * 1024 * 1024,
 			Used:  20 * 1024 * 1024,
 		},
 		"mvn03": Info{
 			Name:  "mvn03",
-			ID:    "03",
 			Path:  "/mvn03",
 			Total: 100 * 1024 * 1024,
 			Used:  30 * 1024 * 1024,

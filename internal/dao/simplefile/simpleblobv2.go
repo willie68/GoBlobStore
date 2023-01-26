@@ -117,7 +117,7 @@ func (s *BlobStorage) storeBlobV2(b *model.BlobDescription, f io.Reader) (string
 		uuid := utils.GenerateID()
 		b.BlobID = uuid
 	}
-	size, err := s.writeBinFileV2(b.BlobID, f)
+	size, hash, err := s.writeBinFileV2(b.BlobID, f)
 	if err != nil {
 		return "", err
 	}
@@ -125,6 +125,7 @@ func (s *BlobStorage) storeBlobV2(b *model.BlobDescription, f io.Reader) (string
 		_ = s.deleteFilesV2(b.BlobID)
 		return "", fmt.Errorf("wrong content length %d=%d", b.ContentLength, size)
 	}
+	b.Hash = hash
 	b.ContentLength = size
 	err = s.writeJSONFileV2(b)
 	if err != nil {
@@ -134,63 +135,41 @@ func (s *BlobStorage) storeBlobV2(b *model.BlobDescription, f io.Reader) (string
 	s.cm.Lock()
 	defer s.cm.Unlock()
 	s.bdCch[b.BlobID] = *b
-	go s.buildHash(b.BlobID)
+	//	go s.buildHash(b.BlobID)
 	return b.BlobID, nil
 }
 
-func (s *BlobStorage) buildHash(id string) {
-	d, err := s.getBlobDescriptionV2(id)
-	if err != nil {
-		log.Logger.Errorf("buildHash: error getting description for: %s\r\n%v", id, err)
-		return
-	}
-
-	h := sha256.New()
-	err = s.getBlobV2(id, h)
-	if err != nil {
-		log.Logger.Errorf("buildHash: error building sha 256 hash for: %s\r\n%v", id, err)
-		return
-	}
-	d.Hash = fmt.Sprintf("sha-256:%x", h.Sum(nil))
-
-	err = s.writeJSONFileV2(d)
-	if err != nil {
-		log.Logger.Errorf("buildHash: error writing description for: %s\r\n%v", id, err)
-		return
-	}
-	s.cm.Lock()
-	defer s.cm.Unlock()
-	delete(s.bdCch, d.BlobID)
-}
-
-func (s *BlobStorage) writeBinFileV2(id string, r io.Reader) (int64, error) {
+func (s *BlobStorage) writeBinFileV2(id string, r io.Reader) (int64, string, error) {
 	binFile, err := s.buildFilenameV2(id, BinaryExt)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	err = s.createFilePathV2(id)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
 
 	f, err := os.Create(binFile)
-
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	size, err := f.ReadFrom(r)
+	h := sha256.New()
+	w := io.MultiWriter(f, h)
+
+	size, err := io.Copy(w, r)
+
+	//size, err := f.ReadFrom(r)
 	if err != nil {
 		_ = f.Close()
 		_ = os.Remove(binFile)
-		return 0, err
+		return 0, "", err
 	}
 	err = f.Close()
-
-	return size, err
+	hash := fmt.Sprintf("sha-256:%x", h.Sum(nil))
+	return size, hash, err
 }
 
-// TODO implement error handling
 func (s *BlobStorage) deleteFilesV2(id string) error {
 	binFile := s.getBinV2(id)
 	err := os.Remove(binFile)
