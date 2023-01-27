@@ -3,6 +3,7 @@ package bluge
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -10,30 +11,43 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-const rootpath = "../../../testdata/blbstg/"
+const blugefolder = "bluge"
 
-var cnfg map[string]interface{}
+var (
+	testroot = os.Getenv("gotestroot")
+	cnfg     map[string]any
+	rootpath string
+)
 
-func InitT(ast *assert.Assertions) {
-	cnfg = make(map[string]interface{})
+func InitRoot(t *testing.T) {
+	rootpath = filepath.Join("../../../testdata/", blugefolder)
+	if testroot != "" {
+		rootpath = filepath.Join(testroot, blugefolder)
+		t.Logf("using base path %s", rootpath)
+	}
+}
+
+func InitT(t *testing.T) {
+	InitRoot(t)
+	cnfg = make(map[string]any)
 	cnfg["rootpath"] = rootpath
 
-	os.RemoveAll(rootpath)
+	_ = os.RemoveAll(rootpath)
 	err := InitBluge(cnfg)
-	ast.Nil(err)
-	ast.NotNil(bcnfg)
+	assert.Nil(t, err)
+	assert.NotNil(t, bcnfg)
 }
 
 func TestBlugeConnect(t *testing.T) {
-
 	ast := assert.New(t)
 
-	InitT(ast)
+	InitT(t)
 
 	idx := Index{
 		Tenant: "MCS",
 	}
-	idx.Init()
+	err := idx.Init()
+	ast.Nil(err)
 	ast.NotNil(idx.rootpath)
 	ast.NotNil(idx.config)
 
@@ -47,13 +61,13 @@ func TestBlugeConnect(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["x-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["x-retention"] = []int{123456}
 	b.Properties["x-tenant"] = "MCS"
 
-	err := idx.Index("123456789", b)
+	err = idx.Index("123456789", b)
 	ast.Nil(err)
 
 	rets := make([]string, 0)
@@ -151,12 +165,13 @@ func TestQueryConvertion(t *testing.T) {
 	// The test intfield:!=1234 is throwing an error
 	ast := assert.New(t)
 
-	InitT(ast)
+	InitT(t)
 
 	idx := Index{
 		Tenant: "MCS",
 	}
-	idx.Init()
+	err := idx.Init()
+	ast.Nil(err)
 	ast.NotNil(idx.rootpath)
 	ast.NotNil(idx.config)
 
@@ -168,7 +183,7 @@ func TestQueryConvertion(t *testing.T) {
 		ast.Nil(err, "adding to batch")
 	}
 
-	err := bt.Index()
+	err = bt.Index()
 	ast.Nil(err, "indexing")
 
 	for _, t := range tests {
@@ -196,7 +211,7 @@ func getBlobDescription(id string, num int) model.BlobDescription {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{num}

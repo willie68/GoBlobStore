@@ -24,10 +24,10 @@ ConfigRoutes getting all routes for the config endpoint
 */
 func ConfigRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Post("/", PostCreateTenant)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/", GetTenantConfig)
-	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Delete("/", DeleteTenant)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/size", GetTenantSize)
+	router.With(api.RoleCheck([]api.Role{api.RoleAdmin})).Post("/", PostCreateTenant)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/", GetTenantConfig)
+	router.With(api.RoleCheck([]api.Role{api.RoleAdmin})).Delete("/", DeleteTenant)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/size", GetTenantSize)
 	return BaseURL + configSubpath, router
 }
 
@@ -36,17 +36,13 @@ StoresRoutes getting all routes for the stores endpoint, this is part of the new
 */
 func StoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Post("/", PostCreateTenant)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/", GetTenantConfig)
-	router.With(api.RoleCheck([]api.Role{api.R_ADMIN})).Delete("/", DeleteTenant)
-	router.With(api.RoleCheck([]api.Role{api.R_TENANT_ADMIN})).Get("/size", GetTenantSize)
+	router.With(api.RoleCheck([]api.Role{api.RoleAdmin})).Post("/", PostCreateTenant)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/", GetTenantConfig)
+	router.With(api.RoleCheck([]api.Role{api.RoleAdmin})).Delete("/", DeleteTenant)
+	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/size", GetTenantSize)
 	return BaseURL + configSubpath + storesSubpath, router
 }
 
-/*
-GetTenantConfig
-because of the automatic store creation, the value is more likely that data is stored for this tenant
-*/
 // GetTenantConfig getting if a store for a tenant is initialised
 // @Summary getting if a store for a tenant is initialised, because of the automatic store creation, the value is more likely that data is stored for this tenant
 // @Tags configs
@@ -76,12 +72,12 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.InternalServerError(fmt.Errorf("tenant-error: "+msg+": %v", err)))
 		return
 	}
-	var lastError error = nil
+	var lastError error
 	stgfac, err := dao.GetStorageFactory()
 	if err != nil {
 		lastError = err
 	} else {
-		stgdao, err := stgfac.GetStorageDao(tenant)
+		stgdao, err := stgfac.GetStorage(tenant)
 		if err != nil {
 			lastError = err
 		} else {
@@ -149,7 +145,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 	}
 
 	if config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
-		if !strings.EqualFold(cfg.Storageclass, factory.STGCLASS_S3) {
+		if !strings.EqualFold(cfg.Storageclass, factory.STGClassS3) {
 			err := fmt.Errorf("storage class \"%s\" is not allowed", cfg.Storageclass)
 			httputils.Err(response, request, serror.BadRequest(err))
 			return
@@ -167,7 +163,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
-		stf.RemoveStorageDao(tenant)
+		stf.RemoveStorage(tenant)
 		rsp.Backup = cfg.Storageclass
 	}
 
@@ -193,16 +189,16 @@ func DeleteTenant(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	dao, err := dao.GetTenantDao()
+	stg, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if !dao.HasTenant(tenant) {
+	if !stg.HasTenant(tenant) {
 		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
 		return
 	}
-	process, err := dao.RemoveTenant(tenant)
+	process, err := stg.RemoveTenant(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -232,16 +228,16 @@ func GetTenantSize(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	dao, err := dao.GetTenantDao()
+	stg, err := dao.GetTenantDao()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	if !dao.HasTenant(tenant) {
+	if !stg.HasTenant(tenant) {
 		httputils.Err(response, request, serror.NotFound("tenant", tenant, nil))
 		return
 	}
-	size := dao.GetSize(tenant)
+	size := stg.GetSize(tenant)
 	rsp := model.SizeResponse{
 		TenantID: tenant,
 		Size:     size,

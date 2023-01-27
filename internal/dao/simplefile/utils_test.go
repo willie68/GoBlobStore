@@ -14,7 +14,7 @@ import (
 
 const (
 	zipfile  = "../../../testdata/mig.zip"
-	rootpath = "../../../testdata/blobstorage"
+	rootpath = "../../../testdata/sfbs"
 	tenant   = "MCS"
 )
 
@@ -26,7 +26,8 @@ func initTest(t *testing.T) {
 		ast.Nil(err)
 	}
 	// getting the zip file and extracting it into the file system
-	os.MkdirAll(rootpath, os.ModePerm)
+	err := os.MkdirAll(rootpath, os.ModePerm)
+	ast.Nil(err)
 
 	// getting the zip file and extracting it into the file system
 	archive, err := zip.OpenReader(zipfile)
@@ -42,7 +43,8 @@ func initTest(t *testing.T) {
 			return
 		}
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
+			err = os.MkdirAll(filePath, os.ModePerm)
+			ast.Nil(err)
 			continue
 		}
 
@@ -60,12 +62,14 @@ func initTest(t *testing.T) {
 			panic(err)
 		}
 
-		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			panic(err)
-		}
+		_, err = io.Copy(dstFile, fileInArchive)
+		ast.Nil(err)
 
-		dstFile.Close()
-		fileInArchive.Close()
+		err = dstFile.Close()
+		ast.Nil(err)
+
+		err = fileInArchive.Close()
+		ast.Nil(err)
 	}
 }
 
@@ -80,7 +84,7 @@ func removeContents(dir string) error {
 		return err
 	}
 	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
+		_ = os.RemoveAll(filepath.Join(dir, name))
 	}
 	return nil
 }

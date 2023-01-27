@@ -16,20 +16,23 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-type SimpleFileBlobStorageDao struct {
+// BlobStorage service for storing blob files into a file system
+type BlobStorage struct {
 	RootPath string                           // this is the root path for the file system storage
 	Tenant   string                           // this is the tenant, on which this dao will work
-	filepath string                           // direct path to the tenant specifig sub path
-	bdCch    map[string]model.BlobDescription // short time cache of blobdescriptions
+	filepath string                           // direct path to the tenant specific sub path
+	bdCch    map[string]model.BlobDescription // short time cache of blob descriptions
 	cm       sync.RWMutex
 }
 
-var _ interfaces.BlobStorageDao = &SimpleFileBlobStorageDao{}
+var _ interfaces.BlobStorage = &BlobStorage{}
 
 const retentionBaseKey = "retentionBase"
 
 // ---- SimpleFileBlobStorageDao
-func (s *SimpleFileBlobStorageDao) Init() error {
+
+// Init initialize this dao
+func (s *BlobStorage) Init() error {
 	if s.Tenant == "" {
 		return errors.New("tenant should not be null or empty")
 	}
@@ -47,20 +50,22 @@ func (s *SimpleFileBlobStorageDao) Init() error {
 }
 
 // GetTenant return the id of the tenant
-func (s *SimpleFileBlobStorageDao) GetTenant() string {
+func (s *BlobStorage) GetTenant() string {
 	return s.Tenant
 }
 
-func (s *SimpleFileBlobStorageDao) GetBlobs(callback func(id string) bool) error {
+// GetBlobs getting a list of blob from the filesystem
+func (s *BlobStorage) GetBlobs(callback func(id string) bool) error {
 	return s.getBlobsV2(callback)
 }
 
-func (s *SimpleFileBlobStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
+// StoreBlob storing a blob to the storage system
+func (s *BlobStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	return s.storeBlobV2(b, f)
 }
 
-// updating the blob description
-func (s *SimpleFileBlobStorageDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+// UpdateBlobDescription updating the blob description
+func (s *BlobStorage) UpdateBlobDescription(id string, b *model.BlobDescription) error {
 	err := s.updateBlobDescriptionV2(id, b)
 	if err == os.ErrNotExist {
 		err = s.updateBlobDescriptionV1(id, b)
@@ -71,7 +76,8 @@ func (s *SimpleFileBlobStorageDao) UpdateBlobDescription(id string, b *model.Blo
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
+// HasBlob checking, if a blob is present
+func (s *BlobStorage) HasBlob(id string) (bool, error) {
 	if id == "" {
 		return false, nil
 	}
@@ -83,7 +89,8 @@ func (s *SimpleFileBlobStorageDao) HasBlob(id string) (bool, error) {
 	return found, nil
 }
 
-func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
+// GetBlobDescription getting the description of the file
+func (s *BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	info, err := s.getBlobDescriptionV2(id)
 	if err == os.ErrNotExist {
 		info, err = s.getBlobDescriptionV1(id)
@@ -94,7 +101,8 @@ func (s *SimpleFileBlobStorageDao) GetBlobDescription(id string) (*model.BlobDes
 	return info, nil
 }
 
-func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) error {
+// RetrieveBlob retrieving the binary data from the storage system
+func (s *BlobStorage) RetrieveBlob(id string, writer io.Writer) error {
 	err := s.getBlobV2(id, writer)
 	if err == os.ErrNotExist {
 		err = s.getBlobV1(id, writer)
@@ -105,53 +113,58 @@ func (s *SimpleFileBlobStorageDao) RetrieveBlob(id string, writer io.Writer) err
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) DeleteBlob(id string) error {
-	s.deleteFilesV1(id)
-	s.deleteFilesV2(id)
-	return nil
+// DeleteBlob removing a blob from the storage system
+func (s *BlobStorage) DeleteBlob(id string) error {
+	s.cm.Lock()
+	delete(s.bdCch, id)
+	s.cm.Unlock()
+	err := s.deleteFilesV1(id)
+	if errors.Is(err, os.ErrNotExist) {
+		err = s.deleteFilesV2(id)
+	}
+	return err
 }
 
 // CheckBlob checking a single blob from the storage system
-func (s *SimpleFileBlobStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
+func (s *BlobStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 	return utils.CheckBlob(id, s)
 }
 
-func (s *SimpleFileBlobStorageDao) SearchBlobs(q string, callback func(id string) bool) error {
+// SearchBlobs querying a single blob, niy
+func (s *BlobStorage) SearchBlobs(_ string, _ func(id string) bool) error {
 	return errors.New("not implemented yet")
 }
 
 // GetAllRetentions for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
-func (s *SimpleFileBlobStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
+func (s *BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	retCbk := func(path string, file os.FileInfo, err error) error {
-		if file != nil {
-			if !file.IsDir() {
-				dat, err := os.ReadFile(path)
-				if err != nil {
-					log.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
-					return nil
-				}
-				ety := model.RetentionEntry{}
-				err = json.Unmarshal(dat, &ety)
-				if err != nil {
-					log.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
-					return nil
-				}
-				ok := callback(ety)
-				if !ok {
-					return filepath.SkipDir
-				}
+		if file != nil && !file.IsDir() {
+			dat, err := os.ReadFile(path)
+			if err != nil {
+				log.Logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
 				return nil
 			}
+			ety := model.RetentionEntry{}
+			err = json.Unmarshal(dat, &ety)
+			if err != nil {
+				log.Logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
+				return nil
+			}
+			ok := callback(ety)
+			if !ok {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 		return nil
 	}
-	retPath := filepath.Join(s.filepath, RETENTION_PATH)
-	filepath.Walk(retPath, retCbk)
-
-	return nil
+	retPath := filepath.Join(s.filepath, RetentionPath)
+	err := filepath.Walk(retPath, retCbk)
+	return err
 }
 
-func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
+// GetRetention getting a single retention entry
+func (s *BlobStorage) GetRetention(id string) (model.RetentionEntry, error) {
 	r, err := s.getRetention(id)
 	if err != nil {
 		return model.RetentionEntry{}, err
@@ -162,7 +175,8 @@ func (s *SimpleFileBlobStorageDao) GetRetention(id string) (model.RetentionEntry
 	return *r, err
 }
 
-func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
+// AddRetention adding a retention entry to the storage
+func (s *BlobStorage) AddRetention(r *model.RetentionEntry) error {
 	b, err := s.GetBlobDescription(r.BlobID)
 	if err != nil {
 		return err
@@ -172,7 +186,8 @@ func (s *SimpleFileBlobStorageDao) AddRetention(r *model.RetentionEntry) error {
 	return s.writeRetentionFile(b)
 }
 
-func (s *SimpleFileBlobStorageDao) DeleteRetention(id string) error {
+// DeleteRetention deletes the retention entry from the storage
+func (s *BlobStorage) DeleteRetention(id string) error {
 	/*
 		_, err := s.GetBlobDescription(id)
 		if err != nil {
@@ -182,7 +197,8 @@ func (s *SimpleFileBlobStorageDao) DeleteRetention(id string) error {
 	return s.deleteRetentionFile(id)
 }
 
-func (s *SimpleFileBlobStorageDao) ResetRetention(id string) error {
+// ResetRetention resets the retention for a blob
+func (s *BlobStorage) ResetRetention(id string) error {
 	r, err := s.getRetention(id)
 	if err != nil {
 		return err
@@ -191,10 +207,12 @@ func (s *SimpleFileBlobStorageDao) ResetRetention(id string) error {
 	return s.AddRetention(r)
 }
 
-func (s *SimpleFileBlobStorageDao) GetLastError() error {
+// GetLastError returning the last error (niy)
+func (s *BlobStorage) GetLastError() error {
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) Close() error {
+// Close closing the storage
+func (s *BlobStorage) Close() error {
 	return nil
 }

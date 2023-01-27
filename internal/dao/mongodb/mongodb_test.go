@@ -12,10 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var cnfg map[string]interface{}
+var cnfg map[string]any
 
 func InitT(ast *assert.Assertions) {
-	cnfg = make(map[string]interface{})
+	cnfg = make(map[string]any)
 	cnfg["hosts"] = []string{"127.0.0.1:27017"}
 	cnfg["username"] = "blobstore"
 	cnfg["password"] = "blobstore"
@@ -43,7 +43,8 @@ func TestMongoConnect(t *testing.T) {
 	idx := Index{
 		Tenant: "MCS",
 	}
-	idx.Init()
+	err := idx.Init()
+	ast.Nil(err)
 	ast.NotNil(idx.col)
 
 	b := model.BlobDescription{
@@ -56,13 +57,13 @@ func TestMongoConnect(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
 	b.Properties["X-tenant"] = "MCS"
 
-	err := idx.Index("123456789", b)
+	err = idx.Index("123456789", b)
 	ast.Nil(err)
 
 	rets := make([]string, 0)
@@ -83,10 +84,10 @@ func TestQueryConvertion(t *testing.T) {
 	q := query.Query{
 		Condition: query.Node{
 			Operator: query.OROP,
-			Conditions: []interface{}{
+			Conditions: []any{
 				query.Node{
 					Operator: query.ANDOP,
-					Conditions: []interface{}{
+					Conditions: []any{
 						query.Condition{
 							Field:    "field1",
 							Operator: query.NO,
@@ -107,7 +108,7 @@ func TestQueryConvertion(t *testing.T) {
 				},
 				query.Node{
 					Operator: query.ANDOP,
-					Conditions: []interface{}{
+					Conditions: []any{
 						query.Condition{
 							Field:    "field1",
 							Operator: query.NO,

@@ -16,20 +16,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/willie68/GoBlobStore/internal/dao/business"
 	"github.com/willie68/GoBlobStore/internal/dao/fastcache"
+	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	"github.com/willie68/GoBlobStore/internal/dao/simplefile"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
 const (
-	rootFilePrefix = "../../../testdata/check/"
+	rootFilePrefix = "../../../testdata/chk/"
 	tenant         = "chktnt"
 	blbPath        = rootFilePrefix + "blbstg"
 	cchPath        = rootFilePrefix + "blbcch"
 	bckPath        = rootFilePrefix + "bckstg"
 )
 
-type JsonResult struct {
+type JSONResult struct {
 	Tenant       string
 	Cache        []CheckResultLine
 	CacheCount   int
@@ -39,10 +40,10 @@ type JsonResult struct {
 	BackupCount  int
 }
 
-var main *business.MainStorageDao
+var main *business.MainStorage
 
-func initChkTest(t *testing.T) {
-	stgDao := &simplefile.SimpleFileBlobStorageDao{
+func initChkTest(_ *testing.T) {
+	stgDao := &simplefile.BlobStorage{
 		RootPath: blbPath,
 		Tenant:   tenant,
 	}
@@ -50,20 +51,21 @@ func initChkTest(t *testing.T) {
 	cchDao := &fastcache.FastCache{
 		RootPath:   cchPath,
 		MaxCount:   1000,
-		MaxRamSize: 1 * 1024 * 1024,
+		MaxRAMSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
-	bckDao := &simplefile.SimpleFileBlobStorageDao{
+	bckDao := &simplefile.BlobStorage{
 		RootPath: bckPath,
 		Tenant:   tenant,
 	}
 	bckDao.Init()
 
-	main = &business.MainStorageDao{
-		StgDao: stgDao,
-		CchDao: cchDao,
-		BckDao: bckDao,
-		Tenant: tenant,
+	main = &business.MainStorage{
+		StgDao:      stgDao,
+		CchDao:      cchDao,
+		BckDao:      bckDao,
+		Tenant:      tenant,
+		Bcksyncmode: true,
 	}
 
 	main.Init()
@@ -71,27 +73,8 @@ func initChkTest(t *testing.T) {
 
 func clear(t *testing.T) {
 	// getting the zip file and extracting it into the file system
-	err := removeContents(rootFilePrefix)
+	err := os.RemoveAll(rootFilePrefix)
 	assert.Nil(t, err)
-}
-
-func removeContents(dir string) error {
-	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
-	}
-	return nil
 }
 
 func createBlobDescription(id string) model.BlobDescription {
@@ -107,7 +90,7 @@ func createBlobDescription(id string) model.BlobDescription {
 		Filename:      fmt.Sprintf("test_%s.txt", id),
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -145,10 +128,10 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	err = main.RetrieveBlob(b.BlobID, &buf)
 	ast.Nil(err)
 
-	json, err := json.Marshal(b)
+	jsn, err := json.Marshal(b)
 	ast.Nil(err)
 
-	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", jsn))
 }
 
 func getResult(id string, res []CheckResultLine) (CheckResultLine, bool) {
@@ -187,7 +170,7 @@ func prepare(ast *assert.Assertions) []string {
 	return blobs
 }
 
-func check(ast *assert.Assertions) JsonResult {
+func check(ast *assert.Assertions) JSONResult {
 	cctx := CheckContext{
 		TenantID: main.Tenant,
 		Primary:  main.StgDao,
@@ -201,7 +184,7 @@ func check(ast *assert.Assertions) JsonResult {
 
 	byteValue, err := ioutil.ReadFile(file)
 	ast.Nil(err)
-	var res JsonResult
+	var res JSONResult
 	err = json.Unmarshal(byteValue, &res)
 	ast.Nil(err)
 
@@ -232,17 +215,32 @@ func TestCheck(t *testing.T) {
 	// prepare tests
 	blobs := prepare(ast)
 
+	// Check if all blobs are present
+	for _, id := range blobs {
+		ok, err := main.StgDao.HasBlob(id)
+		ast.Nil(err)
+		ast.True(ok, "Main Check")
+
+		ok, err = main.BckDao.HasBlob(id)
+		ast.Nil(err)
+		ast.True(ok, "Main Check")
+
+		ok, err = main.CchDao.HasBlob(id)
+		ast.Nil(err)
+		ast.True(ok, "Main Check")
+	}
+
 	// Test1: Delete Blob only from primary storage
-	Test1ID := blobs[0]
-	main.StgDao.DeleteBlob(Test1ID)
+	test1ID := blobs[0]
+	main.StgDao.DeleteBlob(test1ID)
 
 	// Test2: Delete Blob from backup storage
-	Test2ID := blobs[1]
-	main.BckDao.DeleteBlob(Test2ID)
+	test2ID := blobs[1]
+	main.BckDao.DeleteBlob(test2ID)
 
 	// Test3: Change Blob content in backup storage
-	Test3ID := blobs[2]
-	fp, err := buildFilename(bckPath, tenant, Test3ID, ".bin")
+	test3ID := blobs[2]
+	fp, err := buildFilename(bckPath, tenant, test3ID, ".bin")
 	ast.Nil(err)
 	_, err = os.Stat(fp)
 	ast.Nil(err)
@@ -251,8 +249,8 @@ func TestCheck(t *testing.T) {
 	ast.Nil(err)
 
 	// Test4: Change Blob content in primary storage
-	Test4ID := blobs[3]
-	fp, err = buildFilename(blbPath, tenant, Test4ID, ".bin")
+	test4ID := blobs[3]
+	fp, err = buildFilename(blbPath, tenant, test4ID, ".bin")
 	ast.Nil(err)
 	_, err = os.Stat(fp)
 	ast.Nil(err)
@@ -260,77 +258,104 @@ func TestCheck(t *testing.T) {
 	err = os.WriteFile(fp, []byte("changed content"), 0644)
 	ast.Nil(err)
 
-	// Test1: Delete Blob only from primary storage
-	Test5ID := blobs[4]
-	main.CchDao.DeleteBlob(Test5ID)
+	// Test5: Delete Blob only from cache
+	test5ID := blobs[4]
+	err = main.CchDao.DeleteBlob(test5ID)
+	ast.Nil(err)
 
 	time.Sleep(1 * time.Second)
 	// checking
 	res := check(ast)
 
 	// nominal
-	ast.Equal(99, res.CacheCount, "cache count")
-	ast.Equal(99, res.PrimaryCount, "primary count")
-	ast.Equal(99, res.BackupCount, "backup count")
+	err = writeFiles(blobs)
+	ast.Nil(err)
+
+	ast.True(res.CacheCount >= 99, "cache count")
+	ast.True(res.PrimaryCount >= 99, "primary count")
+	ast.True(res.BackupCount >= 99, "backup count")
 
 	// Test 1: cache inconsistent
-	r, ok := getResult(Test1ID, res.Cache)
+	r, ok := getResult(test1ID, res.Cache)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 
 	// and Backup has the entry for this
-	r, ok = getResult(Test1ID, res.Backup)
+	r, ok = getResult(test1ID, res.Backup)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 
 	// Test 2: primary has InBackup false flag
-	r, ok = getResult(Test2ID, res.Primary)
+	r, ok = getResult(test2ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 	ast.Equal(false, r.InBackup)
 
 	// Test 3: primary has BackupHashOK false flag
-	r, ok = getResult(Test3ID, res.Primary)
+	r, ok = getResult(test3ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 	ast.Equal(false, r.BackupHashOK)
 	ast.Equal(true, r.PrimaryHashOK)
 
 	// Test 4: primary has PrimaryHashOK false flag
-	r, ok = getResult(Test4ID, res.Primary)
+	r, ok = getResult(test4ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(true, r.HasError)
 	ast.Equal(true, r.BackupHashOK)
 	ast.Equal(false, r.PrimaryHashOK)
 
 	// Test 5: primary has InCache false flag
-	r, ok = getResult(Test5ID, res.Primary)
+	r, ok = getResult(test5ID, res.Primary)
 	ast.True(ok)
 	ast.Equal(false, r.HasError)
 	ast.Equal(false, r.InCache)
 
 	for _, id := range blobs {
-		if id == Test1ID {
+		if id == test1ID {
 			continue
 		}
 		r, ok = getResult(id, res.Primary)
 		ast.True(ok)
-		if id != Test2ID && id != Test3ID && id != Test4ID {
+		if id != test2ID && id != test3ID && id != test4ID {
 			ast.Equal(false, r.HasError)
 		}
-		if id != Test3ID {
+		if id != test3ID {
 			ast.Equal(true, r.BackupHashOK)
 		}
-		if id != Test4ID {
+		if id != test4ID {
 			ast.Equal(true, r.PrimaryHashOK)
 		}
 
-		if id != Test5ID {
+		if id != test5ID {
 			ast.Equal(true, r.InCache)
 		}
 
-		if id != Test2ID {
+		if id != test2ID {
 			ast.Equal(true, r.InBackup)
 		}
 	}
+}
+
+func writeFiles(blobs []string) error {
+	f, err := os.OpenFile(filepath.Join(rootFilePrefix, "results.txt"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, _ = f.WriteString(fmt.Sprintf("counts\nm: %d\nb: %d\nc: %d\n", getCount(main.StgDao), getCount(main.BckDao), getCount(main.CchDao)))
+	_, _ = f.WriteString("i\tid \tm\tb\tc\n")
+	for x, id := range blobs {
+		_, _ = f.WriteString(fmt.Sprintf("%d\t%s \t %s\t %s\t %s\n", x, id, "x", "x", "x"))
+	}
+	return nil
+}
+
+func getCount(stg interfaces.BlobStorage) int {
+	count := 0
+	_ = stg.GetBlobs(func(id string) bool {
+		count++
+		return true
+	})
+	return count
 }

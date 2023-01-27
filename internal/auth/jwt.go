@@ -11,6 +11,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/config"
 )
 
+// JWTAuthConfig authentication/Authorisation configuration for JWT authentification
 type JWTAuthConfig struct {
 	Active      bool
 	Validate    bool
@@ -21,23 +22,26 @@ type JWTAuthConfig struct {
 	RoleMapping map[string]string
 }
 
+// JWT struct for the decoded jwt token
 type JWT struct {
 	Token     string
-	Header    map[string]interface{}
-	Payload   map[string]interface{}
+	Header    map[string]any
+	Payload   map[string]any
 	Signature string
 	IsValid   bool
 }
 
+// JWTAuth the jwt authentication struct
 type JWTAuth struct {
 	Config JWTAuthConfig
 }
 
-// JWT config for the service
-var JWTConfig JWTAuthConfig = JWTAuthConfig{
+// JWTConfig for the service
+var JWTConfig = JWTAuthConfig{
 	Active: false,
 }
 
+// InitJWT initialise the JWT for this service
 func InitJWT(cnfg JWTAuthConfig) JWTAuth {
 	JWTConfig = cnfg
 	return JWTAuth{
@@ -45,6 +49,7 @@ func InitJWT(cnfg JWTAuthConfig) JWTAuth {
 	}
 }
 
+// ParseJWTConfig building up the dynamical configuration for this
 func ParseJWTConfig(cfg config.Authentication) (JWTAuthConfig, error) {
 	jwtcfg := JWTAuthConfig{
 		Active: true,
@@ -68,38 +73,45 @@ func ParseJWTConfig(cfg config.Authentication) (JWTAuthConfig, error) {
 	}
 	jwtcfg.RoleActive = jwtcfg.RoleClaim != ""
 	jwtcfg.RoleMapping = make(map[string]string)
-	jwtcfg.RoleMapping[string(api.R_OBJECT_READER)] = "object-reader"
-	jwtcfg.RoleMapping[string(api.R_OBJECT_CREATOR)] = "object-creator"
-	jwtcfg.RoleMapping[string(api.R_OBJECT_ADMIN)] = "object-admin"
-	jwtcfg.RoleMapping[string(api.R_TENANT_ADMIN)] = "tenant-admin"
-	jwtcfg.RoleMapping[string(api.R_ADMIN)] = "admin"
+	jwtcfg.RoleMapping[string(api.RoleObjectReader)] = "object-reader"
+	jwtcfg.RoleMapping[string(api.RoleObjectCreator)] = "object-creator"
+	jwtcfg.RoleMapping[string(api.RoleObjectAdmin)] = "object-admin"
+	jwtcfg.RoleMapping[string(api.RoleTenantAdmin)] = "tenant-admin"
+	jwtcfg.RoleMapping[string(api.RoleAdmin)] = "admin"
 
-	vm, ok := cfg.Properties["rolemapping"].(map[string]interface{})
-	if ok {
-		v, err := config.GetConfigValueAsString(vm, "object-reader")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.R_OBJECT_READER)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "object-creator")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.R_OBJECT_CREATOR)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "object-admin")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.R_OBJECT_ADMIN)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "tenant-admin")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.R_TENANT_ADMIN)] = v
-		}
-		v, err = config.GetConfigValueAsString(vm, "admin")
-		if err == nil && v != "" {
-			jwtcfg.RoleMapping[string(api.R_ADMIN)] = v
-		}
-	}
+	doMapping(&jwtcfg, cfg)
+
 	return jwtcfg, nil
 }
 
+func doMapping(jwtcfg *JWTAuthConfig, cfg config.Authentication) {
+	vm, ok := cfg.Properties["rolemapping"].(map[string]any)
+	if !ok {
+		return
+	}
+	v, _ := config.GetConfigValueAsString(vm, "object-reader")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleObjectReader)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "object-creator")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleObjectCreator)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "object-admin")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleObjectAdmin)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "tenant-admin")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleTenantAdmin)] = v
+	}
+	v, _ = config.GetConfigValueAsString(vm, "admin")
+	if v != "" {
+		jwtcfg.RoleMapping[string(api.RoleAdmin)] = v
+	}
+}
+
+// DecodeJWT simple decode the jwt token string
 func DecodeJWT(token string) (JWT, error) {
 	jwt := JWT{
 		Token:   token,
@@ -140,8 +152,8 @@ func DecodeJWT(token string) (JWT, error) {
 	return jwt, nil
 }
 
-func jwtDecodePart(payload string) (map[string]interface{}, error) {
-	var result map[string]interface{}
+func jwtDecodePart(payload string) (map[string]any, error) {
+	var result map[string]any
 	payloadData, err := base64.URLEncoding.WithPadding(base64.NoPadding).DecodeString(payload)
 	if err != nil {
 		err = fmt.Errorf("token payload can't be decoded: %v", err)
@@ -155,7 +167,8 @@ func jwtDecodePart(payload string) (map[string]interface{}, error) {
 	return result, nil
 }
 
-func (j *JWT) Validate(cfg JWTAuthConfig) error {
+// Validate validation of the token is not implemented
+func (j *JWT) Validate(_ JWTAuthConfig) error {
 	//TODO here should be the implementation of the validation of the token
 	return nil
 }

@@ -20,7 +20,7 @@ func TestParsing(t *testing.T) {
 		BlobID:        "1234567890",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     0,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 		Hash:          "sha-256:fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
 	}
 	blobDescription.Properties["X-es-user"] = []string{"Hallo", "Hallo2"}
@@ -44,14 +44,14 @@ func TestParsing(t *testing.T) {
 	if !ok {
 		t.Fatal("header not found")
 	}
-	halloList := haloStr.([]interface{})
+	halloList := haloStr.([]any)
 	assert.Equal(t, "Hallo", halloList[0].(string))
 
 	retention, ok := blobInfo.Properties["X-es-retention"]
 	if !ok {
 		t.Fatal("header not found")
 	}
-	retList := retention.([]interface{})
+	retList := retention.([]any)
 	assert.Equal(t, 123456., retList[0])
 
 	tenant, ok := blobInfo.Properties["X-es-tenant"]
@@ -74,7 +74,7 @@ func TestCheck(t *testing.T) {
 		BlobID:        "1234567890",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     0,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 		Hash:          "sha-256:fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
 		Check: &Check{
 			Store: &CheckInfo{

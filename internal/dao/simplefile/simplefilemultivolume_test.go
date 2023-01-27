@@ -29,7 +29,6 @@ func initSFMVTest(t *testing.T) {
 		err := os.MkdirAll(filepath.Join(sfmvRootPath, v), os.ModePerm)
 		ast.Nil(err)
 	}
-
 }
 
 func clear(t *testing.T) {
@@ -38,11 +37,12 @@ func clear(t *testing.T) {
 		err := os.RemoveAll(sfmvRootPath)
 		assert.Nil(t, err)
 	}
-	os.MkdirAll(sfmvRootPath, os.ModePerm)
+	err := os.MkdirAll(sfmvRootPath, os.ModePerm)
+	assert.Nil(t, err)
 }
 
-func getSFMVStoreageDao(t *testing.T) SimpleFileMultiVolumeDao {
-	dao := SimpleFileMultiVolumeDao{
+func getSFMVStoreageDao(t *testing.T) MultiVolumeStorage {
+	dao := MultiVolumeStorage{
 		RootPath: sfmvRootPath,
 		Tenant:   tenant,
 	}
@@ -55,7 +55,7 @@ func getSFMVStoreageDao(t *testing.T) SimpleFileMultiVolumeDao {
 
 func TestSimpleFileMultiVolumeDaoNoTenant(t *testing.T) {
 	ast := assert.New(t)
-	dao := SimpleFileMultiVolumeDao{
+	dao := MultiVolumeStorage{
 		RootPath: sfmvRootPath,
 	}
 
@@ -87,7 +87,9 @@ func TestSFMVDaoGeneral(t *testing.T) {
 
 	dao := getSFMVStoreageDao(t)
 	ast.NotNil(dao)
-	ast.Equal(ErrNotImplemented, dao.SearchBlobs("", func(id string) bool { return true }), "search should not be implemented")
+	ast.Equal(ErrNotImplemented, dao.SearchBlobs("", func(id string) bool {
+		return true
+	}), "search should not be implemented")
 
 	err := dao.Close()
 	ast.Nil(err, "error closing dao")
@@ -118,7 +120,7 @@ func TestSFMVDaoStoreOneBlobCRUD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -175,7 +177,7 @@ func TestSFMVDaoStoreOneBlobExtend(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -222,7 +224,7 @@ func TestSFMVDaoRetentionCRUD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     1,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -297,7 +299,7 @@ func TestSFMVDaoStoreMultiBlobs(t *testing.T) {
 			Filename:      "test.txt",
 			LastAccess:    time.Now().UnixMilli(),
 			Retention:     1,
-			Properties:    make(map[string]interface{}),
+			Properties:    make(map[string]any),
 		}
 		b.Properties["X-count"] = i
 		b.Properties["X-user"] = []string{"Hallo", "Hallo2"}

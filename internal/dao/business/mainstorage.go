@@ -1,3 +1,4 @@
+// Package business the package contains the structs for the business rules of the storage system
 package business
 
 /*
@@ -16,41 +17,43 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-var _ interfaces.BlobStorageDao = &MainStorageDao{}
+// testing interface compatibility
+var _ interfaces.BlobStorage = &MainStorage{}
 
-type MainStorageDao struct {
+// MainStorage the main dao for the business rules
+type MainStorage struct {
 	RtnMng      interfaces.RetentionManager
-	StgDao      interfaces.BlobStorageDao
-	BckDao      interfaces.BlobStorageDao
-	CchDao      interfaces.BlobStorageDao
+	StgDao      interfaces.BlobStorage
+	BckDao      interfaces.BlobStorage
+	CchDao      interfaces.BlobStorage
 	IdxDao      interfaces.Index
-	TntBckDao   interfaces.BlobStorageDao
+	TntBckDao   interfaces.BlobStorage
 	Bcksyncmode bool
 	Tenant      string
 	hasIdx      bool
 	TntError    error
 }
 
-// Init initialise this dao
-func (m *MainStorageDao) Init() error {
-	// all storages should be initialised before adding to this business class
-	// there for only specifig initialisation for this class is required
+// Init initialize this dao
+func (m *MainStorage) Init() error {
+	// all storages should be initialized before adding to this business class
+	// there for only specific initialization for this class is required
 	m.hasIdx = m.IdxDao != nil
 	return nil
 }
 
 // GetTenant return the id of the tenant
-func (m *MainStorageDao) GetTenant() string {
+func (m *MainStorage) GetTenant() string {
 	return m.Tenant
 }
 
 // GetBlobs getting a list of blob from the filesystem using offset and limit
-func (m *MainStorageDao) GetBlobs(callback func(id string) bool) error {
+func (m *MainStorage) GetBlobs(callback func(id string) bool) error {
 	return m.StgDao.GetBlobs(callback)
 }
 
 // StoreBlob storing a blob to the storage system
-func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
+func (m *MainStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, error) {
 	hasBlob, err := m.StgDao.HasBlob(b.BlobID)
 	if err != nil {
 		return "", fmt.Errorf("main: store blob: check blob: %s, %v", b.BlobID, err)
@@ -96,8 +99,8 @@ func (m *MainStorageDao) StoreBlob(b *model.BlobDescription, f io.Reader) (strin
 	return id, err
 }
 
-// updating the blob description
-func (m *MainStorageDao) UpdateBlobDescription(id string, b *model.BlobDescription) error {
+// UpdateBlobDescription updating the blob description
+func (m *MainStorage) UpdateBlobDescription(id string, b *model.BlobDescription) error {
 	err := m.StgDao.UpdateBlobDescription(id, b)
 	if err != nil {
 		return err
@@ -124,7 +127,7 @@ func (m *MainStorageDao) UpdateBlobDescription(id string, b *model.BlobDescripti
 	return nil
 }
 
-func (m *MainStorageDao) cacheFileByID(id string) {
+func (m *MainStorage) cacheFileByID(id string) {
 	if m.CchDao != nil {
 		ok, err := m.CchDao.HasBlob(id)
 		if err != nil {
@@ -142,7 +145,7 @@ func (m *MainStorageDao) cacheFileByID(id string) {
 	}
 }
 
-func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
+func (m *MainStorage) cacheFile(b *model.BlobDescription) {
 	if m.CchDao != nil {
 		ok, err := m.CchDao.HasBlob(b.BlobID)
 		if err != nil {
@@ -166,19 +169,19 @@ func (m *MainStorageDao) cacheFile(b *model.BlobDescription) {
 	}
 }
 
-func (m *MainStorageDao) tntBackupFile(b *model.BlobDescription, id string) {
+func (m *MainStorage) tntBackupFile(b *model.BlobDescription, id string) {
 	if m.TntBckDao != nil {
 		m.bckFile(m.TntBckDao, b, id)
 	}
 }
 
-func (m *MainStorageDao) backupFile(b *model.BlobDescription, id string) {
+func (m *MainStorage) backupFile(b *model.BlobDescription, id string) {
 	if m.BckDao != nil {
 		m.bckFile(m.BckDao, b, id)
 	}
 }
 
-func (m *MainStorageDao) bckFile(dao interfaces.BlobStorageDao, b *model.BlobDescription, id string) {
+func (m *MainStorage) bckFile(dao interfaces.BlobStorage, b *model.BlobDescription, id string) {
 	if dao != nil {
 		ok, err := dao.HasBlob(b.BlobID)
 		if err != nil {
@@ -202,7 +205,7 @@ func (m *MainStorageDao) bckFile(dao interfaces.BlobStorageDao, b *model.BlobDes
 	}
 }
 
-func (m *MainStorageDao) restoreFile(b *model.BlobDescription) {
+func (m *MainStorage) restoreFile(b *model.BlobDescription) {
 	if m.BckDao != nil {
 		id := b.BlobID
 		ok, err := m.BckDao.HasBlob(id)
@@ -228,7 +231,7 @@ func (m *MainStorageDao) restoreFile(b *model.BlobDescription) {
 }
 
 // HasBlob getting the description of the file
-func (m *MainStorageDao) HasBlob(id string) (bool, error) {
+func (m *MainStorage) HasBlob(id string) (bool, error) {
 	if m.CchDao != nil {
 		ok, err := m.CchDao.HasBlob(id)
 		if err == nil && ok {
@@ -236,23 +239,21 @@ func (m *MainStorageDao) HasBlob(id string) (bool, error) {
 		}
 	}
 	ok, err := m.StgDao.HasBlob(id)
-	if err != nil || !ok {
-		if m.BckDao != nil {
-			bok, berr := m.BckDao.HasBlob(id)
-			if berr == nil && bok {
-				bb, berr := m.BckDao.GetBlobDescription(id)
-				if berr == nil {
-					go m.restoreFile(bb)
-				}
-				return true, nil
+	if (err != nil || !ok) && (m.BckDao != nil) {
+		bok, berr := m.BckDao.HasBlob(id)
+		if berr == nil && bok {
+			bb, berr := m.BckDao.GetBlobDescription(id)
+			if berr == nil {
+				go m.restoreFile(bb)
 			}
+			return true, nil
 		}
 	}
 	return ok, err
 }
 
 // GetBlobDescription getting the description of the file
-func (m *MainStorageDao) GetBlobDescription(id string) (*model.BlobDescription, error) {
+func (m *MainStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	if m.CchDao != nil {
 		b, err := m.CchDao.GetBlobDescription(id)
 		if err == nil {
@@ -275,32 +276,26 @@ func (m *MainStorageDao) GetBlobDescription(id string) (*model.BlobDescription, 
 }
 
 // RetrieveBlob retrieving the binary data from the storage system
-func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
-	if m.CchDao != nil {
-		ok, _ := m.CchDao.HasBlob(id)
-		if ok {
-			b, err := m.CchDao.GetBlobDescription(id)
-			if err == nil {
-				if b.TenantID == m.Tenant {
-					err := m.CchDao.RetrieveBlob(id, w)
-					if err == nil {
-						return nil
-					}
-				}
-			}
-		}
+func (m *MainStorage) RetrieveBlob(id string, w io.Writer) error {
+	// check cache
+	ok := m.retrieveFromCache(id, w)
+	if ok {
+		return nil
 	}
+
 	err := m.StgDao.RetrieveBlob(id, w)
-	if err != nil {
-		if m.BckDao != nil {
-			berr := m.BckDao.RetrieveBlob(id, w)
-			if berr == nil {
-				bb, berr := m.BckDao.GetBlobDescription(id)
-				if berr == nil {
-					go m.restoreFile(bb)
-				}
-				return nil
+	if err == nil {
+		go m.cacheFileByID(id)
+		return nil
+	}
+
+	if m.BckDao != nil {
+		berr := m.BckDao.RetrieveBlob(id, w)
+		if berr == nil {
+			if bb, berr := m.BckDao.GetBlobDescription(id); berr == nil {
+				go m.restoreFile(bb)
 			}
+			return nil
 		}
 		return err
 	}
@@ -309,8 +304,23 @@ func (m *MainStorageDao) RetrieveBlob(id string, w io.Writer) error {
 	return nil
 }
 
+func (m *MainStorage) retrieveFromCache(id string, w io.Writer) bool {
+	if m.CchDao != nil {
+		if ok, _ := m.CchDao.HasBlob(id); ok {
+			b, err := m.CchDao.GetBlobDescription(id)
+			if err == nil && b.TenantID == m.Tenant {
+				err := m.CchDao.RetrieveBlob(id, w)
+				if err == nil {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 // DeleteBlob removing a blob from the storage system
-func (m *MainStorageDao) DeleteBlob(id string) error {
+func (m *MainStorage) DeleteBlob(id string) error {
 	err := m.StgDao.DeleteBlob(id)
 	if err != nil {
 		return err
@@ -331,7 +341,8 @@ func (m *MainStorageDao) DeleteBlob(id string) error {
 	return nil
 }
 
-func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) error {
+// SearchBlobs if an index dao is present, redirect the search to the index service
+func (m *MainStorage) SearchBlobs(q string, callback func(id string) bool) error {
 	if !m.hasIdx {
 		return errors.New("index not configured")
 	}
@@ -344,7 +355,7 @@ func (m *MainStorageDao) SearchBlobs(q string, callback func(id string) bool) er
 }
 
 // CheckBlob checking a single blob from the storage system
-func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
+func (m *MainStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 	// check blob on main storage
 	stgCI, err := m.StgDao.CheckBlob(id)
 	if err != nil {
@@ -362,48 +373,53 @@ func (m *MainStorageDao) CheckBlob(id string) (*model.CheckInfo, error) {
 	bd.Check = &ri
 	// check blob on backup storage
 	if m.BckDao != nil {
-		bckDI, err := m.BckDao.CheckBlob(id)
-		if err != nil {
-			log.Logger.Errorf("error checking blob on backup: %v", err)
-		}
-		bckBd, err := m.StgDao.GetBlobDescription(id)
-		if err != nil {
-			log.Logger.Errorf("error getting blob description on backup: %v", err)
-		}
-		// merge stgCI and bckCI
-		ri.Backup = bckDI
-		ri.Healthy = ri.Healthy && bckDI.Healthy
-		msg := bckDI.Message
-		if ri.Message != "" && msg != "" {
-			msg = fmt.Sprintf("%s, %s", ri.Message, msg)
-		}
-		if msg != "" {
-			ri.Message = msg
-		}
-
-		// checking if both hashes are equal
-		if bd.Hash != bckBd.Hash {
-			ri.Healthy = false
-			msg := "hashes are not equal"
-			if ri.Message != "" {
-				msg = fmt.Sprintf("%s, %s", ri.Message, msg)
-			}
-			ri.Message = msg
-		}
-		bckBd.Check = &ri
-		m.BckDao.UpdateBlobDescription(id, bckBd)
+		m.checkBck(id, &ri, bd)
 	}
 	bd.Check = &ri
 	m.StgDao.UpdateBlobDescription(id, bd)
 	return stgCI, nil
 }
 
+func (m *MainStorage) checkBck(id string, ri *model.Check, bd *model.BlobDescription) {
+	bckDI, err := m.BckDao.CheckBlob(id)
+	if err != nil {
+		log.Logger.Errorf("error checking blob on backup: %v", err)
+	}
+	bckBd, err := m.BckDao.GetBlobDescription(id)
+	if err != nil {
+		log.Logger.Errorf("error getting blob description on backup: %v", err)
+	}
+	// merge stgCI and bckCI
+	ri.Backup = bckDI
+	ri.Healthy = ri.Healthy && bckDI.Healthy
+	msg := bckDI.Message
+	if ri.Message != "" && msg != "" {
+		msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+	}
+	if msg != "" {
+		ri.Message = msg
+	}
+
+	// checking if both hashes are equal
+	if bd.Hash != bckBd.Hash {
+		ri.Healthy = false
+		msg := "hashes are not equal"
+		if ri.Message != "" {
+			msg = fmt.Sprintf("%s, %s", ri.Message, msg)
+		}
+		ri.Message = msg
+	}
+	bckBd.Check = ri
+	m.BckDao.UpdateBlobDescription(id, bckBd)
+}
+
 // GetAllRetentions for every retention entry for this Tenant we call this this function, you can stop the listing by returning a false
-func (m *MainStorageDao) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
+func (m *MainStorage) GetAllRetentions(callback func(r model.RetentionEntry) bool) error {
 	return m.StgDao.GetAllRetentions(callback)
 }
 
-func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
+// AddRetention adding a retention entry to the main and backup storage
+func (m *MainStorage) AddRetention(r *model.RetentionEntry) error {
 	err := m.StgDao.AddRetention(r)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.AddRetention(r); err1 != nil {
@@ -413,11 +429,13 @@ func (m *MainStorageDao) AddRetention(r *model.RetentionEntry) error {
 	return err
 }
 
-func (m *MainStorageDao) GetRetention(id string) (model.RetentionEntry, error) {
+// GetRetention getting a single retention entry from the main storage
+func (m *MainStorage) GetRetention(id string) (model.RetentionEntry, error) {
 	return m.StgDao.GetRetention(id)
 }
 
-func (m *MainStorageDao) DeleteRetention(id string) error {
+// DeleteRetention deletes the retention entry from the main and backup storage
+func (m *MainStorage) DeleteRetention(id string) error {
 	err := m.StgDao.DeleteRetention(id)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.DeleteRetention(id); err1 != nil {
@@ -427,23 +445,24 @@ func (m *MainStorageDao) DeleteRetention(id string) error {
 	return err
 }
 
-func (m *MainStorageDao) ResetRetention(id string) error {
+// ResetRetention resets the retention for a blob, main and backup storage
+func (m *MainStorage) ResetRetention(id string) error {
 	err := m.StgDao.ResetRetention(id)
 	if m.BckDao != nil {
 		if err1 := m.BckDao.ResetRetention(id); err1 != nil {
-			log.Logger.Errorf("error reseting retention on backup:%s, %v", id, err1)
+			log.Logger.Errorf("error resetting retention on backup:%s, %v", id, err1)
 		}
 	}
 	return err
 }
 
-// Error get last error for this tenant
-func (m *MainStorageDao) GetLastError() error {
+// GetLastError Error get last error for this tenant
+func (m *MainStorage) GetLastError() error {
 	return m.TntError
 }
 
 // Close closing the blob storage
-func (m *MainStorageDao) Close() error {
+func (m *MainStorage) Close() error {
 	err := m.StgDao.Close()
 	if m.BckDao != nil {
 		if err1 := m.BckDao.Close(); err1 != nil {

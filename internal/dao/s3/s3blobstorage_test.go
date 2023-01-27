@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	tntDao S3TenantManager
+	tntDao TenantManager
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 
 // TODO all tests are skipped
 func setup(t *testing.T) {
-	tntDao = S3TenantManager{
+	tntDao = TenantManager{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -36,16 +36,18 @@ func setup(t *testing.T) {
 
 	ok := tntDao.HasTenant(tenant)
 	if !ok {
-		tntDao.AddTenant(tenant)
+		err = tntDao.AddTenant(tenant)
+		assert.Nil(t, err)
 	}
 }
 
-func close(t *testing.T) {
-	tntDao.RemoveTenant(tenant)
+func closeTest(t *testing.T) {
+	_, err := tntDao.RemoveTenant(tenant)
+	assert.Nil(t, err)
 }
 
-func createDao() (S3BlobStorage, error) {
-	dao := S3BlobStorage{
+func createDao() (BlobStorage, error) {
+	dao := BlobStorage{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -66,7 +68,7 @@ func TestS3Init(t *testing.T) {
 	ast.Nil(err)
 	ast.NotNil(dao)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestCheckUnknownBlob(t *testing.T) {
@@ -82,13 +84,13 @@ func TestCheckUnknownBlob(t *testing.T) {
 	ast.Nil(err)
 	ast.False(ok)
 
-	close(t)
+	closeTest(t)
 }
 func TestCheckEmptyTenant(t *testing.T) {
 	t.SkipNow()
 	setup(t)
 	ast := assert.New(t)
-	dao := S3BlobStorage{
+	dao := BlobStorage{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -99,7 +101,7 @@ func TestCheckEmptyTenant(t *testing.T) {
 
 	ast.NotNil(err)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestCRUDBlob(t *testing.T) {
@@ -121,7 +123,7 @@ func TestCRUDBlob(t *testing.T) {
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,
 		Retention:     0,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-tenant"] = "MCS"
 
@@ -132,7 +134,8 @@ func TestCRUDBlob(t *testing.T) {
 	id, err := dao.StoreBlob(&b, r)
 	ast.Nil(err)
 	ast.NotNil(id)
-	r.Close()
+	err = r.Close()
+	ast.Nil(err)
 
 	fmt.Printf("blob id: %s", id)
 	ok, err := dao.HasBlob(id)
@@ -150,8 +153,10 @@ func TestCRUDBlob(t *testing.T) {
 
 	w, err := os.Create(testfile)
 	ast.Nil(err)
-	dao.RetrieveBlob(id, w)
-	w.Close()
+	err = dao.RetrieveBlob(id, w)
+	ast.Nil(err)
+	err = w.Close()
+	ast.Nil(err)
 
 	ok, err = readercomp.FilesEqual(pdffile, testfile)
 	ast.Nil(err)
@@ -181,7 +186,7 @@ func TestCRUDBlob(t *testing.T) {
 	ast.Nil(err)
 	ast.False(ok)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestRetentionStorage(t *testing.T) {
@@ -208,10 +213,11 @@ func TestRetentionStorage(t *testing.T) {
 	ast.Nil(err)
 
 	rets := make([]model.RetentionEntry, 0)
-	dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+	err = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
 		rets = append(rets, r)
 		return true
 	})
+	ast.Nil(err)
 
 	ast.Equal(1, len(rets))
 	retDst := rets[0]
@@ -234,7 +240,7 @@ func TestRetentionStorage(t *testing.T) {
 	err = dao.DeleteRetention(blobID)
 	ast.Nil(err)
 
-	close(t)
+	closeTest(t)
 }
 
 func TestCRUDBlobWID(t *testing.T) {
@@ -258,7 +264,7 @@ func TestCRUDBlobWID(t *testing.T) {
 		Filename:      fileInfo.Name(),
 		TenantID:      tenant,
 		Retention:     0,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-tenant"] = "MCS"
 
@@ -270,7 +276,8 @@ func TestCRUDBlobWID(t *testing.T) {
 	ast.Nil(err)
 	ast.NotNil(id)
 	ast.Equal(id, uuid)
-	r.Close()
+	err = r.Close()
+	ast.Nil(err)
 
 	fmt.Printf("blob id: %s", id)
 	ok, err := dao.HasBlob(uuid)
@@ -289,8 +296,10 @@ func TestCRUDBlobWID(t *testing.T) {
 
 	w, err := os.Create(testfile)
 	ast.Nil(err)
-	dao.RetrieveBlob(uuid, w)
-	w.Close()
+	err = dao.RetrieveBlob(uuid, w)
+	ast.Nil(err)
+	err = w.Close()
+	ast.Nil(err)
 
 	ok, err = readercomp.FilesEqual(pdffile, testfile)
 	ast.Nil(err)
@@ -320,5 +329,5 @@ func TestCRUDBlobWID(t *testing.T) {
 	ast.Nil(err)
 	ast.False(ok)
 
-	close(t)
+	closeTest(t)
 }

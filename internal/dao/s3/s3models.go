@@ -1,5 +1,6 @@
 package s3
 
-type S3StoreEntry struct {
+// StoreEntry entry in a list for tenant management
+type StoreEntry struct {
 	Tenant string `yaml:"tenant" json:"tenant"`
 }

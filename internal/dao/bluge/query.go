@@ -15,8 +15,8 @@ func toBlugeQuery(q query.Query) (bluge.Query, error) {
 	return bq, err
 }
 
-//xToBdb converting a node/condition to a bluge string
-func xToBq(x interface{}) (bluge.Query, error) {
+// xToBdb converting a node/condition to a bluge string
+func xToBq(x any) (bluge.Query, error) {
 	switch v := x.(type) {
 	case query.Condition:
 		return cToBq(v)
@@ -30,7 +30,7 @@ func xToBq(x interface{}) (bluge.Query, error) {
 	return nil, fmt.Errorf("can't convert %V to bluge query", x)
 }
 
-//nToMdb converting a node into a mongo query string
+// nToMdb converting a node into a mongo query string
 func nToBq(n query.Node) (bluge.Query, error) {
 	bq := bluge.NewBooleanQuery()
 	for _, c := range n.Conditions {
@@ -47,7 +47,7 @@ func nToBq(n query.Node) (bluge.Query, error) {
 	return bq, nil
 }
 
-//cToMdb converting a condition into a mongo query string
+// cToMdb converting a condition into a mongo query string
 func cToBq(c query.Condition) (bluge.Query, error) {
 	bq := bluge.NewBooleanQuery()
 	var q bluge.Query
@@ -63,9 +63,8 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		v, err := cToFloat(c)
 		if err != nil {
 			return nil, err
-		} else {
-			q = bluge.NewBooleanQuery().AddMustNot(bluge.NewNumericRangeInclusiveQuery(v, v, true, true).SetField(c.Field))
 		}
+		q = bluge.NewBooleanQuery().AddMustNot(bluge.NewNumericRangeInclusiveQuery(v, v, true, true).SetField(c.Field))
 	case query.GT:
 		v, err := cToFloat(c)
 		if err != nil {
@@ -91,13 +90,7 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		}
 		q = bluge.NewNumericRangeInclusiveQuery(bluge.MinNumeric, v, false, true).SetField(c.Field)
 	default:
-		if c.HasWildcard() {
-			cq := cToStr(c)
-			cq = strings.ToLower(cq)
-			q = bluge.NewWildcardQuery(cq).SetField(c.Field)
-		} else {
-			q = bluge.NewMatchQuery(cToStr(c)).SetField(c.Field)
-		}
+		q = processWildcard(c)
 	}
 	if c.Invert {
 		bq.AddMustNot(q)
@@ -105,6 +98,17 @@ func cToBq(c query.Condition) (bluge.Query, error) {
 		bq.AddMust(q)
 	}
 	return bq, nil
+}
+
+func processWildcard(c query.Condition) (q bluge.Query) {
+	if c.HasWildcard() {
+		cq := cToStr(c)
+		cq = strings.ToLower(cq)
+		q = bluge.NewWildcardQuery(cq).SetField(c.Field)
+	} else {
+		q = bluge.NewMatchQuery(cToStr(c)).SetField(c.Field)
+	}
+	return q
 }
 
 func cToFloat(c query.Condition) (float64, error) {

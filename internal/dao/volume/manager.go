@@ -1,7 +1,6 @@
 package volume
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -10,48 +9,51 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
-	"github.com/sony/sonyflake"
+	log "github.com/willie68/GoBlobStore/internal/logging"
 	"gopkg.in/yaml.v2"
 )
 
-/*
-This is a volume manager, which provide functionality about volumes mapped to a static root path.
-e.g. /root/mvn01, /root/mvn02 ...
-every sub folder should be another mount point. The manager provide information about presence, capacity, free space and utilization.
-It also provide a utilization in m% of all volumes.
-The call back will be fired on every new mount of a volume in the monitored root folder.
-*/
-type VolumeManager struct {
-	root      string
-	cm        sync.Mutex
-	volumes   map[string]VolumeInfo
-	sonyflake sonyflake.Sonyflake
-	callbacks []Callback
-	ticker    *time.Ticker
-	rnd       *rand.Rand
+// Manager This is a volume manager, which provide functionality about volumes mapped to a static root path.
+//
+// e.g. /root/mvn01, /root/mvn02 ...
+// every sub folder should be another mount point. The manager provide information about presence, capacity, free space and utilization.
+// It also provide a utilization in m% of all volumes.
+// The call back will be fired on every new mount of a volume in the monitored root folder.
+type Manager struct {
+	root       string
+	tickertime time.Duration
+	cm         sync.Mutex
+	volumes    map[string]Info
+	callbacks  []Callback
+	ticker     *time.Ticker
+	rnd        *rand.Rand
 }
 
+// Callback a simple callback function
 type Callback func(name string) bool
 
-type VolumeInfo struct {
+// Info information about a volume
+type Info struct {
 	Name     string `yaml:"name",json:"name"`
-	ID       string `yaml:"id",json:"id"`
 	Free     uint64 `yaml:"free",json:"free"`
 	Used     uint64 `yaml:"used",json:"used"`
 	Total    uint64 `yaml:"total",json:"total"`
 	Path     string `yaml:"-",json:"-"`
 	Selector int    `yaml:"-",json:"-"`
-	freepm   int    `yaml:"-",json:"-"`
+	freepm   int
 }
 
-func NewVolumeManager(rootpath string) (VolumeManager, error) {
-	vs := VolumeManager{
-		root: rootpath,
+// NewVolumeManager creating a new NewVolumeManager with a root path
+func NewVolumeManager(rootpath string) (Manager, error) {
+	vs := Manager{
+		root:       rootpath,
+		tickertime: 1 * time.Minute,
 	}
 	return vs, nil
 }
 
-func (v *VolumeManager) Init() error {
+// Init initialize the volume manager
+func (v *Manager) Init() error {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	v.cm = sync.Mutex{}
 	v.rnd = rand.New(s1)
@@ -59,33 +61,36 @@ func (v *VolumeManager) Init() error {
 	if v.ticker != nil {
 		v.ticker.Stop()
 	}
-	v.volumes = make(map[string]VolumeInfo)
-	var st sonyflake.Settings
-	st.StartTime = time.Now()
-	v.sonyflake = *sonyflake.NewSonyflake(st)
+	v.volumes = make(map[string]Info)
 	err := v.Rescan()
-	v.ticker = time.NewTicker(1 * time.Minute)
+	v.ticker = time.NewTicker(v.tickertime)
 	go func() {
 		for range v.ticker.C {
-			v.Rescan()
+			err := v.Rescan()
+			if err != nil {
+				log.Logger.Errorf("volume manager: error rescan volumes: %v", err)
+			}
 		}
 	}()
 	return err
 }
 
-func (v *VolumeManager) HasVolume(name string) bool {
+// HasVolume checking if a volume is present
+func (v *Manager) HasVolume(name string) bool {
 	v.cm.Lock()
 	defer v.cm.Unlock()
 	_, ok := v.volumes[name]
 	return ok
 }
 
-func (v *VolumeManager) AddCallback(cb Callback) bool {
+// AddCallback adding a callback for volume list changes
+func (v *Manager) AddCallback(cb Callback) bool {
 	v.callbacks = append(v.callbacks, cb)
 	return true
 }
 
-func (v *VolumeManager) Rescan() error {
+// Rescan scan the mount points for new volumes
+func (v *Manager) Rescan() error {
 	entries, err := os.ReadDir(v.root)
 	if err != nil {
 		return err
@@ -105,25 +110,19 @@ func (v *VolumeManager) Rescan() error {
 			}
 		}
 	}
-	v.CalculatePerMill()
-	return nil
+	err = v.CalculatePerMill()
+	return err
 }
 
-func (v *VolumeManager) volInfo(name string) (*VolumeInfo, error) {
-	var vi VolumeInfo
+func (v *Manager) volInfo(name string) (*Info, error) {
+	var vi Info
 	volRoot := filepath.Join(v.root, name)
 	volInfoFile := filepath.Join(volRoot, ".volumeinfo")
 
 	_, err := os.Stat(volInfoFile)
 	if os.IsNotExist(err) {
-		id, err := v.sonyflake.NextID()
-		if err != nil {
-			return nil, err
-		}
-		sid := fmt.Sprintf("%x", id)
-		vi = VolumeInfo{
+		vi = Info{
 			Name: name,
-			ID:   sid,
 		}
 	} else {
 		in, err := os.ReadFile(volInfoFile)
@@ -155,7 +154,8 @@ func (v *VolumeManager) volInfo(name string) (*VolumeInfo, error) {
 	return &vi, err
 }
 
-func (v *VolumeManager) Info(name string) *VolumeInfo {
+// Info getting the volume info of a single volume
+func (v *Manager) Info(name string) *Info {
 	v.cm.Lock()
 	defer v.cm.Unlock()
 	vi, ok := v.volumes[name]
@@ -165,17 +165,8 @@ func (v *VolumeManager) Info(name string) *VolumeInfo {
 	return nil
 }
 
-func (v *VolumeManager) ID(name string) string {
-	v.cm.Lock()
-	defer v.cm.Unlock()
-	vi, ok := v.volumes[name]
-	if ok {
-		return vi.ID
-	}
-	return ""
-}
-
-func (v *VolumeManager) CalculatePerMill() error {
+// CalculatePerMill calculates the volume utilization in /1000
+func (v *Manager) CalculatePerMill() error {
 	var g uint64
 	var gfreepm int
 	v.cm.Lock()
@@ -197,7 +188,8 @@ func (v *VolumeManager) CalculatePerMill() error {
 	return nil
 }
 
-func (v *VolumeManager) SelectFree(i int) string {
+// SelectFree select the next free volume in conjunction to the 1000 based selector
+func (v *Manager) SelectFree(i int) string {
 	v.cm.Lock()
 	defer v.cm.Unlock()
 	keys := make([]string, 0, len(v.volumes))
@@ -215,6 +207,7 @@ func (v *VolumeManager) SelectFree(i int) string {
 	return ""
 }
 
-func (v *VolumeManager) Rnd() int {
+// Rnd getting a 1000 based selector randomly
+func (v *Manager) Rnd() int {
 	return v.rnd.Intn(1000)
 }

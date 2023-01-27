@@ -1,3 +1,4 @@
+// Package simplefile implement a storage system on a mounted device with simple files as storage objects
 package simplefile
 
 import (
@@ -12,15 +13,19 @@ import (
 )
 
 const (
-	DESCRIPTION_EXT = ".json"
-	BINARY_EXT      = ".bin"
-	RETENTION_EXT   = ".json"
-	RETENTION_PATH  = "retention"
+	// DescriptionExt extension of the description file
+	DescriptionExt = ".json"
+	// BinaryExt extension of the binary file
+	BinaryExt = ".bin"
+	// RetentionExt extension of the retention file
+	RetentionExt = ".json"
+	// RetentionPath path to the retention files
+	RetentionPath = "retention"
 )
 
-func (s *SimpleFileBlobStorageDao) getBlobDescriptionV1(id string) (*model.BlobDescription, error) {
+func (s *BlobStorage) getBlobDescriptionV1(id string) (*model.BlobDescription, error) {
 	var info model.BlobDescription
-	jsonFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
+	jsonFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DescriptionExt))
 	if _, err := os.Stat(jsonFile); os.IsNotExist(err) {
 		return nil, os.ErrNotExist
 	}
@@ -37,9 +42,9 @@ func (s *SimpleFileBlobStorageDao) getBlobDescriptionV1(id string) (*model.BlobD
 }
 
 // updating the blob description
-func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV1(id string, b *model.BlobDescription) error {
+func (s *BlobStorage) updateBlobDescriptionV1(id string, b *model.BlobDescription) error {
 	if s.hasBlobV1(id) {
-		err := s.writeJsonFileV1(b)
+		err := s.writeJSONFileV1(b)
 		if err != nil {
 			return err
 		}
@@ -51,20 +56,20 @@ func (s *SimpleFileBlobStorageDao) updateBlobDescriptionV1(id string, b *model.B
 	return os.ErrNotExist
 }
 
-func (s *SimpleFileBlobStorageDao) hasBlobV1(id string) bool {
-	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BINARY_EXT))
+func (s *BlobStorage) hasBlobV1(id string) bool {
+	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BinaryExt))
 	if _, err := os.Stat(binFile); os.IsNotExist(err) {
 		return false
 	}
-	descFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
+	descFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DescriptionExt))
 	if _, err := os.Stat(descFile); os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
-func (s *SimpleFileBlobStorageDao) getBlobV1(id string, w io.Writer) error {
-	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BINARY_EXT))
+func (s *BlobStorage) getBlobV1(id string, w io.Writer) error {
+	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BinaryExt))
 	if _, err := os.Stat(binFile); os.IsNotExist(err) {
 		return os.ErrNotExist
 	}
@@ -80,47 +85,55 @@ func (s *SimpleFileBlobStorageDao) getBlobV1(id string, w io.Writer) error {
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) buildRetentionFilename(id string) (string, error) {
+func (s *BlobStorage) buildRetentionFilename(id string) (string, error) {
 	fp := s.filepath
-	fp = filepath.Join(fp, RETENTION_PATH)
+	fp = filepath.Join(fp, RetentionPath)
 	err := os.MkdirAll(fp, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(fp, fmt.Sprintf("%s%s", id, RETENTION_EXT)), nil
+	return filepath.Join(fp, fmt.Sprintf("%s%s", id, RetentionExt)), nil
 }
 
-// TODO implement error handling
-func (s *SimpleFileBlobStorageDao) deleteFilesV1(id string) error {
-	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BINARY_EXT))
-	os.Remove(binFile)
-	jsonFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DESCRIPTION_EXT))
-	os.Remove(jsonFile)
+func (s *BlobStorage) deleteFilesV1(id string) error {
+	binFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, BinaryExt))
+	err := os.Remove(binFile)
+	if err != nil {
+		return err
+	}
+	jsonFile := filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, DescriptionExt))
+	err = os.Remove(jsonFile)
+	if err != nil {
+		return err
+	}
 	jsonFile, _ = s.buildRetentionFilename(id)
-	os.Remove(jsonFile)
+	err = os.Remove(jsonFile)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) writeJsonFileV1(b *model.BlobDescription) error {
-	jsonFile, err := s.buildFilenameV1(b.BlobID, DESCRIPTION_EXT)
+func (s *BlobStorage) writeJSONFileV1(b *model.BlobDescription) error {
+	jsonFile, err := s.buildFilenameV1(b.BlobID, DescriptionExt)
 	if err != nil {
 		return err
 	}
 
-	json, err := json.Marshal(b)
+	js, err := json.Marshal(b)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, json, os.ModePerm)
+	err = ioutil.WriteFile(jsonFile, js, os.ModePerm)
 	if err != nil {
-		os.Remove(jsonFile)
+		_ = os.Remove(jsonFile)
 		return err
 	}
 
 	return nil
 }
 
-func (s *SimpleFileBlobStorageDao) buildFilenameV1(id string, ext string) (string, error) {
+func (s *BlobStorage) buildFilenameV1(id string, ext string) (string, error) {
 	return filepath.Join(s.filepath, fmt.Sprintf("%s%s", id, ext)), nil
 }

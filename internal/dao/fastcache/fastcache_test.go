@@ -15,17 +15,18 @@ import (
 )
 
 const (
-	rootpath = "R:/blbcch/"
+	rootpath = "../../../testdata/fc"
 )
 
 func initTest(t *testing.T) {
 	// getting the zip file and extracting it into the file system
-	os.MkdirAll(rootpath, os.ModePerm)
+	err := os.MkdirAll(rootpath, os.ModePerm)
+	assert.Nil(t, err)
 }
 
 func clear(t *testing.T) {
 	// getting the zip file and extracting it into the file system
-	err := removeContents(rootpath)
+	err := os.RemoveAll(rootpath)
 	assert.Nil(t, err)
 }
 
@@ -52,7 +53,7 @@ func getStoreageDao(t *testing.T) *FastCache {
 	dao := FastCache{
 		RootPath:   rootpath,
 		MaxCount:   20,
-		MaxRamSize: 1 * 1024 * 1024 * 1024,
+		MaxRAMSize: 1 * 1024 * 1024 * 1024,
 	}
 	err := dao.Init()
 	if err != nil {
@@ -108,7 +109,8 @@ func TestList(t *testing.T) {
 
 	assert.Equal(t, 0, len(blobs))
 
-	dao.Close()
+	err = dao.Close()
+	assert.Nil(t, err)
 }
 
 func TestCRD(t *testing.T) {
@@ -125,7 +127,7 @@ func TestCRD(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -163,7 +165,8 @@ func TestCRD(t *testing.T) {
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)
 
-	dao.Close()
+	err = dao.Close()
+	ast.Nil(err)
 }
 
 func TestMaxCount(t *testing.T) {
@@ -217,15 +220,14 @@ func TestMaxCount(t *testing.T) {
 		err := dao.RetrieveBlob(id, &buf)
 		ast.Nil(err)
 		if err == nil {
-
 			assert.Equal(t, "this is a blob content", buf.String())
-
 			//			err = dao.DeleteBlob(id)
 			//			ast.Nil(err)
 		}
 	}
 
-	dao.Close()
+	err = dao.Close()
+	ast.Nil(err)
 	//clear(t)
 }
 
@@ -239,10 +241,10 @@ func getBlobDescription(id string) *model.BlobDescription {
 		ContentLength: 22,
 		ContentType:   "text/plain",
 		CreationDate:  time.Now().UnixMilli(),
-		Filename:      "id",
+		Filename:      id,
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -280,7 +282,7 @@ func TestSameUUID(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -311,5 +313,45 @@ func TestSameUUID(t *testing.T) {
 
 	err = dao.DeleteBlob(id)
 	ast.Nil(err)
-	dao.Close()
+
+	err = dao.Close()
+	ast.Nil(err)
+}
+
+func TestNotImplemented(t *testing.T) {
+	initTest(t)
+	clear(t)
+	dao := getStoreageDao(t)
+	ast := assert.New(t)
+
+	ast.Equal(DefaultTnt, dao.GetTenant())
+
+	err := dao.SearchBlobs("hallo", func(id string) bool {
+		return true
+	})
+	ast.ErrorAs(err, &errNotImplemented)
+
+	err = dao.GetAllRetentions(func(r model.RetentionEntry) bool {
+		return true
+	})
+	ast.ErrorAs(err, &errNotImplemented)
+
+	err = dao.AddRetention(&model.RetentionEntry{
+		Filename: "string",
+		TenantID: DefaultTnt,
+		BlobID:   "12345678",
+	})
+	ast.ErrorAs(err, &errNotImplemented)
+
+	_, err = dao.GetRetention("12345678")
+	ast.ErrorAs(err, &errNotImplemented)
+
+	err = dao.DeleteRetention("12345678")
+	ast.ErrorAs(err, &errNotImplemented)
+
+	err = dao.ResetRetention("12345678")
+	ast.ErrorAs(err, &errNotImplemented)
+
+	err = dao.GetLastError()
+	ast.Nil(err)
 }

@@ -11,27 +11,29 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
+// RestoreContext struct for the running a full restore of the tenant
 type RestoreContext struct {
 	TenantID  string
 	ID        string
 	Started   time.Time
 	Finnished time.Time
-	Primary   interfaces.BlobStorageDao
-	Backup    interfaces.BlobStorageDao
+	Primary   interfaces.BlobStorage
+	Backup    interfaces.BlobStorage
 	Running   bool
 	cancel    bool
 }
 
+// checking interface compatibility
 var _ interfaces.Running = &RestoreContext{}
 
 // MigrateRestore migrates all blobs in the backup storage for a tenant into the main storage, if not already present
 func MigrateRestore(tenant string, stgf interfaces.StorageFactory) (*RestoreContext, error) {
-	d, err := stgf.GetStorageDao(tenant)
+	d, err := stgf.GetStorage(tenant)
 	if err != nil {
 		return nil, err
 	}
 
-	main, ok := d.(*business.MainStorageDao)
+	main, ok := d.(*business.MainStorage)
 	if !ok {
 		return nil, errors.New("wrong storage class for check")
 	}
@@ -45,9 +47,12 @@ func MigrateRestore(tenant string, stgf interfaces.StorageFactory) (*RestoreCont
 	return &r, nil
 }
 
+// Restore starting a full restore of a tenant
 func (r *RestoreContext) Restore() {
 	r.Running = true
-	defer func() { r.Running = false }()
+	defer func() {
+		r.Running = false
+	}()
 	r.cancel = false
 	log.Logger.Debugf("start restoring tenant \"%s\"", r.TenantID)
 	// restoring all blobs in backup storage
@@ -57,7 +62,10 @@ func (r *RestoreContext) Restore() {
 		err := r.Backup.GetBlobs(func(id string) bool {
 			// process only blobs that are not already in primary store
 			if ok, _ := r.Primary.HasBlob(id); !ok {
-				restore(id, r.Backup, r.Primary)
+				err := restore(id, r.Backup, r.Primary)
+				if err != nil {
+					log.Logger.Errorf("error restoring file from backup: %v", err)
+				}
 			}
 			count++
 			return true
@@ -68,12 +76,13 @@ func (r *RestoreContext) Restore() {
 	}
 }
 
+// IsRunning checking if a full restore is running
 func (r *RestoreContext) IsRunning() bool {
 	return r.Running
 }
 
 // restore migrates a file from the backup storage of the tenant to the primary storage
-func restore(id string, src interfaces.BlobStorageDao, dst interfaces.BlobStorageDao) error {
+func restore(id string, src interfaces.BlobStorage, dst interfaces.BlobStorage) error {
 	found, err := src.HasBlob(id)
 	if err != nil {
 		log.Logger.Errorf("error checking blob: %s\n%v", id, err)

@@ -7,16 +7,15 @@ import (
 	"github.com/willie68/GoBlobStore/internal/dao/retentionmanager"
 )
 
-// createRetentionManager creates a new Retention manager depending o nthe configuration
-func CreateRetentionManager(rtnMgrStr string, tenantDao interfaces.TenantDao) (interfaces.RetentionManager, error) {
-	switch rtnMgrStr {
-	//This is the single node retention manager
-	case retentionmanager.SingleRetentionManagerName:
+// CreateRetentionManager creates a new Retention manager depending ot he configuration
+func CreateRetentionManager(rtnMgrStr string, tenantDao interfaces.TenantManager) (interfaces.RetentionManager, error) {
+	if rtnMgrStr == retentionmanager.SingleRetentionManagerName {
+		//This is the single node retention manager
 		rtnMgr := &retentionmanager.SingleRetentionManager{
 			TntDao:  tenantDao,
 			MaxSize: 10000,
 		}
 		return rtnMgr, nil
 	}
-	return nil, fmt.Errorf("no rentention manager found for class: %s", rtnMgrStr)
+	return nil, fmt.Errorf("no retention manager found for class: %s", rtnMgrStr)
 }

@@ -12,23 +12,26 @@ import (
 	"github.com/willie68/GoBlobStore/internal/utils"
 )
 
+// CheckContext struct for the running check
 type CheckContext struct {
-	TenantID  string
-	CheckID   string
-	Started   time.Time
-	Finnished time.Time
-	Cache     interfaces.BlobStorageDao
-	Primary   interfaces.BlobStorageDao
-	Backup    interfaces.BlobStorageDao
-	Running   bool
-	Filename  string
-	BlobID    string
-	cancel    bool
-	Message   string
+	TenantID string
+	CheckID  string
+	Started  time.Time
+	Finished time.Time
+	Cache    interfaces.BlobStorage
+	Primary  interfaces.BlobStorage
+	Backup   interfaces.BlobStorage
+	Running  bool
+	Filename string
+	BlobID   string
+	cancel   bool
+	Message  string
 }
 
+// checking interface compatibility
 var _ interfaces.Running = &CheckContext{}
 
+// CheckResultLine on entry for the result of the check, usually converted into one report output line
 type CheckResultLine struct {
 	ID            string
 	Filename      string
@@ -41,11 +44,14 @@ type CheckResultLine struct {
 }
 
 // Admin functions
+
 // CheckStorage checks the storage to find inconsistencies.
 // It will write a audit file with a line for every blob in the storage, including name, hash, and state
 func (c *CheckContext) CheckStorage() (string, error) {
 	c.Running = true
-	defer func() { c.Running = false }()
+	defer func() {
+		c.Running = false
+	}()
 	c.cancel = false
 	file, err := ioutil.TempFile("", "check.*.json")
 	if err != nil {
@@ -54,82 +60,91 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	defer file.Close()
 	c.Filename = file.Name()
 	log.Logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
-	file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
+	_, _ = file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
 
 	// checking all blobs in cache
 	if c.Cache != nil {
-		count := 0
-		log.Logger.Debug("checking cache")
-		file.WriteString(",\r\n\"Cache\": [")
-		err := c.Cache.GetBlobs(func(id string) bool {
-			// checking if the blob belongs to the tenant
-			b, err := c.Cache.GetBlobDescription(id)
-			if (err == nil) && (b.TenantID == c.TenantID) {
-				msg := "ok"
-				ip, _ := c.Primary.HasBlob(id)
-				if !ip {
-					msg = "cache inconsistent"
-				}
-				if count > 0 {
-					file.WriteString(",\r\n")
-				}
-				file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
-				count++
-			}
-			return true
-		})
-
-		file.WriteString("]")
-		if err != nil {
-			log.Logger.Errorf("check: error checking cache. %v", err)
-		}
-		file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
+		c.checkCache(file)
 	}
 	// checking all blobs in main storage
 	count := 0
 	log.Logger.Debug("checking primary")
-	file.WriteString(",\r\n\"Primary\": [\r\n")
+	_, _ = file.WriteString(",\r\n\"Primary\": [\r\n")
 	err = c.Primary.GetBlobs(func(id string) bool {
 		if count > 0 {
-			file.WriteString(",\r\n")
+			_, _ = file.WriteString(",\r\n")
 		}
 		c.checkBlob(id, file)
 		count++
 		return true
 	})
-	file.WriteString("]")
-	file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
+	_, _ = file.WriteString("]")
+	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
 	if err != nil {
 		log.Logger.Errorf("check: error checking primary. %v", err)
 	}
 	// checking all blobs in backup storage
 	if c.Backup != nil {
-		log.Logger.Debug("checking backup")
-		count := 0
-		first := true
-		file.WriteString(",\r\n\"Backup\": [\r\n")
-		err := c.Backup.GetBlobs(func(id string) bool {
-			// only check blobs that are not already checked in primary
-			if ok, _ := c.Primary.HasBlob(id); !ok {
-				if !first {
-					file.WriteString(",\r\n")
-				}
-				file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
-				first = false
-			}
-			count++
-			return true
-		})
-		if err != nil {
-			log.Logger.Errorf("check: error checking backup. %v", err)
-		}
-		file.WriteString("]")
-		file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
+		c.checkBackup(file)
 	}
-	file.WriteString("\r\n}")
+	_, _ = file.WriteString("\r\n}")
 	return file.Name(), err
 }
 
+func (c *CheckContext) checkBackup(file *os.File) {
+	log.Logger.Debug("checking backup")
+	count := 0
+	first := true
+	_, _ = file.WriteString(",\r\n\"Backup\": [\r\n")
+	err := c.Backup.GetBlobs(func(id string) bool {
+		// only check blobs that are not already checked in primary
+		if ok, _ := c.Primary.HasBlob(id); !ok {
+			if !first {
+				_, _ = file.WriteString(",\r\n")
+			}
+			_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": true }", id))
+			first = false
+		}
+		count++
+		return true
+	})
+	if err != nil {
+		log.Logger.Errorf("check: error checking backup. %v", err)
+	}
+	_, _ = file.WriteString("]")
+	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
+}
+
+func (c *CheckContext) checkCache(file *os.File) {
+	count := 0
+	log.Logger.Debug("checking cache")
+	_, _ = file.WriteString(",\r\n\"Cache\": [")
+	err := c.Cache.GetBlobs(func(id string) bool {
+		// checking if the blob belongs to the tenant
+		b, err := c.Cache.GetBlobDescription(id)
+		if (err == nil) && (b.TenantID == c.TenantID) {
+			msg := "ok"
+			ip, _ := c.Primary.HasBlob(id)
+			if !ip {
+				msg = "cache inconsistent"
+			}
+			if count > 0 {
+				_, _ = file.WriteString(",\r\n")
+			}
+			_, _ = file.WriteString(fmt.Sprintf("{\"ID\": \"%s\", \"HasError\": %t, \"Messages\": [\"%s\"]}", id, !ip, msg))
+			count++
+		}
+		return true
+	})
+
+	_, _ = file.WriteString("]")
+	if err != nil {
+		log.Logger.Errorf("check: error checking cache. %v", err)
+	}
+	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
+}
+
+// IsRunning checking if this task is running
 func (c *CheckContext) IsRunning() bool {
 	return c.Running
 }
@@ -184,7 +199,7 @@ func (c *CheckContext) checkBlob(id string, file *os.File) {
 	}
 	// writing a line of check results
 	js, _ := json.Marshal(r)
-	file.WriteString(string(js))
+	_, _ = file.WriteString(string(js))
 }
 
 func newResult() CheckResultLine {

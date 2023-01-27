@@ -7,17 +7,17 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-// this is the interface for the factory which will create tenant specifig storage implementations
+// StorageFactory this is the interface for the factory which will create tenant specific storage implementations
 type StorageFactory interface {
 	Init(storage config.Engine, rtnm RetentionManager) error
-	GetStorageDao(tenant string) (BlobStorageDao, error)
-	RemoveStorageDao(tenant string) error
+	GetStorage(tenant string) (BlobStorage, error)
+	RemoveStorage(tenant string) error
 	Close() error
 }
 
-// BlobStoreDao this is the interface which all implementation of a blob storage engine has to fulfill
-type BlobStorageDao interface {
-	Init() error       // initialise this dao
+// BlobStorage this is the interface which all implementation of a blob storage engine has to fulfill
+type BlobStorage interface {
+	Init() error       // initialize this dao
 	GetTenant() string // get the tenant id
 
 	GetBlobs(callback func(id string) bool) error // getting a list of blob from the storage
@@ -34,7 +34,7 @@ type BlobStorageDao interface {
 	// Searching for blobs
 	SearchBlobs(query string, callback func(id string) bool) error // getting a list of blob from the storage
 
-	// Retentionrelated methods
+	// Retention related methods
 	GetAllRetentions(callback func(r model.RetentionEntry) bool) error // for every retention entry for this tenant we call this this function, you can stop the listing by returnong a false
 	AddRetention(r *model.RetentionEntry) error
 	GetRetention(id string) (model.RetentionEntry, error)

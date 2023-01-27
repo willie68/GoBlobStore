@@ -1,3 +1,4 @@
+// Package main this is the entry point into the service
 package main
 
 import (
@@ -8,19 +9,20 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/opentracing/opentracing-go"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/uber/jaeger-client-go"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httptracer"
 	"github.com/go-chi/render"
+	"github.com/opentracing/opentracing-go"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/uber/jaeger-client-go"
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/apiv1"
@@ -43,7 +45,7 @@ var apikey string
 var ssl bool
 var configFile string
 var serviceConfig config.Config
-var Tracer opentracing.Tracer
+var tracer opentracing.Tracer
 var sslsrv *http.Server
 var srv *http.Server
 
@@ -60,65 +62,12 @@ func init() {
 func apiRoutes() (*chi.Mux, error) {
 	log.Logger.Infof("baseurl : %s", apiv1.BaseURL)
 	router := chi.NewRouter()
-	router.Use(
-		render.SetContentType(render.ContentTypeJSON),
-		middleware.Logger,
-		//middleware.DefaultCompress,
-		middleware.Recoverer,
-		cors.Handler(cors.Options{
-			// AllowedOrigins: []string{"https://foo.com"}, // Use this to allow specific origin hosts
-			AllowedOrigins: []string{"*"},
-			// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
-			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-mcs-username", "X-mcs-password", "X-mcs-profile"},
-			ExposedHeaders:   []string{"Link"},
-			AllowCredentials: true,
-			MaxAge:           300, // Maximum value not ignored by any of major browsers
-		}),
-		httptracer.Tracer(Tracer, httptracer.Config{
-			ServiceName:    config.Servicename,
-			ServiceVersion: "V" + apiv1.ApiVersion,
-			SampleRate:     1,
-			SkipFunc: func(r *http.Request) bool {
-				return false
-				//return r.URL.Path == "/livez"
-			},
-			Tags: map[string]interface{}{
-				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
-				// "_dd1.sr.eausr": 1, // datadog, event sample rate
-			},
-		}),
-	)
-	if serviceConfig.Metrics.Enable {
-		router.Use(
-			api.MetricsHandler(api.MetricsConfig{
-				SkipFunc: func(r *http.Request) bool {
-					return false
-				},
-			}),
-		)
-	}
+	setDefaultHandler(router)
+
 	if serviceConfig.Apikey {
-		router.Use(
-			api.SysAPIHandler(api.SysAPIConfig{
-				Apikey:           apikey,
-				HeaderKeyMapping: serviceConfig.HeaderMapping,
-				SkipFunc: func(r *http.Request) bool {
-					path := strings.TrimSuffix(r.URL.Path, "/")
-					if strings.HasSuffix(path, "/livez") {
-						return true
-					}
-					if strings.HasSuffix(path, "/readyz") {
-						return true
-					}
-					if strings.HasSuffix(path, "/metrics") {
-						return true
-					}
-					return false
-				},
-			}),
-		)
+		setApikeyHandler(router)
 	}
+
 	// jwt is activated, register the Authenticator and Validator
 	if strings.EqualFold(serviceConfig.Auth.Type, "jwt") {
 		jwtConfig, err := auth.ParseJWTConfig(serviceConfig.Auth)
@@ -154,11 +103,74 @@ func apiRoutes() (*chi.Mux, error) {
 		r.Mount(apiv1.TenantStoresRoutes())
 		r.Mount("/", health.Routes())
 		if serviceConfig.Metrics.Enable {
-			r.Mount("/metrics", promhttp.Handler())
+			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
 
 	return router, nil
+}
+
+func setApikeyHandler(router *chi.Mux) {
+	router.Use(
+		api.SysAPIHandler(api.SysAPIConfig{
+			Apikey:           apikey,
+			HeaderKeyMapping: serviceConfig.HeaderMapping,
+			SkipFunc: func(r *http.Request) bool {
+				path := strings.TrimSuffix(r.URL.Path, "/")
+				if strings.HasSuffix(path, "/livez") {
+					return true
+				}
+				if strings.HasSuffix(path, "/readyz") {
+					return true
+				}
+				if strings.HasSuffix(path, api.MetricsEndpoint) {
+					return true
+				}
+				return false
+			},
+		}),
+	)
+}
+
+func setDefaultHandler(router *chi.Mux) {
+	router.Use(
+		render.SetContentType(render.ContentTypeJSON),
+		middleware.Logger,
+		//middleware.DefaultCompress,
+		middleware.Recoverer,
+		cors.Handler(cors.Options{
+			// AllowedOrigins: []string{"https://foo.com"}, // Use this to allow specific origin hosts
+			AllowedOrigins: []string{"*"},
+			// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-mcs-username", "X-mcs-password", "X-mcs-profile"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: true,
+			MaxAge:           300, // Maximum value not ignored by any of major browsers
+		}),
+		httptracer.Tracer(tracer, httptracer.Config{
+			ServiceName:    config.Servicename,
+			ServiceVersion: "V" + apiv1.APIVersion,
+			SampleRate:     1,
+			SkipFunc: func(r *http.Request) bool {
+				return false
+				//return r.URL.Path == "/livez"
+			},
+			Tags: map[string]any{
+				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
+				// "_dd1.sr.eausr": 1, // datadog, event sample rate
+			},
+		}),
+	)
+	if serviceConfig.Metrics.Enable {
+		router.Use(
+			api.MetricsHandler(api.MetricsConfig{
+				SkipFunc: func(r *http.Request) bool {
+					return false
+				},
+			}),
+		)
+	}
 }
 
 func healthRoutes() *chi.Mux {
@@ -168,14 +180,14 @@ func healthRoutes() *chi.Mux {
 		middleware.Logger,
 		//middleware.DefaultCompress,
 		middleware.Recoverer,
-		httptracer.Tracer(Tracer, httptracer.Config{
+		httptracer.Tracer(tracer, httptracer.Config{
 			ServiceName:    config.Servicename,
-			ServiceVersion: "V" + apiv1.ApiVersion,
+			ServiceVersion: "V" + apiv1.APIVersion,
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
 				return false
 			},
-			Tags: map[string]interface{}{
+			Tags: map[string]any{
 				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
 				// "_dd1.sr.eausr": 1, // datadog, event sample rate
 			},
@@ -194,7 +206,7 @@ func healthRoutes() *chi.Mux {
 	router.Route("/", func(r chi.Router) {
 		r.Mount("/", health.Routes())
 		if serviceConfig.Metrics.Enable {
-			r.Mount("/metrics", promhttp.Handler())
+			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
 	return router
@@ -220,27 +232,19 @@ func main() {
 
 	serror.Service = config.Servicename
 	if configFile == "" {
-		configFolder, err := config.GetDefaultConfigFolder()
+		configFile, err = getDefaultConfigfile()
 		if err != nil {
-			log.Logger.Alertf("can't load config file: %s", err.Error())
-			os.Exit(1)
+			log.Logger.Errorf("error getting default config file: %v", err)
+			panic("error getting default config file")
 		}
-		configFolder = fmt.Sprintf("%s/service/", configFolder)
-		err = os.MkdirAll(configFolder, os.ModePerm)
-		if err != nil {
-			log.Logger.Alertf("can't load config file: %s", err.Error())
-			os.Exit(1)
-		}
-		configFile = configFolder + "/service.yaml"
 	}
 
 	config.File = configFile
 	log.Logger.Infof("using config file: %s", configFile)
 
-	// autorestart starts here...
 	if err := config.Load(); err != nil {
 		log.Logger.Alertf("can't load config file: %s", err.Error())
-		os.Exit(1)
+		panic("can't load config file")
 	}
 
 	serviceConfig = config.Get()
@@ -250,13 +254,13 @@ func main() {
 	log.Logger.Info("service is starting")
 
 	var closer io.Closer
-	Tracer, closer = initJaeger(config.Servicename, serviceConfig.OpenTracing)
-	opentracing.SetGlobalTracer(Tracer)
+	tracer, closer = initJaeger(config.Servicename, serviceConfig.OpenTracing)
+	opentracing.SetGlobalTracer(tracer)
 	defer closer.Close()
 
 	healthCheckConfig := health.CheckConfig(serviceConfig.HealthCheck)
 
-	health.InitHealthSystem(healthCheckConfig, Tracer)
+	health.InitHealthSystem(healthCheckConfig, tracer)
 
 	if serviceConfig.Sslport > 0 {
 		ssl = true
@@ -298,60 +302,10 @@ func main() {
 	}
 
 	if ssl {
-		gc := crypt.GenerateCertificate{
-			Organization: "MCS",
-			Host:         "127.0.0.1",
-			ValidFor:     10 * 365 * 24 * time.Hour,
-			IsCA:         false,
-			EcdsaCurve:   "P384",
-			Ed25519Key:   false,
-		}
-		tlsConfig, err := gc.GenerateTLSConfig()
-		if err != nil {
-			log.Logger.Alertf("could not create tls config. %s", err.Error())
-		}
-		sslsrv = &http.Server{
-			Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Sslport),
-			WriteTimeout: time.Second * 15,
-			ReadTimeout:  time.Second * 15,
-			IdleTimeout:  time.Second * 60,
-			Handler:      router,
-			TLSConfig:    tlsConfig,
-		}
-		go func() {
-			log.Logger.Infof("starting https server on address: %s", sslsrv.Addr)
-			if err := sslsrv.ListenAndServeTLS("", ""); err != nil {
-				log.Logger.Alertf("error starting server: %s", err.Error())
-			}
-		}()
-		srv = &http.Server{
-			Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Port),
-			WriteTimeout: time.Second * 15,
-			ReadTimeout:  time.Second * 15,
-			IdleTimeout:  time.Second * 60,
-			Handler:      healthRouter,
-		}
-		go func() {
-			log.Logger.Infof("starting http server on address: %s", srv.Addr)
-			if err := srv.ListenAndServe(); err != nil {
-				log.Logger.Alertf("error starting server: %s", err.Error())
-			}
-		}()
+		startHTTPSServer(router)
+		startHTTPServer(healthRouter)
 	} else {
-		// own http server for the healthchecks
-		srv = &http.Server{
-			Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Port),
-			WriteTimeout: time.Second * 15,
-			ReadTimeout:  time.Second * 15,
-			IdleTimeout:  time.Second * 60,
-			Handler:      router,
-		}
-		go func() {
-			log.Logger.Infof("starting http server on address: %s", srv.Addr)
-			if err := srv.ListenAndServe(); err != nil {
-				log.Logger.Alertf("error starting server: %s", err.Error())
-			}
-		}()
+		startHTTPServer(router)
 	}
 
 	log.Logger.Info("waiting for clients")
@@ -359,19 +313,87 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	<-c
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-
-	srv.Shutdown(ctx)
-	if ssl {
-		sslsrv.Shutdown(ctx)
-	}
+	shutdownServers()
 
 	log.Logger.Info("finished")
 
 	os.Exit(0)
 }
 
+func shutdownServers() {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Logger.Errorf("shutdown http server error: %v", err)
+	}
+	if ssl {
+		if err := sslsrv.Shutdown(ctx); err != nil {
+			log.Logger.Errorf("shutdown https server error: %v", err)
+		}
+	}
+}
+
+func startHTTPSServer(router *chi.Mux) {
+	gc := crypt.GenerateCertificate{
+		Organization: "MCS",
+		Host:         "127.0.0.1",
+		ValidFor:     10 * 365 * 24 * time.Hour,
+		IsCA:         false,
+		EcdsaCurve:   "P384",
+		Ed25519Key:   false,
+	}
+	tlsConfig, err := gc.GenerateTLSConfig()
+	if err != nil {
+		log.Logger.Alertf("could not create tls config. %s", err.Error())
+	}
+	sslsrv = &http.Server{
+		Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Sslport),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      router,
+		TLSConfig:    tlsConfig,
+	}
+	go func() {
+		log.Logger.Infof("starting https server on address: %s", sslsrv.Addr)
+		if err := sslsrv.ListenAndServeTLS("", ""); err != nil {
+			log.Logger.Alertf("error starting server: %s", err.Error())
+		}
+	}()
+}
+
+func startHTTPServer(router *chi.Mux) {
+	// own http server for the healthchecks
+	srv = &http.Server{
+		Addr:         "0.0.0.0:" + strconv.Itoa(serviceConfig.Port),
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+		Handler:      router,
+	}
+	go func() {
+		log.Logger.Infof("starting http server on address: %s", srv.Addr)
+		if err := srv.ListenAndServe(); err != nil {
+			log.Logger.Alertf("error starting server: %s", err.Error())
+		}
+	}()
+}
+
+func getDefaultConfigfile() (string, error) {
+	configFolder, err := config.GetDefaultConfigFolder()
+	if err != nil {
+		return "", errors.Wrap(err, "can't load config file")
+	}
+	configFolder = filepath.Join(configFolder, "service")
+	err = os.MkdirAll(configFolder, os.ModePerm)
+	if err != nil {
+		return "", errors.Wrap(err, "can't load config file")
+	}
+	return filepath.Join(configFolder, "service.yaml"), nil
+}
+
+// initLogging initialize the logging, especially the gelf logger
 func initLogging() {
 	log.Logger.SetLevel(serviceConfig.Logging.Level)
 	var err error
@@ -384,6 +406,7 @@ func initLogging() {
 	log.Logger.Init()
 }
 
+// initConfig override the configuration from the service.yaml with the given commandline parameters
 func initConfig() {
 	if port > 0 {
 		serviceConfig.Port = port
@@ -415,8 +438,8 @@ func initConfig() {
 	}
 }
 
-func initJaeger(servicename string, config config.OpenTracing) (opentracing.Tracer, io.Closer) {
-
+// initJaeger initialize the jaeger (opentracing) component
+func initJaeger(servicename string, cnfg config.OpenTracing) (opentracing.Tracer, io.Closer) {
 	cfg := jaegercfg.Configuration{
 		ServiceName: servicename,
 		Sampler: &jaegercfg.SamplerConfig{
@@ -425,11 +448,11 @@ func initJaeger(servicename string, config config.OpenTracing) (opentracing.Trac
 		},
 		Reporter: &jaegercfg.ReporterConfig{
 			LogSpans:           true,
-			LocalAgentHostPort: config.Host,
-			CollectorEndpoint:  config.Endpoint,
+			LocalAgentHostPort: cnfg.Host,
+			CollectorEndpoint:  cnfg.Endpoint,
 		},
 	}
-	if (config.Endpoint == "") && (config.Host == "") {
+	if (cnfg.Endpoint == "") && (cnfg.Host == "") {
 		cfg.Disabled = true
 	}
 	tracer, closer, err := cfg.NewTracer(jaegercfg.Logger(jaeger.StdLogger))
@@ -439,6 +462,7 @@ func initJaeger(servicename string, config config.OpenTracing) (opentracing.Trac
 	return tracer, closer
 }
 
+// getApikey generate an apikey based on the service name
 func getApikey() string {
 	value := fmt.Sprintf("%s_%s", config.Servicename, "default")
 	apikey := fmt.Sprintf("%x", md5.Sum([]byte(value)))

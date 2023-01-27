@@ -8,28 +8,32 @@ import (
 	"strings"
 )
 
-func DecodeBytes(b []byte, v interface{}) error {
+// DecodeBytes decode json byte array
+func DecodeBytes(b []byte, v any) error {
 	rd := bytes.NewReader(b)
 	return DecodeJSON(rd, v)
 }
 
-func DecodeString(str string, v interface{}) error {
+// DecodeString decode json string
+func DecodeString(str string, v any) error {
 	rd := strings.NewReader(str)
 	return DecodeJSON(rd, v)
 }
 
-func DecodeJSON(r io.Reader, v interface{}) error {
+// DecodeJSON decode from reader interface
+func DecodeJSON(r io.Reader, v any) error {
 	defer io.Copy(ioutil.Discard, r)
 	d := json.NewDecoder(r)
 	d.UseNumber()
 	return d.Decode(v)
 }
 
-func ConvertJson2Map(src map[string]interface{}) (dst map[string]interface{}) {
+// ConvertJSON2Map convert into a flatted map
+func ConvertJSON2Map(src map[string]any) (dst map[string]any) {
 	if src == nil {
 		return nil
 	}
-	dst = make(map[string]interface{})
+	dst = make(map[string]any)
 	for key, value := range src {
 		switch v := value.(type) {
 		case json.Number:
@@ -44,8 +48,8 @@ func ConvertJson2Map(src map[string]interface{}) (dst map[string]interface{}) {
 					dst[key] = v.String()
 				}
 			}
-		case map[string]interface{}:
-			dst[key] = ConvertJson2Map(v)
+		case map[string]any:
+			dst[key] = ConvertJSON2Map(v)
 		default:
 			dst[key] = value
 		}

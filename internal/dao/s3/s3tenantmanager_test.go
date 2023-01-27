@@ -12,7 +12,7 @@ import (
 func TestS3TenantManager(t *testing.T) {
 	t.SkipNow()
 	ast := assert.New(t)
-	dao := S3TenantManager{
+	dao := TenantManager{
 		Endpoint:  "http://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -72,7 +72,7 @@ func TestS3TenantManager(t *testing.T) {
 func TestSimplefileTenantManagerConfig(t *testing.T) {
 	t.SkipNow()
 	ast := assert.New(t)
-	dao := S3TenantManager{
+	dao := TenantManager{
 		Endpoint:  "https://127.0.0.1:9002",
 		Bucket:    "testbucket",
 		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
@@ -82,7 +82,8 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 	err := dao.Init()
 	ast.Nil(err)
 
-	dao.AddTenant("MCS")
+	err = dao.AddTenant("MCS")
+	ast.Nil(err)
 	ast.True(dao.HasTenant("MCS"))
 
 	cfn, err := dao.GetConfig("MCS")
@@ -91,7 +92,7 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 
 	stg := config.Storage{
 		Storageclass: "S3",
-		Properties:   make(map[string]interface{}),
+		Properties:   make(map[string]any),
 	}
 	stg.Properties["accessKey"] = "accessKey"
 	stg.Properties["secretKey"] = "secretKey"
@@ -109,5 +110,6 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 	ast.Equal(cfn.Backup.Storageclass, cfn2.Backup.Storageclass)
 	ast.Equal(cfn.Backup.Properties["accessKey"], cfn2.Backup.Properties["accessKey"])
 	ast.Equal(cfn.Backup.Properties["secretKey"], cfn2.Backup.Properties["secretKey"])
-	dao.RemoveTenant("MCS")
+	_, err = dao.RemoveTenant("MCS")
+	ast.Nil(err)
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/vfaronov/httpheader"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/dao"
@@ -23,48 +24,48 @@ import (
 )
 
 // BlobStore the blobstorage implementation to use
-var BlobStore interfaces.BlobStorageDao
+var BlobStore interfaces.BlobStorage
 
+// BlobRoutes getting a router with all blob routes active
 func BlobRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_CREATOR})).Post("/", PostBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/", GetBlobs)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/{id}", GetBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Get("/{id}/info", GetBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Put("/{id}/info", PutBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Delete("/{id}", DeleteBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Get("/{id}/resetretention", GetBlobResetRetention)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Get("/{id}/check", GetBlobCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN})).Post("/{id}/check", PostBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectCreator})).Post("/", PostBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Get("/", GetBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Get("/{id}", GetBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Get("/{id}/info", GetBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Put("/{id}/info", PutBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Delete("/{id}", DeleteBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Get("/{id}/resetretention", GetBlobResetRetention)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Get("/{id}/check", GetBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin})).Post("/{id}/check", PostBlobCheck)
 	return BaseURL + blobsSubpath, router
 }
 
+// SearchRoutes getting a router with all routes for searching
 func SearchRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER})).Post("/", SearchBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader})).Post("/", SearchBlobs)
 	return BaseURL + searchSubpath, router
 }
 
-/*
-StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
-*/
+// TenantStoresRoutes getting all routes for the stores endpoint, this is part of the new api. But mainly here only a new name.
 func TenantStoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_CREATOR}), api.TenantCheck()).Post(tenantURL("/"), PostBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/"), GetBlobs)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/{id}"), GetBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Get(tenantURL("/{id}/info"), GetBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Put(tenantURL("/{id}/info"), PutBlobInfo)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Delete(tenantURL("/{id}"), DeleteBlob)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Get(tenantURL("/{id}/resetretention"), GetBlobResetRetention)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Get(tenantURL("/{id}/check"), GetBlobCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_ADMIN}), api.TenantCheck()).Post(tenantURL("/{id}/check"), PostBlobCheck)
-	router.With(api.RoleCheck([]api.Role{api.R_OBJECT_READER}), api.TenantCheck()).Post(fmt.Sprintf("/{%s}%s", api.URL_PARAM_TENANT_ID, searchSubpath), SearchBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectCreator}), api.TenantCheck()).Post(tenantURL("/"), PostBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Get(tenantURL("/"), GetBlobs)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Get(tenantURL("/{id}"), GetBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Get(tenantURL("/{id}/info"), GetBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Put(tenantURL("/{id}/info"), PutBlobInfo)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Delete(tenantURL("/{id}"), DeleteBlob)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Get(tenantURL("/{id}/resetretention"), GetBlobResetRetention)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Get(tenantURL("/{id}/check"), GetBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectAdmin}), api.TenantCheck()).Post(tenantURL("/{id}/check"), PostBlobCheck)
+	router.With(api.RoleCheck([]api.Role{api.RoleObjectReader}), api.TenantCheck()).Post(fmt.Sprintf("/{%s}%s", api.URLParamTenantID, searchSubpath), SearchBlobs)
 	return BaseURL + storesSubpath, router
 }
 
 func tenantURL(subpath string) string {
-	return fmt.Sprintf("/{%s}%s%s", api.URL_PARAM_TENANT_ID, blobsSubpath, subpath)
+	return fmt.Sprintf("/{%s}%s%s", api.URLParamTenantID, blobsSubpath, subpath)
 }
 
 func getBlobLocation(blobid string) string {
@@ -91,7 +92,7 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -124,14 +125,20 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 	}
 
 	response.Header().Add("Location", idStr)
-	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	retentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
 	if ok {
-		response.Header().Add(RetentionHeader, strconv.FormatInt(int64(b.Retention), 10))
+		response.Header().Add(retentionHeader, strconv.FormatInt(int64(b.Retention), 10))
 	}
 	response.Header().Set("Content-Type", b.ContentType)
 	if b.ContentLength > 0 {
 		response.Header().Set("Content-Length", fmt.Sprintf("%d", b.ContentLength))
 	}
+	contentDisposition := "attachment"
+	if b.Filename != "" {
+		contentDisposition += fmt.Sprintf("; filename*=%s", httpheader.EncodeExtValue(b.Filename, ""))
+	}
+	response.Header().Set("Content-Disposition", contentDisposition)
+
 	response.WriteHeader(http.StatusOK)
 
 	err = storage.RetrieveBlob(idStr, response)
@@ -162,7 +169,7 @@ func GetBlobInfo(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -206,7 +213,7 @@ func PutBlobInfo(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -268,7 +275,7 @@ func GetBlobResetRetention(response http.ResponseWriter, request *http.Request) 
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -315,7 +322,7 @@ func GetBlobs(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -348,9 +355,7 @@ func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, blobs)
 }
 
-/*
-PostBlobsEndpoint creating a new blob in the storage for the tenant.
-*/
+// PostBlob creating a new blob in the storage for the tenant.
 func PostBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -387,43 +392,25 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 			return
 		}
 		cntLength = -1
-		filename = "data.bin"
-
-		FilenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
-		if ok {
-			filename = request.Header.Get(FilenameHeader)
+		filename, err = getFilename(request.Header)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
 		}
 		f = mpf
 	}
 
 	// retention given via headers
-	var retentionTime int64 = 0
-	RetentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
-	if ok {
-		retention := request.Header.Get(RetentionHeader)
-		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
-	}
+	retentionHeader, retentionTime := getRetention(request.Header)
 
-	// blobid given via headers
-	BlobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
-	blobid := ""
-	if ok {
-		blobid = request.Header.Get(BlobIDHeader)
-	}
+	// blobID given via headers
+	blobID := getBlobID(request.Header)
 
-	metadata := make(map[string]interface{})
-	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
-	if ok {
-		headerPrefix = strings.ToLower(headerPrefix)
-		for key := range request.Header {
-			if strings.HasPrefix(strings.ToLower(key), headerPrefix) {
-				metadata[key] = request.Header.Get(key)
-			}
-		}
-	}
+	// metadata from headers
+	metadata := getMetadata(request.Header)
 
 	b := model.BlobDescription{
-		BlobID:        blobid,
+		BlobID:        blobID,
 		StoreID:       tenant,
 		TenantID:      tenant,
 		ContentLength: cntLength,
@@ -434,29 +421,17 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 		CreationDate:  time.Now().UnixMilli(),
 	}
 
-	stgf, err := dao.GetStorageFactory()
+	storage, err := getTenantStore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
+	serr := checkBlobID(blobID, storage)
+	if serr != nil {
+		httputils.Err(response, request, serr)
 	}
 
-	if blobid != "" {
-		ok, err = storage.HasBlob(blobid)
-		if err != nil {
-			httputils.Err(response, request, serror.InternalServerError(err))
-			return
-		}
-		if ok {
-			httputils.Err(response, request, serror.Conflict(fmt.Errorf(`blob with id "%s" already exists`, b.BlobID)))
-			return
-		}
-	}
 	_, err = storage.StoreBlob(&b, f)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
@@ -466,9 +441,70 @@ func PostBlob(response http.ResponseWriter, request *http.Request) {
 	location := getBlobLocation(b.BlobID)
 	b.BlobURL = location
 	response.Header().Add("Location", location)
-	response.Header().Add(RetentionHeader, strconv.FormatInt(retentionTime, 10))
+	response.Header().Add(retentionHeader, strconv.FormatInt(retentionTime, 10))
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, b)
+}
+
+func checkBlobID(blobID string, storage interfaces.BlobStorage) *serror.Serr {
+	if blobID != "" {
+		ok, err := storage.HasBlob(blobID)
+		if err != nil {
+			return serror.InternalServerError(err)
+		}
+		if ok {
+			return serror.Conflict(fmt.Errorf(`blob with id "%s" already exists`, blobID))
+		}
+	}
+	return nil
+}
+
+func getBlobID(header http.Header) string {
+	blobIDHeader, ok := config.Get().HeaderMapping[api.BlobIDHeaderKey]
+	blobID := ""
+	if ok {
+		blobID = header.Get(blobIDHeader)
+	}
+	return blobID
+}
+
+func getRetention(header http.Header) (string, int64) {
+	var retentionTime int64
+	retentionHeader, ok := config.Get().HeaderMapping[api.RetentionHeaderKey]
+	if ok {
+		retention := header.Get(retentionHeader)
+		retentionTime, _ = strconv.ParseInt(retention, 10, 64)
+	}
+	return retentionHeader, retentionTime
+}
+
+func getMetadata(header http.Header) map[string]any {
+	metadata := make(map[string]any)
+	headerPrefix, ok := config.Get().HeaderMapping[api.HeaderPrefixKey]
+	if ok {
+		headerPrefix = strings.ToLower(headerPrefix)
+		for key := range header {
+			if strings.HasPrefix(strings.ToLower(key), headerPrefix) {
+				metadata[key] = header.Get(key)
+			}
+		}
+	}
+	return metadata
+}
+
+func getFilename(header http.Header) (string, error) {
+	filename := "data.bin"
+
+	filenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
+	if ok {
+		filename = header.Get(filenameHeader)
+		header, _, err := httpheader.DecodeExtValue(filename)
+		if err != nil {
+			return "", err
+		}
+		filename = header
+	}
+	return filename, nil
 }
 
 /*
@@ -490,7 +526,7 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -542,7 +578,7 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -604,7 +640,7 @@ func GetBlobCheck(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := stgf.GetStorage(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -654,13 +690,7 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 	idStr := chi.URLParam(request, "id")
 
 	log.Logger.Infof("do check for tenant %s on blob %s", tenant, idStr)
-	stgf, err := dao.GetStorageFactory()
-	if err != nil {
-		httputils.Err(response, request, serror.InternalServerError(err))
-		return
-	}
-
-	storage, err := stgf.GetStorageDao(tenant)
+	storage, err := getTenantStore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -673,4 +703,17 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 	}
 	render.Status(request, http.StatusCreated)
 	render.JSON(response, request, res)
+}
+
+func getTenantStore(tenant string) (interfaces.BlobStorage, error) {
+	stgf, err := dao.GetStorageFactory()
+	if err != nil {
+		return nil, err
+	}
+
+	storage, err := stgf.GetStorage(tenant)
+	if err != nil {
+		return nil, err
+	}
+	return storage, nil
 }

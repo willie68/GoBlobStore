@@ -1,3 +1,4 @@
+// Package migration this package holds a async service for doing some tenant related migration tasks, like backup, restore, check
 package migration
 
 import (
@@ -10,6 +11,7 @@ import (
 	log "github.com/willie68/GoBlobStore/internal/logging"
 )
 
+// BackupCheck the struct for doing a backup
 type BackupCheck struct {
 	Tenant string
 }
@@ -17,14 +19,14 @@ type BackupCheck struct {
 var wg sync.WaitGroup
 
 // MigrateBackup migrates all blobs in the main storage for all tenants into the backup storage, if not already present
-func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactory) error {
+func MigrateBackup(tenantDao interfaces.TenantManager, stgf interfaces.StorageFactory) error {
 	err := tenantDao.GetTenants(func(t string) bool {
 		log.Logger.Debugf("BckMgr: found tenant: %s", t)
-		stg, err := stgf.GetStorageDao(t)
+		stg, err := stgf.GetStorage(t)
 		if err != nil {
 			return true
 		}
-		mainstg, ok := stg.(*business.MainStorageDao)
+		mainstg, ok := stg.(*business.MainStorage)
 		if ok {
 			if mainstg.BckDao == nil {
 				log.Logger.Debugf("no backstorage found for tenant %s", t)
@@ -41,7 +43,7 @@ func MigrateBackup(tenantDao interfaces.TenantDao, stgf interfaces.StorageFactor
 }
 
 // migrateBckTnt migrates all files from the main storage of the tenant to the backup storage
-func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao) error {
+func migrateBckTnt(stg interfaces.BlobStorage, bck interfaces.BlobStorage) error {
 	log.Logger.Infof("starting backup migration for tenant: %s", stg.GetTenant())
 	stg.GetBlobs(func(id string) bool {
 		found, err := bck.HasBlob(id)
@@ -62,7 +64,7 @@ func migrateBckTnt(stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao)
 }
 
 // backup migrates a file from the main storage of the tenant to the backup storage
-func backup(id string, stg interfaces.BlobStorageDao, bck interfaces.BlobStorageDao) error {
+func backup(id string, stg interfaces.BlobStorage, bck interfaces.BlobStorage) error {
 	found, err := stg.HasBlob(id)
 	if err != nil {
 		log.Logger.Errorf("error checking blob: %s\n%v", id, err)

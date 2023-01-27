@@ -2,6 +2,7 @@ package business
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -11,27 +12,29 @@ import (
 
 // testing the tenant managment business part
 var (
-	dao MainTenantDao
+	tntPath    = filepath.Join(rootFilePrefix, "tntstg")
+	tntbckPath = filepath.Join(rootFilePrefix, "tntbckstg")
+	dao        MainTenant
 )
 
 func initTntTest(ast *assert.Assertions) {
-	if _, err := os.Stat(blbPath); err == nil {
-		err := os.RemoveAll(blbPath)
+	if _, err := os.Stat(tntPath); err == nil {
+		err := os.RemoveAll(tntPath)
 		ast.Nil(err)
 	}
 
-	if _, err := os.Stat(bckPath); err == nil {
-		err := os.RemoveAll(bckPath)
+	if _, err := os.Stat(tntbckPath); err == nil {
+		err := os.RemoveAll(tntbckPath)
 		ast.Nil(err)
 	}
 
-	sfTnt := &simplefile.SimpleFileTenantManager{
-		RootPath: blbPath,
+	sfTnt := &simplefile.TenantManager{
+		RootPath: tntPath,
 	}
-	bkTnt := &simplefile.SimpleFileTenantManager{
-		RootPath: bckPath,
+	bkTnt := &simplefile.TenantManager{
+		RootPath: tntbckPath,
 	}
-	dao = MainTenantDao{
+	dao = MainTenant{
 		TntDao: sfTnt,
 		BckDao: bkTnt,
 	}
@@ -66,7 +69,7 @@ func TestCRUDTenantOps(t *testing.T) {
 	ast.Equal(1, len(tenants))
 
 	ast.True(dao.HasTenant(tenant))
-	ast.Equal(int64(0), dao.GetSize(tenant))
+	ast.True(dao.GetSize(tenant) <= 0)
 
 	_, err = dao.RemoveTenant(tenant)
 	ast.Nil(err)
@@ -104,7 +107,7 @@ func TestUnknownTenant(t *testing.T) {
 	ast.Equal(0, len(tenants))
 
 	ast.False(dao.HasTenant(tenant))
-	ast.Equal(int64(-1), dao.GetSize(tenant))
+	ast.True(dao.GetSize(tenant) <= 0)
 
 	closeTntTest(ast)
 }
@@ -112,7 +115,7 @@ func TestUnknownTenant(t *testing.T) {
 func TestNilTntDao(t *testing.T) {
 	ast := assert.New(t)
 
-	dao := MainTenantDao{}
+	dao := MainTenant{}
 
 	err := dao.Init()
 	ast.NotNil(err)

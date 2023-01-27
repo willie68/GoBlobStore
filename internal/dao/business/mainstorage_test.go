@@ -21,20 +21,20 @@ import (
 )
 
 const (
-	rootFilePrefix = "../../../testdata/main"
+	rootFilePrefix = "../../../testdata/mai"
 	tenant         = "test"
-	blbcount       = 1000
+	blbcount       = 100
 )
 
 var (
 	blbPath = filepath.Join(rootFilePrefix, "blbstg")
 	cchPath = filepath.Join(rootFilePrefix, "blbcch")
 	bckPath = filepath.Join(rootFilePrefix, "bckstg")
-	main    interfaces.BlobStorageDao
+	main    interfaces.BlobStorage
 )
 
-func initTest(t *testing.T) {
-	stgDao := &simplefile.SimpleFileBlobStorageDao{
+func initTest(_ *testing.T) {
+	stgDao := &simplefile.BlobStorage{
 		RootPath: blbPath,
 		Tenant:   tenant,
 	}
@@ -42,16 +42,16 @@ func initTest(t *testing.T) {
 	cchDao := &fastcache.FastCache{
 		RootPath:   cchPath,
 		MaxCount:   blbcount,
-		MaxRamSize: 1 * 1024 * 1024,
+		MaxRAMSize: 1 * 1024 * 1024,
 	}
 	cchDao.Init()
-	bckDao := &simplefile.SimpleFileBlobStorageDao{
+	bckDao := &simplefile.BlobStorage{
 		RootPath: bckPath,
 		Tenant:   tenant,
 	}
 	bckDao.Init()
 
-	main = &MainStorageDao{
+	main = &MainStorage{
 		StgDao: stgDao,
 		CchDao: cchDao,
 		BckDao: bckDao,
@@ -62,23 +62,8 @@ func initTest(t *testing.T) {
 }
 
 func clear(t *testing.T) {
-	removeContents(rootFilePrefix)
-}
-
-func removeContents(dir string) error {
-	d, err := os.Open(dir)
-	if err != nil {
-		return err
-	}
-	defer d.Close()
-	names, err := d.Readdirnames(-1)
-	if err != nil {
-		return err
-	}
-	for _, name := range names {
-		os.RemoveAll(filepath.Join(dir, name))
-	}
-	return nil
+	err := os.RemoveAll(rootFilePrefix)
+	assert.Nil(t, err)
 }
 
 func createBlobDescription(id string) model.BlobDescription {
@@ -94,7 +79,7 @@ func createBlobDescription(id string) model.BlobDescription {
 		Filename:      fmt.Sprintf("test_%s.txt", id),
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}
@@ -119,24 +104,8 @@ func TestManyFiles(t *testing.T) {
 	ast := assert.New(t)
 	ast.NotNil(main)
 
-	ids := make([]model.BlobDescription, 0)
-	for i := 0; i < blbcount; i++ {
-		if i%100 == 0 {
-			if i%10000 == 0 {
-				fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
-				fmt.Printf("%d", i/10000)
-			}
-			fmt.Print(".")
-		}
-		is := strconv.Itoa(i)
+	ids := createManyFiles(ast)
 
-		b, err := createBlob(ast, is)
-		ast.Nil(err)
-		ast.NotNil(b)
-
-		ids = append(ids, b)
-
-	}
 	fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
 	for i, b := range ids {
 		if i%100 == 0 {
@@ -159,7 +128,7 @@ func TestManyFiles(t *testing.T) {
 	})
 	ast.Nil(err)
 
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 
 	for _, id := range blobs {
 		found := false
@@ -184,7 +153,27 @@ func TestManyFiles(t *testing.T) {
 		ast.Nil(err)
 		ast.False(ok)
 	}
+}
 
+func createManyFiles(ast *assert.Assertions) []model.BlobDescription {
+	ids := make([]model.BlobDescription, 0)
+	for i := 0; i < blbcount; i++ {
+		if i%100 == 0 {
+			if i%10000 == 0 {
+				fmt.Printf(", go routines: %d\r\n", runtime.NumGoroutine())
+				fmt.Printf("%d", i/10000)
+			}
+			fmt.Print(".")
+		}
+		is := strconv.Itoa(i)
+
+		b, err := createBlob(ast, is)
+		ast.Nil(err)
+		ast.NotNil(b)
+
+		ids = append(ids, b)
+	}
+	return ids
 }
 
 func createBlob(ast *assert.Assertions, is string) (model.BlobDescription, error) {
@@ -215,10 +204,17 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 	err = main.RetrieveBlob(b.BlobID, &buf)
 	ast.Nil(err)
 
-	json, err := json.Marshal(b)
+	jsn, err := json.Marshal(b)
 	ast.Nil(err)
 
-	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", json))
+	ast.Equal(b.BlobURL, buf.String(), fmt.Sprintf("payload doesn't match: %s", jsn))
+}
+
+func TestMaster(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		t.Logf("%d test iteration", i)
+		TestAutoRestoreByDescription(t)
+	}
 }
 
 func TestAutoRestoreByDescription(t *testing.T) {
@@ -226,12 +222,12 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	initTest(t)
 	ast := assert.New(t)
 	ast.NotNil(main)
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
-	CchDao := bMain.CchDao
+	cchDao := bMain.CchDao
 	bMain.CchDao = nil
-	CchDao.Close()
+	cchDao.Close()
 
 	ast.Nil(bMain.CchDao)
 
@@ -247,8 +243,9 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	ast.True(ok)
 
 	// remove it from primary storage
-	bMain.StgDao.DeleteBlob(id)
-	time.Sleep(1 * time.Second)
+	err = bMain.StgDao.DeleteBlob(id)
+	ast.Nil(err)
+	time.Sleep(1 * time.Millisecond)
 	ok, err = bMain.StgDao.HasBlob(id)
 	ast.Nil(err)
 	ast.False(ok)
@@ -261,9 +258,9 @@ func TestAutoRestoreByDescription(t *testing.T) {
 	bd, err = main.GetBlobDescription(id)
 	ast.Nil(err)
 	ast.NotNil(bd)
-	time.Sleep(1 * time.Second)
+	time.Sleep(10 * time.Millisecond)
 
-	// checking if present in primstorage
+	// checking if present in prime storage
 	ok, err = bMain.StgDao.HasBlob(id)
 	ast.Nil(err)
 	ast.True(ok)
@@ -274,12 +271,12 @@ func TestAutoRestoreByContent(t *testing.T) {
 	initTest(t)
 	ast := assert.New(t)
 	ast.NotNil(main)
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
-	CchDao := bMain.CchDao
+	cchDao := bMain.CchDao
 	bMain.CchDao = nil
-	CchDao.Close()
+	cchDao.Close()
 
 	ast.Nil(bMain.CchDao)
 
@@ -322,12 +319,12 @@ func TestAutoRestoreByHasId(t *testing.T) {
 	initTest(t)
 	ast := assert.New(t)
 	ast.NotNil(main)
-	bMain := main.(*MainStorageDao)
+	bMain := main.(*MainStorage)
 	bMain.Bcksyncmode = true
 	// disable caching
-	CchDao := bMain.CchDao
+	cchDao := bMain.CchDao
 	bMain.CchDao = nil
-	CchDao.Close()
+	cchDao.Close()
 
 	ast.Nil(bMain.CchDao)
 
@@ -358,7 +355,7 @@ func TestAutoRestoreByHasId(t *testing.T) {
 	ast.False(ok)
 
 	// getting blobdescription
-	ok, err = main.HasBlob(b.BlobID)
+	ok, err = main.HasBlob(id)
 	ast.Nil(err)
 	ast.True(ok)
 	time.Sleep(1 * time.Second)

@@ -1,3 +1,4 @@
+// Package httputils some helper functions on the http protocol
 package httputils
 
 import (
@@ -16,12 +17,16 @@ import (
 
 // Validate validator
 var val *validator.Validate
+
+// TenantClaim the claim used in the jwt claims, where the actual tenant is stored
 var TenantClaim string
+
+// Strict throwing an error if the tenant is not present in the token
 var Strict bool
 
 // TenantID gets the tenant-id of the given request
 func TenantID(r *http.Request) (string, error) {
-	tntID := chi.URLParam(r, api.URL_PARAM_TENANT_ID)
+	tntID := chi.URLParam(r, api.URLParamTenantID)
 	if tntID != "" {
 		return strings.ToLower(tntID), nil
 	}
@@ -31,10 +36,9 @@ func TenantID(r *http.Request) (string, error) {
 		tenant, ok := claims[TenantClaim].(string)
 		if ok {
 			return strings.ToLower(tenant), nil
-		} else {
-			if Strict {
-				return "", serror.BadRequest(nil, "missing-tenant", "no tenant claim in jwt token")
-			}
+		}
+		if Strict {
+			return "", serror.BadRequest(nil, "missing-tenant", "no tenant claim in jwt token")
 		}
 	}
 	tenantHeader, ok := config.Get().HeaderMapping[api.TenantHeaderKey]
@@ -49,7 +53,7 @@ func TenantID(r *http.Request) (string, error) {
 }
 
 // Decode decodes and validates an object
-func Decode(r *http.Request, v interface{}) error {
+func Decode(r *http.Request, v any) error {
 	err := render.DefaultDecoder(r, v)
 	if err != nil {
 		return serror.BadRequest(err, "decode-body", "could not decode body")
@@ -71,7 +75,7 @@ func Param(r *http.Request, name string) (string, error) {
 }
 
 // Created object created
-func Created(w http.ResponseWriter, r *http.Request, id string, v interface{}) {
+func Created(w http.ResponseWriter, r *http.Request, id string, v any) {
 	// TODO add relative path to location
 	w.Header().Add("Location", fmt.Sprintf("%s", id))
 	render.Status(r, http.StatusCreated)

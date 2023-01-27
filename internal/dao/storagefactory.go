@@ -14,11 +14,11 @@ import (
 
 // test for interface compatibility
 
-var tenantDao interfaces.TenantDao
+var tenantDao interfaces.TenantManager
 var rtnMgr interfaces.RetentionManager
 var cnfg config.Engine
 var stgf interfaces.StorageFactory
-var migMan *migration.MigrationManagement
+var migMan *migration.Management
 
 // Init initialise the storage factory
 func Init(storage config.Engine) error {
@@ -27,18 +27,18 @@ func Init(storage config.Engine) error {
 		return errors.New("no storage class given")
 	}
 
-	var bktDao interfaces.TenantDao
-	tntDao, err := factory.CreateTenantDao(cnfg.Storage)
+	var bktDao interfaces.TenantManager
+	tntDao, err := factory.CreateTenantManager(cnfg.Storage)
 	if err != nil {
 		return err
 	}
 	if cnfg.Backup.Storageclass != "" {
-		bktDao, err = factory.CreateTenantDao(cnfg.Backup)
+		bktDao, err = factory.CreateTenantManager(cnfg.Backup)
 		if err != nil {
 			return err
 		}
 	}
-	tenantDao = &business.MainTenantDao{
+	tenantDao = &business.MainTenant{
 		TntDao: tntDao,
 		BckDao: bktDao,
 	}
@@ -49,7 +49,7 @@ func Init(storage config.Engine) error {
 
 	// this order of creation of factories is crucial, because the RetentionManager needs the StorageFactory and other way round
 	stgf = &factory.DefaultStorageFactory{
-		TenantDao: tenantDao,
+		TenantMgr: tenantDao,
 	}
 
 	rtnMgr, err = factory.CreateRetentionManager(cnfg.RetentionManager, tenantDao)
@@ -67,7 +67,7 @@ func Init(storage config.Engine) error {
 		return err
 	}
 
-	migMan = &migration.MigrationManagement{
+	migMan = &migration.Management{
 		StorageFactory: stgf,
 	}
 	err = migMan.Init()
@@ -84,14 +84,14 @@ func Init(storage config.Engine) error {
 }
 
 // GetTenantDao returning the tenant for administration tenants
-func GetTenantDao() (interfaces.TenantDao, error) {
+func GetTenantDao() (interfaces.TenantManager, error) {
 	if tenantDao == nil {
 		return nil, errors.New("no tenantdao present")
 	}
 	return tenantDao, nil
 }
 
-// GetTenantDao returning the tenant for administration tenants
+// GetStorageFactory returning the storage factory
 func GetStorageFactory() (interfaces.StorageFactory, error) {
 	if stgf == nil {
 		return nil, errors.New("no storage factory present")
@@ -100,13 +100,14 @@ func GetStorageFactory() (interfaces.StorageFactory, error) {
 }
 
 // GetMigrationManagement returning the tenant for administration tenants
-func GetMigrationManagement() (*migration.MigrationManagement, error) {
+func GetMigrationManagement() (*migration.Management, error) {
 	if migMan == nil {
 		return nil, errors.New("no check management present")
 	}
 	return migMan, nil
 }
 
+// Close closing ths storage factory
 func Close() {
 	err := stgf.Close()
 	if err != nil {

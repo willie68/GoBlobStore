@@ -22,7 +22,6 @@ func TestNodeStackNew(t *testing.T) {
 
 	n.Operator = OROP
 	ast.Equal(OROP, ns.CurrentNode().Operator)
-
 }
 
 func TestNodeStackCondition(t *testing.T) {
@@ -49,5 +48,4 @@ func TestNodeStackCondition(t *testing.T) {
 	c.Field = "Willie"
 	ast.Equal(LT, ns.CurrentCondition().Operator)
 	ast.Equal("Willie", c.Field)
-
 }

@@ -5,32 +5,47 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
+// NoIndexName name of the noindex index service
+const NoIndexName = "noindex"
+
+// checking interface compatibility
 var _ interfaces.Index = &Index{}
 var _ interfaces.IndexBatch = &IndexBatch{}
 
+// Index NOP indexer
 type Index struct {
 }
 
+// IndexBatch NOP batch indexer
 type IndexBatch struct {
 }
 
+// Init init this
 func (i *Index) Init() error {
 	return nil
 }
-func (i *Index) Search(query string, callback func(id string) bool) error {
-	return nil
-}
-func (i *Index) Index(id string, b model.BlobDescription) error {
+
+// Search search for nothing
+func (i *Index) Search(_ string, _ func(id string) bool) error {
 	return nil
 }
 
+// Index NOP Index single
+func (i *Index) Index(_ string, _ model.BlobDescription) error {
+	return nil
+}
+
+// NewBatch creates a NOP batch
 func (i *Index) NewBatch() interfaces.IndexBatch {
 	return &IndexBatch{}
 }
 
-func (i *IndexBatch) Add(id string, b model.BlobDescription) error {
+// Add add something to NOP Batch
+func (i *IndexBatch) Add(_ string, _ model.BlobDescription) error {
 	return nil
 }
+
+// Index NOP batch index
 func (i *IndexBatch) Index() error {
 	return nil
 }

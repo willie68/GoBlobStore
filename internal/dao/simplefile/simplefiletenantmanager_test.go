@@ -31,7 +31,7 @@ func TestAutoPathCreation(t *testing.T) {
 		err := os.RemoveAll(rootpath)
 		ast.Nil(err)
 	}
-	dao := SimpleFileTenantManager{
+	dao := TenantManager{
 		RootPath: rootpath,
 	}
 	err := dao.Init()
@@ -47,7 +47,7 @@ func TestSimplefileTenantManager(t *testing.T) {
 
 	ast := assert.New(t)
 
-	dao := SimpleFileTenantManager{
+	dao := TenantManager{
 		RootPath: rootpath,
 	}
 	err := dao.Init()
@@ -106,13 +106,14 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 
 	ast := assert.New(t)
 
-	dao := SimpleFileTenantManager{
+	dao := TenantManager{
 		RootPath: rootpath,
 	}
 	err := dao.Init()
 	ast.Nil(err)
 
-	dao.AddTenant("MCS")
+	err = dao.AddTenant("MCS")
+	ast.Nil(err)
 	ast.True(dao.HasTenant("MCS"))
 
 	cfn, err := dao.GetConfig("MCS")
@@ -121,7 +122,7 @@ func TestSimplefileTenantManagerConfig(t *testing.T) {
 
 	stg := config.Storage{
 		Storageclass: "S3",
-		Properties:   make(map[string]interface{}),
+		Properties:   make(map[string]any),
 	}
 	stg.Properties["accessKey"] = "accessKey"
 	stg.Properties["secretKey"] = "secretKey"
@@ -146,10 +147,10 @@ func TestSize(t *testing.T) {
 
 	ast := assert.New(t)
 
-	tntdao := SimpleFileTenantManager{
+	tntdao := TenantManager{
 		RootPath: rootpath,
 	}
-	dao := SimpleFileBlobStorageDao{
+	dao := BlobStorage{
 		RootPath: rootpath,
 		Tenant:   tenant,
 	}
@@ -186,7 +187,7 @@ func TestSize(t *testing.T) {
 		Filename:      "test.txt",
 		LastAccess:    time.Now().UnixMilli(),
 		Retention:     180000,
-		Properties:    make(map[string]interface{}),
+		Properties:    make(map[string]any),
 	}
 	b.Properties["X-user"] = []string{"Hallo", "Hallo2"}
 	b.Properties["X-retention"] = []int{123456}

@@ -8,20 +8,24 @@ import (
 	"github.com/willie68/GoBlobStore/internal/serror"
 )
 
+// Role define a role
 type Role string
 
+// RoleChecker interface for checking roles
 type RoleChecker interface {
 	CheckRole(ctx context.Context, allowedRoles []Role) bool
 }
 
+// RoleCheckerImpl the default implementation of the role checker
 var RoleCheckerImpl RoleChecker
 
+// definition of default roles
 const (
-	R_OBJECT_READER  Role = "object-reader"
-	R_OBJECT_CREATOR Role = "object-creator"
-	R_OBJECT_ADMIN   Role = "object-admin"
-	R_TENANT_ADMIN   Role = "tenant-admin"
-	R_ADMIN          Role = "admin"
+	RoleObjectReader  Role = "object-reader"
+	RoleObjectCreator Role = "object-creator"
+	RoleObjectAdmin   Role = "object-admin"
+	RoleTenantAdmin   Role = "tenant-admin"
+	RoleAdmin         Role = "admin"
 )
 
 // RoleCheck implements a simple middleware handler for adding basic http auth to a route.
