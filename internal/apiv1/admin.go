@@ -6,10 +6,10 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/api"
 	log "github.com/willie68/GoBlobStore/internal/logging"
+	services "github.com/willie68/GoBlobStore/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 )
@@ -44,7 +44,7 @@ func GetCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	cMan, err := dao.GetMigrationManagement()
+	cMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -77,7 +77,7 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("do check for tenant %s", tenant)
-	cMan, err := dao.GetMigrationManagement()
+	cMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -119,7 +119,7 @@ func PostRestore(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("do restore for tenant %s", tenant)
-	rMan, err := dao.GetMigrationManagement()
+	rMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -160,7 +160,7 @@ func GetRestore(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	rMan, err := dao.GetMigrationManagement()
+	rMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return

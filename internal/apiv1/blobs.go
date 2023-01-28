@@ -15,10 +15,10 @@ import (
 	"github.com/vfaronov/httpheader"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
-	"github.com/willie68/GoBlobStore/internal/dao"
-	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
+	services "github.com/willie68/GoBlobStore/internal/services"
+	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -86,7 +86,7 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 	}
 	idStr := chi.URLParam(request, "id")
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -163,7 +163,7 @@ func GetBlobInfo(response http.ResponseWriter, request *http.Request) {
 	}
 	idStr := chi.URLParam(request, "id")
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -207,7 +207,7 @@ func PutBlobInfo(response http.ResponseWriter, request *http.Request) {
 	}
 	id := chi.URLParam(request, "id")
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -269,7 +269,7 @@ func GetBlobResetRetention(response http.ResponseWriter, request *http.Request) 
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -316,7 +316,7 @@ func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	url := request.URL
 	values := url.Query()
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -520,7 +520,7 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -572,7 +572,7 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 	url := request.URL
 	values := url.Query()
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -634,7 +634,7 @@ func GetBlobCheck(response http.ResponseWriter, request *http.Request) {
 	}
 	idStr := chi.URLParam(request, "id")
 
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -706,7 +706,7 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 }
 
 func getTenantStore(tenant string) (interfaces.BlobStorage, error) {
-	stgf, err := dao.GetStorageFactory()
+	stgf, err := services.GetStorageFactory()
 	if err != nil {
 		return nil, err
 	}

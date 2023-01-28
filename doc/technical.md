@@ -1,6 +1,6 @@
 The blobstorage consist of some storage implementations and a business manager.
 
-## dao/simplefile
+## services/simplefile
 
 This is the implementation of a simple file storage. 
 
@@ -18,7 +18,7 @@ The description is placed beside the binary and has the extension `.json`.
 
 `rootpath`: path to the file system to store the data
 
-## dao/s3
+## services/s3
 
 The implementation of the s3 storage provider.
 
@@ -46,7 +46,7 @@ The description is placed as user properties the the file.
 
 `password`: a salt to the password encryption part for storing encryption
 
-## dao/fastcache
+## services/fastcache
 
 The implementation of cache storage provider. This implementation usage a LRU cache mechanism. The description files are stored in memory for all cached blobs. The files are stored on a separate file system (fast bound SSD Storage or similar). If the file size <mffrs the file is stored into the memory, too. In the option you can define, how many files are stored into the cache and file system. And you can define the max ram usage for the in memory stored files. Both will be checked automatically. 
 
@@ -60,15 +60,15 @@ The implementation of cache storage provider. This implementation usage a LRU ca
 
 `maxfilesizeforram`: file size to put into the in memory cache (mffrs)
 
-## dao/business
+## services/business
 
 Here is the implementation of the business part of the storage. The mainstorage class handles the usages of backup and cached storage as the base storage class.
 
 
 
-## dao/retentionmanager
+## services/retentionmanager
 
-Because of some circle dependencies the retention manager class must be in the main dao folder. At the moment only the single node retention manager is implemented, which will take control over all retention related parts. It can consist with other single retention manager nodes, but they will not share any workload. Every retention manager will have a full list of all retentions of the complete system. So on a multi node setup,  there can be some errors present because f missing retention files (because another retention manager was faster on deletion)
+Because of some circle dependencies the retention manager class must be in the main services folder. At the moment only the single node retention manager is implemented, which will take control over all retention related parts. It can consist with other single retention manager nodes, but they will not share any workload. Every retention manager will have a full list of all retentions of the complete system. So on a multi node setup,  there can be some errors present because f missing retention files (because another retention manager was faster on deletion)
 
 # FastCache
 
@@ -96,18 +96,18 @@ Be ware the parser itself is not thread safe, so a serialization is done in the 
 
 # Tenant specific backup storage
 
-Das mandantenspezifische Backup ist für den Anwendungsfall gedacht, wo ein Mandant seine Daten in seiner eigenen Cloud vorhalten möchte. Dieses kann dann ein S3 Storage System sein, es ist aber auch möglich, daß dieser Mandant seinen eigenen Blob Storage hat.
+Das mandantenspezifische Backup ist fï¿½r den Anwendungsfall gedacht, wo ein Mandant seine Daten in seiner eigenen Cloud vorhalten mï¿½chte. Dieses kann dann ein S3 Storage System sein, es ist aber auch mï¿½glich, daï¿½ dieser Mandant seinen eigenen Blob Storage hat.
 
-Deswegen sind für die vollständige Implementierung 2 Features von Nöten:
+Deswegen sind fï¿½r die vollstï¿½ndige Implementierung 2 Features von Nï¿½ten:
 
-- Möglichkeit den Backup mandantenspezisch einzurichten
+- Mï¿½glichkeit den Backup mandantenspezisch einzurichten
 - zus. Blobstorage Provider: also eine Storage Provider, der einen entfernten Blob Store als Ablage benutzt.
 
-Bei dem Mandanten spezifischen Backup kann zunächst nur ein weiteres S3 eingerichtet werden. Die Zugangsdaten dazu werden in dem Config bereich des Storagesystem des Mandanten als Json hinterlegt. Dort steht dann eine Liste von backup providern, mit den hinterlegten Credentials. Nur eine davon kann aktiv sein. Enthalten sind weiterhin pro Eintrag das Erzeugungsdatum und das Datum der letzten Änderung. Zusätzlich kann auch konfiguriert werden, daß die Ablage auf dieses S3 ohne Verschlüssellung erfolgt. Und wenn doch eine Verschlüssellung erfolgen sollte, kann auch der Schlüssel abgerufen werden.  In der Konfiguration eines inaktiven Eintrages wird weiterhin festgehalten, ob die Migration vollständig war und alle Dateien gelöscht worden sind. (Wichtig für den Lesezugriff)
+Bei dem Mandanten spezifischen Backup kann zunï¿½chst nur ein weiteres S3 eingerichtet werden. Die Zugangsdaten dazu werden in dem Config bereich des Storagesystem des Mandanten als Json hinterlegt. Dort steht dann eine Liste von backup providern, mit den hinterlegten Credentials. Nur eine davon kann aktiv sein. Enthalten sind weiterhin pro Eintrag das Erzeugungsdatum und das Datum der letzten ï¿½nderung. Zusï¿½tzlich kann auch konfiguriert werden, daï¿½ die Ablage auf dieses S3 ohne Verschlï¿½ssellung erfolgt. Und wenn doch eine Verschlï¿½ssellung erfolgen sollte, kann auch der Schlï¿½ssel abgerufen werden.  In der Konfiguration eines inaktiven Eintrages wird weiterhin festgehalten, ob die Migration vollstï¿½ndig war und alle Dateien gelï¿½scht worden sind. (Wichtig fï¿½r den Lesezugriff)
 
 ## Aktivierung eine Providers
 
-Beim Aktivieren eines Eintrages, werden zunächst alle neuen Schreibvorgänge auf das neue Backup geroutet und dann alle Daten auf das neue Backupsystem migriert. Dazu wird zunächst der Primärstorage als Quelle verwendet. Wurde eine Datei migiert, wird diese direkt auf den anderen Backupstores gelöscht. Im 2. Schritt werden dann die vorher konfigurierten Backups nach verwaisten einträgen durchsucht und diese ebenfalls auf das neue Backup migriert. Während dieser Migration ist keine weiterer schreibeneder Zugriff auf die Konfiguration möglich. 
+Beim Aktivieren eines Eintrages, werden zunï¿½chst alle neuen Schreibvorgï¿½nge auf das neue Backup geroutet und dann alle Daten auf das neue Backupsystem migriert. Dazu wird zunï¿½chst der Primï¿½rstorage als Quelle verwendet. Wurde eine Datei migiert, wird diese direkt auf den anderen Backupstores gelï¿½scht. Im 2. Schritt werden dann die vorher konfigurierten Backups nach verwaisten eintrï¿½gen durchsucht und diese ebenfalls auf das neue Backup migriert. Wï¿½hrend dieser Migration ist keine weiterer schreibeneder Zugriff auf die Konfiguration mï¿½glich. 
 
 ## Schreibzugriff
 
@@ -115,4 +115,4 @@ Geht direkt auf das aktive Backupsystem.
 
 ## Lesezugriff
 
-Wird zunächst gegen das aktive Backupsystem geprüft. Sollte dort der Eintrag nicht zu finden sein, wird zunächst das Default Backup konsultiert, danach der Reiher nach die älteren Backups. 
+Wird zunï¿½chst gegen das aktive Backupsystem geprï¿½ft. Sollte dort der Eintrag nicht zu finden sein, wird zunï¿½chst das Default Backup konsultiert, danach der Reiher nach die ï¿½lteren Backups. 

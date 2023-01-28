@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"bitbucket.easy.de/dm/service-blobstore-go/internal/config"
-	"bitbucket.easy.de/dm/service-blobstore-go/internal/dao"
-	"bitbucket.easy.de/dm/service-blobstore-go/internal/dao/simplefile"
 	log "bitbucket.easy.de/dm/service-blobstore-go/internal/logging"
+	"bitbucket.easy.de/dm/service-blobstore-go/internal/services/simplefile"
 	flag "github.com/spf13/pflag"
+	"github.com/willie68/GoBlobStore/internal/services"
 )
 
 var (
@@ -32,7 +32,7 @@ func main() {
 	config.Load()
 
 	stgCnf := config.Get().Engine.Storage
-	dao.Init(config.Get().Engine)
+	services.Init(config.Get().Engine)
 	stgPath = stgCnf.Properties["rootpath"].(string)
 	fmt.Printf("storagepath: %s", stgPath)
 
@@ -81,11 +81,11 @@ func checkTenant(tenant string) {
 	})
 	log.Logger.Infof("ids for tenant: %s, len: %d\r\n", tenant, len(ids))
 
-	dao := simplefile.SimpleFileBlobStorageDao{
+	srv := simplefile.SimpleFileBlobStorage{
 		RootPath: stgPath,
 		Tenant:   tenant,
 	}
-	err := dao.Init()
+	err := srv.Init()
 	if err != nil {
 		fmt.Printf("init error: %v \r\n", err)
 		return
@@ -94,13 +94,13 @@ func checkTenant(tenant string) {
 	logline := ""
 	for _, id := range ids {
 		logline += fmt.Sprintf("%s -> ", id)
-		ok, err := dao.HasBlob(id)
+		ok, err := srv.HasBlob(id)
 		if err != nil {
 			logline += fmt.Sprintf("error: %v", err)
 		}
 		if ok {
 			logline += "ok"
-			_, err := dao.GetBlobDescription(id)
+			_, err := srv.GetBlobDescription(id)
 			if err != nil {
 				logline += fmt.Sprintf("db error: %v", err)
 			}

@@ -10,11 +10,11 @@ import (
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
-	"github.com/willie68/GoBlobStore/internal/dao"
-	"github.com/willie68/GoBlobStore/internal/dao/factory"
-	"github.com/willie68/GoBlobStore/internal/dao/interfaces"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
+	services "github.com/willie68/GoBlobStore/internal/services"
+	"github.com/willie68/GoBlobStore/internal/services/factory"
+	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -61,32 +61,32 @@ func GetTenantConfig(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	tntdao, err := dao.GetTenantDao()
+	tntsrv, err := services.GetTenantSrv()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
 	}
-	tntCnf, err := tntdao.GetConfig(tenant)
+	tntCnf, err := tntsrv.GetConfig(tenant)
 	if err != nil {
 		msg := "error getting tenant config"
 		httputils.Err(response, request, serror.InternalServerError(fmt.Errorf("tenant-error: "+msg+": %v", err)))
 		return
 	}
 	var lastError error
-	stgfac, err := dao.GetStorageFactory()
+	stgfac, err := services.GetStorageFactory()
 	if err != nil {
 		lastError = err
 	} else {
-		stgdao, err := stgfac.GetStorage(tenant)
+		stgsrv, err := stgfac.GetStorage(tenant)
 		if err != nil {
 			lastError = err
 		} else {
-			lastError = stgdao.GetLastError()
+			lastError = stgsrv.GetLastError()
 		}
 	}
 	rsp := model.GetConfigResponse{
 		TenantID:  tenant,
-		Created:   tntdao.HasTenant(tenant),
+		Created:   tntsrv.HasTenant(tenant),
 		LastError: lastError,
 	}
 	if tntCnf != nil {
@@ -116,7 +116,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.Logger.Infof("create store for tenant %s", tenant)
-	tntdao, err := dao.GetTenantDao()
+	tntsrv, err := services.GetTenantSrv()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -128,7 +128,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	err = tntdao.AddTenant(tenant)
+	err = tntsrv.AddTenant(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -153,12 +153,12 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		tntcfg := interfaces.TenantConfig{
 			Backup: cfg,
 		}
-		err = tntdao.SetConfig(tenant, tntcfg)
+		err = tntsrv.SetConfig(tenant, tntcfg)
 		if err != nil {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
-		stf, err := dao.GetStorageFactory()
+		stf, err := services.GetStorageFactory()
 		if err != nil {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
@@ -189,7 +189,7 @@ func DeleteTenant(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	stg, err := dao.GetTenantDao()
+	stg, err := services.GetTenantSrv()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
@@ -228,7 +228,7 @@ func GetTenantSize(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	stg, err := dao.GetTenantDao()
+	stg, err := services.GetTenantSrv()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
 		return
