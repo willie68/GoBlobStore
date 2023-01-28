@@ -52,14 +52,21 @@ type Authentication struct {
 
 // Engine configuration
 type Engine struct {
-	RetentionManager string  `yaml:"retentionManager"`
-	Tenantautoadd    bool    `yaml:"tenantautoadd"`
-	BackupSyncmode   bool    `yaml:"backupsyncmode"`
-	AllowTntBackup   bool    `yaml:"allowtntbackup"`
-	Storage          Storage `yaml:"storage"`
-	Backup           Storage `yaml:"backup"`
-	Cache            Storage `yaml:"cache"`
-	Index            Storage `yaml:"index"`
+	RetentionManager string    `yaml:"retentionManager"`
+	Tenantautoadd    bool      `yaml:"tenantautoadd"`
+	BackupSyncmode   bool      `yaml:"backupsyncmode"`
+	AllowTntBackup   bool      `yaml:"allowtntbackup"`
+	Storage          Storage   `yaml:"storage"`
+	Backup           Storage   `yaml:"backup"`
+	Cache            Storage   `yaml:"cache"`
+	Index            Storage   `yaml:"index"`
+	Extractor        Extractor `yaml:"extractor"`
+}
+
+// Extractor defining config for full text extraction services
+type Extractor struct {
+	Service    string         `yaml:"service"`
+	Properties map[string]any `yaml:"properties"`
 }
 
 // Storage configuration

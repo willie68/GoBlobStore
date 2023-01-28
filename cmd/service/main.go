@@ -29,10 +29,10 @@ import (
 	"github.com/willie68/GoBlobStore/internal/auth"
 	"github.com/willie68/GoBlobStore/internal/config"
 	"github.com/willie68/GoBlobStore/internal/crypt"
-	"github.com/willie68/GoBlobStore/internal/dao"
 	"github.com/willie68/GoBlobStore/internal/health"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
+	services "github.com/willie68/GoBlobStore/internal/services"
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 
 	flag "github.com/spf13/pflag"
@@ -276,7 +276,7 @@ func main() {
 	log.Logger.Infof("%s api routes", config.Servicename)
 
 	if err := initStorageSystem(); err != nil {
-		errstr := fmt.Sprintf("could not initialise dao factory. %s", err.Error())
+		errstr := fmt.Sprintf("could not initialise service factory. %s", err.Error())
 		log.Logger.Alertf(errstr)
 		panic(errstr)
 	}
@@ -470,5 +470,5 @@ func getApikey() string {
 }
 
 func initStorageSystem() error {
-	return dao.Init(serviceConfig.Engine)
+	return services.Init(serviceConfig.Engine)
 }
