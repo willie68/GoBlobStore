@@ -26,6 +26,14 @@ engine:
       rootpath: H:/temp/blbcache
       maxcount: 100000
       maxramusage: 1024000000
+  index:
+    storageclass: bluge
+    properties:
+      rootpath: H:/temp/blbstg
+  extractor:
+    service: tika
+    properties:
+      baseurl: "http://127.0.0.1:9998"
 headermapping:
   headerprefix: x-
   retention:
