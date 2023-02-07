@@ -8,7 +8,9 @@ RUN set -eux; \
     apk add --no-progress --quiet --no-cache --upgrade --virtual .build-deps \
         gcc \
         git \
-        musl-dev
+        musl-dev \
+        bash \
+        jq
 
 ## Task: copy source files
 
@@ -18,6 +20,7 @@ WORKDIR /src
 
 RUN go mod download
 RUN go mod tidy -go=1.18
+RUN go get github.com/jstemmer/go-junit-report
 
 ## Task: build project
 
@@ -30,5 +33,4 @@ FROM builder as test
 
 # run unit tests with coverage
 RUN chmod +x /src/build/unitentrytest.sh
-RUN ls -l 
 ENTRYPOINT [ "/src/build/unitentrytest.sh" ]

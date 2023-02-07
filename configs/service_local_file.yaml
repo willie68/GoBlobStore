@@ -29,7 +29,7 @@ engine:
 headermapping:
   headerprefix: x-
   retention:
-  tenant: 
+  tenant: X-es-tenant
   apikey: 
   filename:
 #  apikey: X-es-apikey

@@ -136,7 +136,6 @@ func setDefaultHandler(router *chi.Mux) {
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
 		middleware.Logger,
-		//middleware.DefaultCompress,
 		middleware.Recoverer,
 		cors.Handler(cors.Options{
 			// AllowedOrigins: []string{"https://foo.com"}, // Use this to allow specific origin hosts
@@ -154,7 +153,6 @@ func setDefaultHandler(router *chi.Mux) {
 			SampleRate:     1,
 			SkipFunc: func(r *http.Request) bool {
 				return false
-				//return r.URL.Path == "/livez"
 			},
 			Tags: map[string]any{
 				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
@@ -178,7 +176,6 @@ func healthRoutes() *chi.Mux {
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
 		middleware.Logger,
-		//middleware.DefaultCompress,
 		middleware.Recoverer,
 		httptracer.Tracer(tracer, httptracer.Config{
 			ServiceName:    config.Servicename,

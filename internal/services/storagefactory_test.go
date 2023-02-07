@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	//rootFilePrefix = "R:/mainstg"
 	rootFilePrefix = "../../testdata/sf"
 	tntcount       = 100
 	blbcount       = tntcount * 10

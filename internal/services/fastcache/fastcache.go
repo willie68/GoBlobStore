@@ -160,13 +160,13 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 	})
 	for {
 		id := f.entries.HandleContrains()
-		if id != "" {
-			err = f.DeleteBlob(id)
-			if err != nil {
-				log.Logger.Errorf("cache: can't delete blob %s: %v", id, err)
-			}
-		} else {
+		if id == "" {
 			break
+		}
+
+		err = f.DeleteBlob(id)
+		if err != nil {
+			log.Logger.Errorf("cache: can't delete blob %s: %v", id, err)
 		}
 	}
 	f.updateBloom(b.BlobID)
