@@ -141,6 +141,7 @@ func (d *DefaultStorageFactory) createStorage(tenant string) (interfaces.BlobSto
 		Tenant:      tenant,
 		TntBckSrv:   tntBckSrv,
 		TntError:    lasterror,
+		TntMgr:      d.TenantMgr,
 	}
 	err = msrv.Init()
 	if err != nil {

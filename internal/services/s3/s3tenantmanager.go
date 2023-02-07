@@ -261,6 +261,11 @@ func (s *TenantManager) GetSize(_ string) int64 {
 	return 0
 }
 
+// AddSize adding the blob size to the tenant size
+func (s *TenantManager) AddSize(_ string, _ int64) {
+	// not implemented
+}
+
 func (s *TenantManager) getEncryption() encrypt.ServerSide {
 	if !s.usetls || s.Insecure {
 		return nil
