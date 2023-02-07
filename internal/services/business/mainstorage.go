@@ -28,6 +28,7 @@ type MainStorage struct {
 	CchSrv      interfaces.BlobStorage
 	IdxSrv      interfaces.Index
 	TntBckSrv   interfaces.BlobStorage
+	TntMgr      interfaces.TenantManager
 	Bcksyncmode bool
 	Tenant      string
 	hasIdx      bool
@@ -94,6 +95,7 @@ func (m *MainStorage) StoreBlob(b *model.BlobDescription, f io.Reader) (string, 
 		}
 	}
 	go m.cacheFile(b)
+	go m.addStorageSize(id)
 	gor := (runtime.NumGoroutine() / 1000)
 	time.Sleep(time.Duration(gor) * time.Millisecond)
 	return id, err
@@ -230,6 +232,25 @@ func (m *MainStorage) restoreFile(b *model.BlobDescription) {
 	}
 }
 
+// addStorageSize adjust the storage size for the tenant
+func (m *MainStorage) addStorageSize(id string) {
+	bd, err := m.GetBlobDescription(id)
+	if err != nil {
+		log.Logger.Errorf("adjust: can't get blob description: %v", err)
+		return
+	}
+	if m.TntMgr != nil {
+		m.TntMgr.AddSize(m.Tenant, bd.ContentLength)
+	}
+}
+
+// subStorageSize subtract the storage size for the tenant
+func (m *MainStorage) subStorageSize(bd *model.BlobDescription) {
+	if m.TntMgr != nil {
+		m.TntMgr.SubSize(m.Tenant, bd.ContentLength)
+	}
+}
+
 // HasBlob getting the description of the file
 func (m *MainStorage) HasBlob(id string) (bool, error) {
 	if m.CchSrv != nil {
@@ -321,10 +342,15 @@ func (m *MainStorage) retrieveFromCache(id string, w io.Writer) bool {
 
 // DeleteBlob removing a blob from the storage system
 func (m *MainStorage) DeleteBlob(id string) error {
-	err := m.StgSrv.DeleteBlob(id)
+	bd, err := m.StgSrv.GetBlobDescription(id)
 	if err != nil {
 		return err
 	}
+	err = m.StgSrv.DeleteBlob(id)
+	if err != nil {
+		return err
+	}
+	go m.subStorageSize(bd)
 	if m.BckSrv != nil {
 		if err = m.BckSrv.DeleteBlob(id); err != nil {
 			log.Logger.Errorf("error deleting blob on backup: %v", err)

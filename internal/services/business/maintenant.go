@@ -129,6 +129,16 @@ func (m *MainTenant) GetSize(tenant string) int64 {
 	return m.TntSrv.GetSize(tenant)
 }
 
+// AddSize adding the blob size to the tenant size
+func (m *MainTenant) AddSize(tenant string, size int64) {
+	m.TntSrv.AddSize(tenant, size)
+}
+
+// SubSize subtract the blob size to the tenant size
+func (m *MainTenant) SubSize(tenant string, size int64) {
+	m.TntSrv.SubSize(tenant, size)
+}
+
 // Close closing the service
 func (m *MainTenant) Close() error {
 	var err error

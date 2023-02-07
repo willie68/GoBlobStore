@@ -20,7 +20,7 @@ var cnfg config.Engine
 var stgf interfaces.StorageFactory
 var migMan *migration.Management
 
-// Init initialise the storage factory
+// Init initialize the storage factory
 func Init(storage config.Engine) error {
 	cnfg = storage
 	if cnfg.Storage.Storageclass == "" {

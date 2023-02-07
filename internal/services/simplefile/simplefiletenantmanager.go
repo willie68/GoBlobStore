@@ -19,6 +19,7 @@ type TenantManager struct {
 	RootPath    string // this is the root path for the file system storage
 	TenantInfos sync.Map
 	calcRunning bool
+	sm          sync.Mutex // Mutex for adding blob size to a tenant size
 }
 
 // TenantInfo entry for tenant list
@@ -38,6 +39,7 @@ func (s *TenantManager) Init() error {
 		return err
 	}
 	s.calcRunning = false
+	s.sm = sync.Mutex{}
 	// background task for calculating the storage size of every tenant
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
@@ -75,6 +77,13 @@ func (s *TenantManager) AddTenant(tenant string) error {
 	if err != nil {
 		return err
 	}
+	tinfo := TenantInfo{
+		ID:   tenant,
+		Size: -1,
+	}
+	s.sm.Lock()
+	defer s.sm.Unlock()
+	s.TenantInfos.Store(tenant, tinfo)
 
 	return nil
 }
@@ -158,6 +167,50 @@ func (s *TenantManager) GetSize(tenant string) int64 {
 	return tinfo.Size
 }
 
+// AddSize adding the blob size to the tenant size
+func (s *TenantManager) AddSize(tenant string, size int64) {
+	if !s.HasTenant(tenant) {
+		return
+	}
+	s.sm.Lock()
+	defer s.sm.Unlock()
+	info, ok := s.TenantInfos.Load(tenant)
+	if !ok {
+		return
+	}
+	tinfo, ok := info.(TenantInfo)
+	if !ok {
+		return
+	}
+	if tinfo.Size < 0 {
+		tinfo.Size = 0
+	}
+	tinfo.Size += size
+	s.TenantInfos.Store(tenant, tinfo)
+}
+
+// SubSize subtract the blob size to the tenant size
+func (s *TenantManager) SubSize(tenant string, size int64) {
+	if !s.HasTenant(tenant) {
+		return
+	}
+	s.sm.Lock()
+	defer s.sm.Unlock()
+	info, ok := s.TenantInfos.Load(tenant)
+	if !ok {
+		return
+	}
+	tinfo, ok := info.(TenantInfo)
+	if !ok {
+		return
+	}
+	if tinfo.Size < 0 {
+		return
+	}
+	tinfo.Size -= size
+	s.TenantInfos.Store(tenant, tinfo)
+}
+
 func (s *TenantManager) calculateAllStorageSizes() {
 	log.Logger.Debug("calculating storage sizes of all tenants")
 	s.calcRunning = true
@@ -171,6 +224,8 @@ func (s *TenantManager) calculateAllStorageSizes() {
 			ID:   tenant,
 			Size: size,
 		}
+		s.sm.Lock()
+		defer s.sm.Unlock()
 		s.TenantInfos.Store(tenant, tinfo)
 		return true
 	})
