@@ -18,17 +18,8 @@ var (
 	ErrNotImplemented = errors.New("not implemented")
 )
 
-// Prepare the operation on the id
-func (s *SingleNodeOpsCoor) Prepare(op interfaces.Operation, id string) (bool, error) {
-	return false, ErrNotImplemented
-}
+// Prepare the operation on the id, this is a factory
+func (s *SingleNodeOpsCoor) Prepare(op interfaces.OperationType, id string) (interfaces.Operation, error) {
 
-// Start the operation
-func (s *SingleNodeOpsCoor) Start(op interfaces.Operation, id string) (bool, error) {
-	return false, ErrNotImplemented
-}
-
-// Stop the operation, remove this from the operation stack
-func (s *SingleNodeOpsCoor) Stop(op interfaces.Operation, id string) (bool, error) {
-	return false, ErrNotImplemented
+	return nil, ErrNotImplemented
 }
