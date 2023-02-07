@@ -19,9 +19,7 @@ import (
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
 
-/*
-ConfigRoutes getting all routes for the config endpoint
-*/
+// ConfigRoutes getting all routes for the config endpoint
 func ConfigRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.With(api.RoleCheck([]api.Role{api.RoleAdmin})).Post("/", PostCreateTenant)
@@ -31,9 +29,7 @@ func ConfigRoutes() (string, *chi.Mux) {
 	return BaseURL + configSubpath, router
 }
 
-/*
-StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
-*/
+// StoresRoutes getting all routes for the stores endpoint, this is part of the new api. But manly here only a new name.
 func StoresRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.With(api.RoleCheck([]api.Role{api.RoleAdmin})).Post("/", PostCreateTenant)

@@ -163,10 +163,10 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 			return err
 		}
 		defer cur.Close(context.TODO())
-		//Finding multiple documents returns a cursor
-		//Iterate through the cursor allows us to decode documents one at a time
+		// Finding multiple documents returns a cursor
+		// Iterate through the cursor allows us to decode documents one at a time
 		for cur.Next(context.TODO()) {
-			//Create a value into which the single document can be decoded
+			// Create a value into which the single document can be decoded
 			elem := struct {
 				BlobID string `bson:"blobid"`
 			}{}
@@ -180,12 +180,7 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 			}
 		}
 
-		if err := cur.Err(); err != nil {
-			return err
-		}
-
-		//Close the cursor once finished
-		return nil
+		return cur.Err()
 	}
 	return errors.New("no filter defined")
 }

@@ -1,9 +1,7 @@
 // Package slicesutils some convenient functions on slices
 package slicesutils
 
-/*
-Contains checking if the e string is present in the slice s
-*/
+// Contains checking if the e string is present in the slice s
 func Contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -13,9 +11,7 @@ func Contains(s []string, e string) bool {
 	return false
 }
 
-/*
-Remove removes the entry with the index i from the slice
-*/
+// Remove removes the entry with the index i from the slice
 func Remove(s []string, i int) []string {
 	s[i] = s[len(s)-1]
 	// We do not need to put s[i] at the end, as it will be discarded anyway
@@ -31,9 +27,7 @@ func RemoveString(s []string, e string) []string {
 	return s
 }
 
-/*
-Find finding the index of the e string in the s slice
-*/
+// Find finding the index of the e string in the s slice
 func Find(s []string, e string) int {
 	for i, n := range s {
 		if e == n {

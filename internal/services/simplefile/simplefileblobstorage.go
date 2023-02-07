@@ -188,12 +188,6 @@ func (s *BlobStorage) AddRetention(r *model.RetentionEntry) error {
 
 // DeleteRetention deletes the retention entry from the storage
 func (s *BlobStorage) DeleteRetention(id string) error {
-	/*
-		_, err := s.GetBlobDescription(id)
-		if err != nil {
-			return err
-		}
-	*/
 	return s.deleteRetentionFile(id)
 }
 

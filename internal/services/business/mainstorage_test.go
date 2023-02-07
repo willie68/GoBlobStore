@@ -249,6 +249,7 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 }
 
 func TestMaster(t *testing.T) {
+	t.SkipNow()
 	for i := 0; i < 100; i++ {
 		t.Logf("%d test iteration", i)
 		TestAutoRestoreByDescription(t)

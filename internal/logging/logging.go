@@ -63,7 +63,7 @@ func (s *serviceLogger) Init() {
 			Filename:   s.Filename,
 			MaxSize:    100, // megabytes
 			MaxBackups: 3,
-			MaxAge:     28,    //days
+			MaxAge:     28,    // days
 			Compress:   false, // disabled by default
 		}, os.Stdout)
 	}

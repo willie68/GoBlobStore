@@ -64,7 +64,7 @@ func (s *SingleRetentionManager) processRetention() error {
 	rmvList := make([]string, 0)
 	for _, v := range s.retentionList {
 		if v.GetRetentionTimestampMS() < actualTime {
-			//TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
+			// TODO maybe the retention entry has been changed (from another node), so please refresh the entry and check again
 			rmvList = append(rmvList, v.BlobID)
 			stg, err := s.stgf.GetStorage(v.TenantID)
 			if err != nil {
@@ -122,7 +122,6 @@ func (s *SingleRetentionManager) refereshRetention() error {
 
 // pushToList adding a new retention to the retention list, if fits
 func (s *SingleRetentionManager) pushToList(r model.RetentionEntry) {
-	//s.retentionList = append(s.retentionList, r)
 	for _, v := range s.retentionList {
 		if r.BlobID == v.BlobID {
 			return

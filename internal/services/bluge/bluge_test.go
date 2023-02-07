@@ -160,7 +160,7 @@ var tests = []struct {
 }
 
 func TestQueryConvertion(t *testing.T) {
-	//TODO skip the skip
+	// TODO skip the skip
 	t.SkipNow()
 	// The test intfield:!=1234 is throwing an error
 	ast := assert.New(t)

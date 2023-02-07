@@ -16,7 +16,7 @@ warningCode = 0
 #[rule.confusing-results]
 [rule.cognitive-complexity]
   arguments = [15]
-#[rule.comment-spacings] wanted but not supported by @latest
+[rule.comment-spacings]
 [rule.constant-logical-expr]
 [rule.context-as-argument]
 [rule.context-keys-type]

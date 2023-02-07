@@ -234,7 +234,6 @@ func TestQParse(t *testing.T) {
 		// TODO can't mix AND and OR 		`field1:"Willie" OR field2:<=100 OR field3:"muck"`,
 		// TODO can't mix AND and OR		`(field1:"Willie" AND field2:<=100) OR field3:"muck"`,
 	}
-	//s := `event:"sent" AND subject:"A special offer just for you!"`
 	for _, s := range ss {
 		N.Reset()
 		res, err := Parse("query", []byte(s))

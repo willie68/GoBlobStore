@@ -136,14 +136,6 @@ func TokenFromHeader(r *http.Request) string {
 
 // TokenFromQuery tries to retrieve the token string from the "jwt" URI
 // query parameter.
-//
-// To use it, build our own middleware handler, such as:
-//
-//	func Verifier(ja *JWTAuth) func(http.Handler) http.Handler {
-//		return func(next http.Handler) http.Handler {
-//			return Verify(ja, TokenFromQuery, TokenFromHeader, TokenFromCookie)(next)
-//		}
-//	}
 func TokenFromQuery(r *http.Request) string {
 	// Get token from query param named "jwt".
 	return r.URL.Query().Get("jwt")
