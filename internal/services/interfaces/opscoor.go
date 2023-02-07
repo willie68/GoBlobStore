@@ -4,27 +4,32 @@ import "errors"
 
 // OpsCoor interface for the operation coordinator
 type OpsCoor interface {
-	Prepare(op Operation, id string) (bool, error)
-	Start(op Operation, id string) (bool, error)
-	Stop(op Operation, id string) (bool, error)
+	Prepare(op OperationType, id string) (Operation, error)
 }
 
-// Operation Defining the different operations
-type Operation struct {
+// Operation this is the interface for a single operation
+type Operation interface {
+	Init(id string) error
+	Start() (bool, error)
+	Stop() (bool, error)
+}
+
+// OperationType Defining the different operations
+type OperationType struct {
 	op string
 }
 
 // defining different operations
 var (
-	OpUnknown = Operation{op: ""}
-	OpBackup  = Operation{op: "backup"}
-	OpTntBck  = Operation{op: "tntbackup"}
-	OpRestore = Operation{op: "restore"}
-	OpCache   = Operation{op: "cache"}
+	OpUnknown = OperationType{op: ""}
+	OpBackup  = OperationType{op: "backup"}
+	OpTntBck  = OperationType{op: "tntbackup"}
+	OpRestore = OperationType{op: "restore"}
+	OpCache   = OperationType{op: "cache"}
 )
 
 // String convert to string
-func (o *Operation) String() string {
+func (o *OperationType) String() string {
 	return o.op
 }
 
@@ -34,7 +39,7 @@ var (
 )
 
 // OpFromString converts a string into an operation
-func OpFromString(s string) (Operation, error) {
+func OpFromString(s string) (OperationType, error) {
 	switch s {
 	case OpBackup.op:
 		return OpBackup, nil
