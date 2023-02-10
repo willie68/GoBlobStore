@@ -94,20 +94,20 @@ There is much more implemented in the parser file, but not everything is working
 
 Be ware the parser itself is not thread safe, so a serialization is done in the API.
 
-# Tenant specific backup storage
+# Tenant specific backup storage (Draft)
 
-Das mandantenspezifische Backup ist f�r den Anwendungsfall gedacht, wo ein Mandant seine Daten in seiner eigenen Cloud vorhalten m�chte. Dieses kann dann ein S3 Storage System sein, es ist aber auch m�glich, da� dieser Mandant seinen eigenen Blob Storage hat.
+Das mandantenspezifische Backup ist für den Anwendungsfall gedacht, wo ein Mandant seine Daten in seiner eigenen Cloud vorhalten möchte. Dieses kann dann ein S3 Storage System sein, es ist aber auch möglich, daß dieser Mandant seinen eigenen Blob Storage hat.
 
-Deswegen sind f�r die vollst�ndige Implementierung 2 Features von N�ten:
+Deswegen sind für die vollständige Implementierung 2 Features von Nöten:
 
-- M�glichkeit den Backup mandantenspezisch einzurichten
+- Möglichkeit den Backup mandantenspezisch einzurichten
 - zus. Blobstorage Provider: also eine Storage Provider, der einen entfernten Blob Store als Ablage benutzt.
 
-Bei dem Mandanten spezifischen Backup kann zun�chst nur ein weiteres S3 eingerichtet werden. Die Zugangsdaten dazu werden in dem Config bereich des Storagesystem des Mandanten als Json hinterlegt. Dort steht dann eine Liste von backup providern, mit den hinterlegten Credentials. Nur eine davon kann aktiv sein. Enthalten sind weiterhin pro Eintrag das Erzeugungsdatum und das Datum der letzten �nderung. Zus�tzlich kann auch konfiguriert werden, da� die Ablage auf dieses S3 ohne Verschl�ssellung erfolgt. Und wenn doch eine Verschl�ssellung erfolgen sollte, kann auch der Schl�ssel abgerufen werden.  In der Konfiguration eines inaktiven Eintrages wird weiterhin festgehalten, ob die Migration vollst�ndig war und alle Dateien gel�scht worden sind. (Wichtig f�r den Lesezugriff)
+Bei dem Mandanten spezifischen Backup kann zunächst nur ein weiteres S3 eingerichtet werden. Die Zugangsdaten dazu werden in dem Config bereich des Storagesystem des Mandanten als Json hinterlegt. Dort steht dann eine Liste von backup providern, mit den hinterlegten Credentials. Nur eine davon kann aktiv sein. Enthalten sind weiterhin pro Eintrag das Erzeugungsdatum und das Datum der letzten Änderung. Zusätzlich kann auch konfiguriert werden, daß die Ablage auf dieses S3 ohne Verschlüssellung erfolgt. Und wenn doch eine Verschlüssellung erfolgen sollte, kann auch der Schlüssel abgerufen werden.  In der Konfiguration eines inaktiven Eintrages wird weiterhin festgehalten, ob die Migration vollständig war und alle Dateien gelöscht worden sind. (Wichtig für den Lesezugriff)
 
 ## Aktivierung eine Providers
 
-Beim Aktivieren eines Eintrages, werden zun�chst alle neuen Schreibvorg�nge auf das neue Backup geroutet und dann alle Daten auf das neue Backupsystem migriert. Dazu wird zun�chst der Prim�rstorage als Quelle verwendet. Wurde eine Datei migiert, wird diese direkt auf den anderen Backupstores gel�scht. Im 2. Schritt werden dann die vorher konfigurierten Backups nach verwaisten eintr�gen durchsucht und diese ebenfalls auf das neue Backup migriert. W�hrend dieser Migration ist keine weiterer schreibeneder Zugriff auf die Konfiguration m�glich. 
+Beim Aktivieren eines Eintrages, werden zunächst alle neuen Schreibvorgänge auf das neue Backup geroutet und dann alle Daten auf das neue Backupsystem migriert. Dazu wird zunächst der Primärstorage als Quelle verwendet. Wurde eine Datei migiert, wird diese direkt auf den anderen Backupstores gelöscht. Im 2. Schritt werden dann die vorher konfigurierten Backups nach verwaisten Einträgen durchsucht und diese ebenfalls auf das neue Backup migriert. Während dieser Migration ist keine weiterer schreibeneder Zugriff auf die Konfiguration möglich. 
 
 ## Schreibzugriff
 
@@ -115,4 +115,17 @@ Geht direkt auf das aktive Backupsystem.
 
 ## Lesezugriff
 
-Wird zun�chst gegen das aktive Backupsystem gepr�ft. Sollte dort der Eintrag nicht zu finden sein, wird zun�chst das Default Backup konsultiert, danach der Reiher nach die �lteren Backups. 
+Wird zunächst gegen das aktive Backupsystem geprüft. Sollte dort der Eintrag nicht zu finden sein, wird zunächst das Default Backup konsultiert, danach der Reihe nach die älteren Backups. 
+
+# Operation Coordinator (draft)
+
+Der Operations Coordinator soll dafür sorge tragen, daß die verschiedenen Hintergrund Tasks coordiniert ablaufen, bzw. evtl. auch gar nicht erst gestartet werden.
+
+Beispiel:
+Sowohl das Abrufen der Blob Infos wie auch das Abrufen des Blobs starten einen automatischen Restore, wenn das Blob im Primärstorage nicht vorliegt. Für die gleiche ID braucht das Restore aber nur 1x ausgeführt werden. Der Coordinator sorgt beim 2. Aufrufversuch dafür, daß dieser Task nicht mehr gestartet wird. Gleiches gilt für Backup und Cacheoperationen.
+
+Beim Backup ist es theoretisch zwar unwahrscheinlich, aber es gibt ein problematisches Szenario.
+
+Bei einem neu eingerichteten Backupprovider, wird im Hintergrund automatisch ein komplettbackup aller Blobs angestossen. Bei gleichzeitigen Zugriff über das REST Interface, kann es nun tatsächlich zu einer Kollision kommen.
+
+Dieses gilt auch für das TntBackup

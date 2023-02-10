@@ -130,14 +130,14 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	rsp := model.CreateResponse{
-		TenantID: tenant,
-	}
-
 	if !config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
 		err := errors.New("tenant base backups are not allowed")
 		httputils.Err(response, request, serror.BadRequest(err))
 		return
+	}
+
+	rsp := model.CreateResponse{
+		TenantID: tenant,
 	}
 
 	if config.Get().Engine.AllowTntBackup && cfg.Storageclass != "" {
@@ -159,7 +159,11 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 			httputils.Err(response, request, serror.InternalServerError(err))
 			return
 		}
-		stf.RemoveStorage(tenant)
+		err = stf.RemoveStorage(tenant)
+		if err != nil {
+			httputils.Err(response, request, serror.InternalServerError(err))
+			return
+		}
 		rsp.Backup = cfg.Storageclass
 	}
 

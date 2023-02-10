@@ -151,9 +151,6 @@ func setDefaultHandler(router *chi.Mux) {
 			ServiceName:    config.Servicename,
 			ServiceVersion: "V" + apiv1.APIVersion,
 			SampleRate:     1,
-			SkipFunc: func(r *http.Request) bool {
-				return false
-			},
 			Tags: map[string]any{
 				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
 				// "_dd1.sr.eausr": 1, // datadog, event sample rate
@@ -162,11 +159,7 @@ func setDefaultHandler(router *chi.Mux) {
 	)
 	if serviceConfig.Metrics.Enable {
 		router.Use(
-			api.MetricsHandler(api.MetricsConfig{
-				SkipFunc: func(r *http.Request) bool {
-					return false
-				},
-			}),
+			api.MetricsHandler(api.MetricsConfig{}),
 		)
 	}
 }
@@ -177,26 +170,10 @@ func healthRoutes() *chi.Mux {
 		render.SetContentType(render.ContentTypeJSON),
 		middleware.Logger,
 		middleware.Recoverer,
-		httptracer.Tracer(tracer, httptracer.Config{
-			ServiceName:    config.Servicename,
-			ServiceVersion: "V" + apiv1.APIVersion,
-			SampleRate:     1,
-			SkipFunc: func(r *http.Request) bool {
-				return false
-			},
-			Tags: map[string]any{
-				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
-				// "_dd1.sr.eausr": 1, // datadog, event sample rate
-			},
-		}),
 	)
 	if serviceConfig.Metrics.Enable {
 		router.Use(
-			api.MetricsHandler(api.MetricsConfig{
-				SkipFunc: func(r *http.Request) bool {
-					return false
-				},
-			}),
+			api.MetricsHandler(api.MetricsConfig{}),
 		)
 	}
 

@@ -9,7 +9,7 @@ type OpsCoor interface {
 
 // Operation this is the interface for a single operation
 type Operation interface {
-	Init(id string) error
+	Init(coor OpsCoor, id string) error
 	Start() (bool, error)
 	Stop() (bool, error)
 }
