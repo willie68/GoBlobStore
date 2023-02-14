@@ -2,16 +2,24 @@ package interfaces
 
 import "errors"
 
+// Callback used by the coordinator
+type Callback func(op Operation) bool
+
 // OpsCoor interface for the operation coordinator
 type OpsCoor interface {
-	Prepare(op OperationType, id string) (Operation, error)
+	// Prepare get's back an operation entity, bool = true is that this operation can be started, async or sync,
+	// false means there is no need to start this operation
+	Prepare(op OperationType, id string, f Callback) (Operation, bool, error)
+	Count(id string) int
 }
 
 // Operation this is the interface for a single operation
 type Operation interface {
-	Init(coor OpsCoor, id string) error
-	Start() (bool, error)
-	Stop() (bool, error)
+	Type() OperationType
+	Started() bool
+	Active() bool
+	Finished() bool
+	ID() string
 }
 
 // OperationType Defining the different operations

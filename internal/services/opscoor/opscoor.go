@@ -2,6 +2,7 @@ package opscoor
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
@@ -9,115 +10,159 @@ import (
 // SingleNodeOpsCoor this coordinator is used in a single node. It coordinates different operation on the same id
 // the following operation are defined
 type SingleNodeOpsCoor struct {
+	midx     sync.Mutex
+	idx      int64
+	entities sync.Map
 }
 
+type operations struct {
+	sync.RWMutex
+	items []DefaultOperation
+}
+
+type state struct {
+	s string
+}
+
+var (
+	sprep = state{s: "prepare"}
+	srun  = state{s: "running"}
+	sfin  = state{s: "finished"}
+)
+
+// DefaultOperation this is the default operation abstract class
 type DefaultOperation struct {
-	coor interfaces.OpsCoor
-	opt  interfaces.OperationType
-	id   string
+	idx int64
+	opt interfaces.OperationType
+	id  string
+	f   interfaces.Callback
+	st  state
 }
 
-type BackupOperation struct {
-	DefaultOperation
-}
-
-type TntBackupOperation struct {
-	DefaultOperation
-}
-
-type RestoreOperation struct {
-	DefaultOperation
-}
-
-type CacheOperation struct {
-	DefaultOperation
-}
-
-var _ interfaces.Operation = &DefaultOperation{}
-var _ interfaces.Operation = &BackupOperation{}
-var _ interfaces.OpsCoor = &SingleNodeOpsCoor{}
+// interface checks
+var (
+	_ interfaces.Operation = &DefaultOperation{}
+)
 
 // defining different errors for this service
 var (
 	ErrNotImplemented = errors.New("not implemented")
 )
 
+func newOperations() *operations {
+	cs := &operations{
+		items: make([]DefaultOperation, 0),
+	}
+	return cs
+}
+
+// Append adds an item to the concurrent slice
+func (cs *operations) Append(item DefaultOperation) {
+	cs.Lock()
+	defer cs.Unlock()
+
+	cs.items = append(cs.items, item)
+}
+
+func (cs *operations) Len() int {
+	cs.Lock()
+	defer cs.Unlock()
+	return len(cs.items)
+}
+
+func (cs *operations) Remove(op *DefaultOperation) bool {
+	cs.Lock()
+	defer cs.Unlock()
+	i := -1
+	for x, en := range cs.items {
+		if en.idx == op.idx {
+			i = x
+			break
+		}
+	}
+	if i > -1 {
+		cs.items[i] = cs.items[len(cs.items)-1]
+		cs.items = cs.items[:len(cs.items)-1]
+		return true
+	}
+	return false
+}
+
+// NewSingleNodeOpsCoor return a OpsCoor for a single node system
+func NewSingleNodeOpsCoor() *SingleNodeOpsCoor {
+	snoc := &SingleNodeOpsCoor{}
+	snoc.init()
+	return snoc
+}
+
+func (s *SingleNodeOpsCoor) init() {
+	s.midx = sync.Mutex{}
+}
+
 // Prepare the operation on the id, this is a factory
-func (s *SingleNodeOpsCoor) Prepare(opt interfaces.OperationType, id string) (interfaces.Operation, error) {
-	var op interfaces.Operation
-	switch opt {
-	case interfaces.OpBackup:
-		op = &BackupOperation{}
-	case interfaces.OpTntBck:
-		op = &TntBackupOperation{}
-	case interfaces.OpRestore:
-		op = &RestoreOperation{}
-	case interfaces.OpCache:
-		op = &CacheOperation{}
-	default:
-		op = &DefaultOperation{}
+func (s *SingleNodeOpsCoor) Prepare(opt interfaces.OperationType, id string, f interfaces.Callback) (interfaces.Operation, bool, error) {
+	var ops *operations
+	ok := opt != interfaces.OpUnknown
+	s.midx.Lock()
+	defer s.midx.Unlock()
+	s.idx++
+	op := &DefaultOperation{
+		idx: s.idx,
+		opt: opt,
+		id:  id,
+		f:   f,
+		st:  sprep,
 	}
-	err := op.Init(s, id)
-	if err != nil {
-		return nil, err
+	entries, lok := s.entities.Load(id)
+	if !lok {
+		ops = newOperations()
+		s.entities.Store(id, ops)
+	} else {
+		ops, _ = entries.(*operations)
 	}
-	return op, nil
+	ops.Append(*op)
+	go func() {
+		op.st = srun
+		if op.f != nil {
+			op.f(op)
+		}
+		ops.Remove(op)
+		op.st = sfin
+	}()
+	return op, ok, nil
 }
 
-// Init initialize the default operation
-func (o *DefaultOperation) Init(coor interfaces.OpsCoor, id string) error {
-	o.opt = interfaces.OpUnknown
-	o.id = id
-	o.coor = coor
-	return nil
-}
-
-// Start initialize the default operation
-func (o *DefaultOperation) Start() (bool, error) {
-	return true, ErrNotImplemented
-}
-
-// Stop initialize the default operation
-func (o *DefaultOperation) Stop() (bool, error) {
-	return true, ErrNotImplemented
-}
-
-// Init initialize the backup operation
-func (o *BackupOperation) Init(coor interfaces.OpsCoor, id string) error {
-	err := o.DefaultOperation.Init(coor, id)
-	if err != nil {
-		return err
+// Count operations of an id
+func (s *SingleNodeOpsCoor) Count(id string) int {
+	entries, ok := s.entities.Load(id)
+	if !ok {
+		return 0
 	}
-	o.opt = interfaces.OpBackup
-	return nil
+	ops, _ := entries.(*operations)
+	return ops.Len()
 }
 
-// Init initialize the backup operation
-func (o *TntBackupOperation) Init(coor interfaces.OpsCoor, id string) error {
-	err := o.DefaultOperation.Init(coor, id)
-	if err != nil {
-		return err
-	}
-	o.opt = interfaces.OpTntBck
-	return nil
+// ID return the id of this operation
+func (o *DefaultOperation) ID() string {
+	return o.id
 }
 
-// Init initialize the backup operation
-func (o *RestoreOperation) Init(coor interfaces.OpsCoor, id string) error {
-	err := o.DefaultOperation.Init(coor, id)
-	if err != nil {
-		return err
-	}
-	o.opt = interfaces.OpRestore
-	return nil
+// Type return the id of this operation
+func (o *DefaultOperation) Type() interfaces.OperationType {
+	return o.opt
 }
 
-// Init initialize the backup operation
-func (o *CacheOperation) Init(coor interfaces.OpsCoor, id string) error {
-	err := o.DefaultOperation.Init(coor, id)
-	if err != nil {
-		return err
-	}
-	o.opt = interfaces.OpCache
-	return nil
+// Started return the id of this operation
+func (o *DefaultOperation) Started() bool {
+	return false
+}
+
+// Active return the id of this operation
+func (o *DefaultOperation) Active() bool {
+	return false
+}
+
+// Finished return the id of this operation
+func (o *DefaultOperation) Finished() bool {
+	return false
 }

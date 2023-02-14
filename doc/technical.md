@@ -119,7 +119,7 @@ Wird zunächst gegen das aktive Backupsystem geprüft. Sollte dort der Eintrag n
 
 # Operation Coordinator (draft)
 
-Der Operations Coordinator soll dafür sorge tragen, daß die verschiedenen Hintergrund Tasks coordiniert ablaufen, bzw. evtl. auch gar nicht erst gestartet werden.
+Der Operations Coordinator soll dafür Sorge tragen, daß die verschiedenen Hintergrund Tasks coordiniert ablaufen, bzw. evtl. auch gar nicht erst gestartet werden.
 
 Beispiel:
 Sowohl das Abrufen der Blob Infos wie auch das Abrufen des Blobs starten einen automatischen Restore, wenn das Blob im Primärstorage nicht vorliegt. Für die gleiche ID braucht das Restore aber nur 1x ausgeführt werden. Der Coordinator sorgt beim 2. Aufrufversuch dafür, daß dieser Task nicht mehr gestartet wird. Gleiches gilt für Backup und Cacheoperationen.
@@ -128,4 +128,4 @@ Beim Backup ist es theoretisch zwar unwahrscheinlich, aber es gibt ein problemat
 
 Bei einem neu eingerichteten Backupprovider, wird im Hintergrund automatisch ein komplettbackup aller Blobs angestossen. Bei gleichzeitigen Zugriff über das REST Interface, kann es nun tatsächlich zu einer Kollision kommen.
 
-Dieses gilt auch für das TntBackup
+Dieses gilt auch für das TntBackup.
