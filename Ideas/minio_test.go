@@ -13,13 +13,14 @@ import (
 )
 
 func TestMinio(t *testing.T) {
-	t.SkipNow()
+	//t.SkipNow()
 	ctx := context.Background()
-	endpoint := "127.0.0.1:9002"
-	accessKeyID := "D9Q2D6JQGW1MVCC98LQL"
-	secretAccessKey := "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr"
-	useSSL := false
+	endpoint := "s3.tms.proactcloud.de:443"
+	accessKeyID := "J6UTM424GSEQUF28OC9N"
+	secretAccessKey := "qn0hJj5F3XEVrayBLPM5wbHZMQ5WDMtqlKO1AzAo"
+	useSSL := true
 
+	minio.
 	// Initialize minio client object.
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
@@ -37,11 +38,12 @@ func TestMinio(t *testing.T) {
 
 	log.Printf("%#v\n", minioClient) // minioClient is now set up
 
+	log.Printf("%#v\n", minioClient.IsOnline())
 	// Make a new bucket called mymusic.
-	bucketName := "mymusic"
-	location := "us-east-1"
+	bucketName := "dev-test"
+	//location := "us-east-1"
 
-	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
+	//	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	if err != nil {
 		// Check to see if we already own this bucket (which happens if you run this twice)
 		exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)
@@ -54,13 +56,32 @@ func TestMinio(t *testing.T) {
 		log.Printf("Successfully created %s\n", bucketName)
 	}
 
+	cctx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+
+	objectCh := minioClient.ListObjects(cctx, bucketName, minio.ListObjectsOptions{
+		Prefix:    "",
+		Recursive: true,
+	})
+	for object := range objectCh {
+		if object.Err != nil {
+			cancel()
+			break
+		}
+		id := object.Key
+		log.Printf("obj %s: %v", id, object)
+	}
+
 	// Upload the zip file
 	objectName := "pdf.pdf"
 	filePath := "../testdata/pdf.pdf"
 	contentType := "text/markdown"
 
 	// Upload the zip file with FPutObject
-	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
+	info, err := minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
