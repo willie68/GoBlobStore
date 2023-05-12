@@ -10,7 +10,7 @@ import (
 // CreateRetentionManager creates a new Retention manager depending ot he configuration
 func CreateRetentionManager(rtnMgrStr string, tntsrv interfaces.TenantManager) (interfaces.RetentionManager, error) {
 	if rtnMgrStr == retentionmanager.SingleRetentionManagerName {
-		//This is the single node retention manager
+		// This is the single node retention manager
 		rtnMgr := &retentionmanager.SingleRetentionManager{
 			TntSrv:  tntsrv,
 			MaxSize: 10000,

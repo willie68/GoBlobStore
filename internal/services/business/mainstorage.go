@@ -1,10 +1,8 @@
 // Package business the package contains the structs for the business rules of the storage system
 package business
 
-/*
-This type doing all the business logic of storing blobs of the service.
-Managing backup and cache requests, managing the Retentions
-*/
+// This type doing all the business logic of storing blobs of the service.
+// Managing backup and cache requests, managing the Retentions
 import (
 	"errors"
 	"fmt"
@@ -228,6 +226,7 @@ func (m *MainStorage) restoreFile(b *model.BlobDescription) {
 			if _, err := m.StgSrv.StoreBlob(b, rd); err != nil {
 				log.Logger.Errorf("main: restoreFile: store, error getting blob: %s, %v", id, err)
 			}
+			go m.cacheFileByID(id)
 		}
 	}
 }
@@ -320,8 +319,6 @@ func (m *MainStorage) RetrieveBlob(id string, w io.Writer) error {
 		}
 		return err
 	}
-
-	go m.cacheFileByID(id)
 	return nil
 }
 

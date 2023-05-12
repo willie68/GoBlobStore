@@ -135,7 +135,6 @@ func (s *BlobStorage) storeBlobV2(b *model.BlobDescription, f io.Reader) (string
 	s.cm.Lock()
 	defer s.cm.Unlock()
 	s.bdCch[b.BlobID] = *b
-	//	go s.buildHash(b.BlobID)
 	return b.BlobID, nil
 }
 
@@ -159,7 +158,6 @@ func (s *BlobStorage) writeBinFileV2(id string, r io.Reader) (int64, string, err
 
 	size, err := io.Copy(w, r)
 
-	//size, err := f.ReadFrom(r)
 	if err != nil {
 		_ = f.Close()
 		_ = os.Remove(binFile)

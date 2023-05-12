@@ -72,11 +72,9 @@ func getBlobLocation(blobid string) string {
 	return fmt.Sprintf(BaseURL+blobsSubpath+"/%s", blobid)
 }
 
-/*
-GetBlob getting one blob file for a tenant from the storage
-path parameter
-id: the id of the blob file
-*/
+// GetBlob getting one blob file for a tenant from the storage
+// path parameter
+// id: the id of the blob file
 func GetBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -149,11 +147,9 @@ func GetBlob(response http.ResponseWriter, request *http.Request) {
 	}
 }
 
-/*
-GetBlobInfo getting the info of a blob file from the storage
-path param:
-id: the id of the blob file
-*/
+// GetBlobInfo getting the info of a blob file from the storage
+// path param:
+// id: the id of the blob file
 func GetBlobInfo(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -193,11 +189,9 @@ func GetBlobInfo(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, b)
 }
 
-/*
-PutBlobInfo getting the info of a blob file from the storage
-path param:
-id: the id of the blob file
-*/
+// PutBlobInfo getting the info of a blob file from the storage
+// path param:
+// id: the id of the blob file
 func PutBlobInfo(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -257,11 +251,9 @@ func PutBlobInfo(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, b)
 }
 
-/*
-GetBlobResetRetention restting the retention time of a blob to the new value
-path param:
-id: the id of the lob file
-*/
+// GetBlobResetRetention restting the retention time of a blob to the new value
+// path param:
+// id: the id of the lob file
 func GetBlobResetRetention(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -300,12 +292,10 @@ func GetBlobResetRetention(response http.ResponseWriter, request *http.Request) 
 	render.JSON(response, request, found)
 }
 
-/*
-GetBlobs query all blobs from the storage for a tenant
-query params
-offset: the offset to start from
-limit: max count of blobs
-*/
+// GetBlobs query all blobs from the storage for a tenant
+// query params
+// offset: the offset to start from
+// limit: max count of blobs
 func GetBlobs(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -497,21 +487,21 @@ func getFilename(header http.Header) (string, error) {
 
 	filenameHeader, ok := config.Get().HeaderMapping[api.FilenameKey]
 	if ok {
-		filename = header.Get(filenameHeader)
-		header, _, err := httpheader.DecodeExtValue(filename)
-		if err != nil {
-			return "", err
+		fn := header.Get(filenameHeader)
+		if fn != "" {
+			header, _, err := httpheader.DecodeExtValue(fn)
+			if err != nil {
+				return "", err
+			}
+			filename = header
 		}
-		filename = header
 	}
 	return filename, nil
 }
 
-/*
-DeleteBlob delete a dedicated blob from the storage for the tenant
-path param
-id: the id of the blob to remove
-*/
+// DeleteBlob delete a dedicated blob from the storage for the tenant
+// path param
+// id: the id of the blob to remove
 func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -555,13 +545,11 @@ func DeleteBlob(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, idStr)
 }
 
-/*
-SearchBlobs search for blobs meeting the criteria
-query params
-offset: the offset to start from
-limit: max count of blobs
-q: query to use
-*/
+// SearchBlobs search for blobs meeting the criteria
+// query params
+// offset: the offset to start from
+// limit: max count of blobs
+// q: query to use
 func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {
@@ -620,11 +608,9 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 	render.JSON(response, request, blobs)
 }
 
-/*
-GetBlobCheck getting the latest check info of a blob file from the storage
-path param:
-id: the id of the blob file
-*/
+// GetBlobCheck getting the latest check info of a blob file from the storage
+// path param:
+// id: the id of the blob file
 func GetBlobCheck(response http.ResponseWriter, request *http.Request) {
 	tenant, err := httputils.TenantID(request)
 	if err != nil {

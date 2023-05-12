@@ -12,7 +12,7 @@ const RetentionHeaderKey = "retention"
 // FilenameKey key for the headermapping for the file name
 const FilenameKey = "filename"
 
-//BlobIDHeaderKey  is the header for defining a blob id
+// BlobIDHeaderKey  is the header for defining a blob id
 const BlobIDHeaderKey = "blobid"
 
 // HeaderPrefixKey all headers with this prefix will be saved, too

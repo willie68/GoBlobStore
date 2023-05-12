@@ -133,18 +133,3 @@ func (c *Condition) HasWildcard() bool {
 		return false
 	}
 }
-
-/*
-func ParseMe(s string) (*Query, error) {
-	res, err := Parse("query", []byte(s))
-	fmt.Printf("%v", res)
-	if err != nil {
-		return nil, err
-	}
-	q, ok := res.(Query)
-	if ok {
-		return &q, nil
-	}
-	return nil, errors.New("error on parsing")
-}
-*/

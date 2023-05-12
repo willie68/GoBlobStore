@@ -1,9 +1,7 @@
 // Package s3 this package contains all s3 related structs
 package s3
 
-/*
-this file contains the logic to use a S3 server als backend for the blob storage.
-*/
+// this file contains the logic to use a S3 server als backend for the blob storage.
 import (
 	"bytes"
 	"context"

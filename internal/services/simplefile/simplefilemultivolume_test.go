@@ -150,7 +150,6 @@ func TestSFMVSrvStoreOneBlobCRUD(t *testing.T) {
 	diffEnum, diff := jsondiff.Compare(js1, js2, &lopts)
 
 	fmt.Printf("diff: %v: %v", diffEnum, diff)
-	//ast.Equal(jsondiff.FullMatch, diffEnum)
 
 	var buf bytes.Buffer
 	err = srv.RetrieveBlob(id, &buf)

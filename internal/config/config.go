@@ -18,11 +18,11 @@ const Servicename = "goblob-service"
 
 // Config our service configuration
 type Config struct {
-	//port of the http server
+	// port of the http server
 	Port int `yaml:"port"`
-	//port of the https server
+	// port of the https server
 	Sslport int `yaml:"sslport"`
-	//this is the url how to connect to this service from outside
+	// this is the url how to connect to this service from outside
 	ServiceURL string `yaml:"serviceURL"`
 
 	SecretFile string `yaml:"secretfile"`

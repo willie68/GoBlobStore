@@ -14,9 +14,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/utils/httputils"
 )
 
-/*
-AdminRoutes getting all routes for the admin endpoint
-*/
+// AdminRoutes getting all routes for the admin endpoint
 func AdminRoutes() (string, *chi.Mux) {
 	router := chi.NewRouter()
 	router.With(api.RoleCheck([]api.Role{api.RoleTenantAdmin})).Get("/check", GetCheck)

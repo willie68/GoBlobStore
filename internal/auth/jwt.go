@@ -169,6 +169,6 @@ func jwtDecodePart(payload string) (map[string]any, error) {
 
 // Validate validation of the token is not implemented
 func (j *JWT) Validate(_ JWTAuthConfig) error {
-	//TODO here should be the implementation of the validation of the token
+	// TODO here should be the implementation of the validation of the token
 	return nil
 }
