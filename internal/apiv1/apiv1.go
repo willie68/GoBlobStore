@@ -35,6 +35,7 @@ const configSubpath = "/config"
 const blobsSubpath = "/blobs"
 const searchSubpath = "/search"
 
+// APIRoutes defining all api v1 routes
 func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 	APIKey = getApikey()
 	log.Logger.Infof("baseurl : %s", BaseURL)
@@ -83,6 +84,16 @@ func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
+	log.Logger.Infof("%s api routes", config.Servicename)
+
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		log.Logger.Infof("api route: %s %s", method, route)
+		return nil
+	}
+
+	if err := chi.Walk(router, walkFunc); err != nil {
+		log.Logger.Alertf("could not walk api routes. %s", err.Error())
+	}
 
 	return router, nil
 }

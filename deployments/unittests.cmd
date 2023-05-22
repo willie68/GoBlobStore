@@ -1,2 +1,2 @@
-set gotestroot=R:/
-go test -p 1 ./... -coverprofile="ut.cover" -covermode count -v -json -bench
+go test -p 1 -coverprofile cover.out ./...
+go tool cover -func cover.out

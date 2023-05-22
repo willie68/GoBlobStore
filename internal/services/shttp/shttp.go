@@ -29,6 +29,7 @@ const (
 	DoSHTTP = "shttp"
 )
 
+// SHttp service for running an http and https server
 type SHttp struct {
 	cfn     config.Config
 	useSSL  bool
@@ -37,6 +38,7 @@ type SHttp struct {
 	Started bool
 }
 
+// NewSHttp creating a new SHttp service and register it in the di framework
 func NewSHttp(cfn config.Config) (*SHttp, error) {
 	sh := SHttp{
 		cfn:     cfn,

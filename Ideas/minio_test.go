@@ -13,7 +13,6 @@ import (
 )
 
 func TestMinio(t *testing.T) {
-	//t.SkipNow()
 	ctx := context.Background()
 	endpoint := "s3.tms.proactcloud.de:443"
 	accessKeyID := "J6UTM424GSEQUF28OC9N"
@@ -40,9 +39,6 @@ func TestMinio(t *testing.T) {
 	log.Printf("%#v\n", minioClient.IsOnline())
 	// Make a new bucket called mymusic.
 	bucketName := "dev-test"
-	//location := "us-east-1"
-
-	//	err = minioClient.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: location})
 	if err != nil {
 		// Check to see if we already own this bucket (which happens if you run this twice)
 		exists, errBucketExists := minioClient.BucketExists(ctx, bucketName)

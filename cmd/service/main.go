@@ -2,7 +2,6 @@
 package main
 
 import (
-	"crypto/md5"
 	"fmt"
 	"io"
 	"os"
@@ -94,7 +93,7 @@ func main() {
 	log.Logger.Infof("serviceURL: %s", serviceConfig.ServiceURL)
 	log.Logger.Infof("apikey: %s", apiv1.APIKey)
 
-	if err := initStorageSystem(); err != nil {
+	if err := services.Init(serviceConfig.Engine); err != nil {
 		errstr := fmt.Sprintf("could not initialise service factory. %s", err.Error())
 		log.Logger.Alertf(errstr)
 		panic(errstr)
@@ -191,15 +190,4 @@ func initJaeger(servicename string, cnfg config.OpenTracing) (opentracing.Tracer
 	}
 	opentracing.SetGlobalTracer(tracer)
 	return tracer, closer
-}
-
-// getApikey generate an apikey based on the service name
-func getApikey() string {
-	value := fmt.Sprintf("%s_%s", config.Servicename, "default")
-	apikey := fmt.Sprintf("%x", md5.Sum([]byte(value)))
-	return strings.ToLower(apikey)
-}
-
-func initStorageSystem() error {
-	return services.Init(serviceConfig.Engine)
 }
