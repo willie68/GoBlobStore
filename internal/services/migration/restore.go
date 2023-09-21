@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/business"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
@@ -54,24 +53,24 @@ func (r *RestoreContext) Restore() {
 		r.Running = false
 	}()
 	r.cancel = false
-	log.Root.Debugf("start restoring tenant \"%s\"", r.TenantID)
+	logger.Debugf("start restoring tenant \"%s\"", r.TenantID)
 	// restoring all blobs in backup storage
 	if r.Backup != nil {
-		log.Root.Debug("checking backup")
+		logger.Debug("checking backup")
 		count := 0
 		err := r.Backup.GetBlobs(func(id string) bool {
 			// process only blobs that are not already in primary store
 			if ok, _ := r.Primary.HasBlob(id); !ok {
 				err := restore(id, r.Backup, r.Primary)
 				if err != nil {
-					log.Root.Errorf("error restoring file from backup: %v", err)
+					logger.Errorf("error restoring file from backup: %v", err)
 				}
 			}
 			count++
 			return true
 		})
 		if err != nil {
-			log.Root.Errorf("error getting files from backup: %v", err)
+			logger.Errorf("error getting files from backup: %v", err)
 		}
 	}
 }
@@ -85,13 +84,13 @@ func (r *RestoreContext) IsRunning() bool {
 func restore(id string, src interfaces.BlobStorage, dst interfaces.BlobStorage) error {
 	found, err := src.HasBlob(id)
 	if err != nil {
-		log.Root.Errorf("error checking blob: %s\n%v", id, err)
+		logger.Errorf("error checking blob: %s\n%v", id, err)
 		return err
 	}
 	if found {
 		b, err := src.GetBlobDescription(id)
 		if err != nil {
-			log.Root.Errorf("error checking blob: %s\n%v", id, err)
+			logger.Errorf("error checking blob: %s\n%v", id, err)
 			return err
 		}
 
@@ -103,18 +102,18 @@ func restore(id string, src interfaces.BlobStorage, dst interfaces.BlobStorage) 
 
 			err := src.RetrieveBlob(id, wr)
 			if err != nil {
-				log.Root.Errorf("error getting blob: %s,%v", id, err)
+				logger.Errorf("error getting blob: %s,%v", id, err)
 			}
 		}()
 		_, err = dst.StoreBlob(b, rd)
 		if err != nil {
-			log.Root.Errorf("error getting blob: %s,%v", id, err)
+			logger.Errorf("error getting blob: %s,%v", id, err)
 		}
 		defer rd.Close()
 		if b.Retention > 0 {
 			rt, err := src.GetRetention(id)
 			if err != nil {
-				log.Root.Errorf("error getting retention: %s,%v", id, err)
+				logger.Errorf("error getting retention: %s,%v", id, err)
 			} else {
 				dst.AddRetention(&rt)
 			}

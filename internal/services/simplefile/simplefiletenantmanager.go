@@ -3,14 +3,12 @@ package simplefile
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
 
@@ -54,7 +52,7 @@ func (s *TenantManager) Init() error {
 
 // GetTenants walk thru all tenants
 func (s *TenantManager) GetTenants(callback func(tenant string) bool) error {
-	infos, err := ioutil.ReadDir(s.RootPath)
+	infos, err := os.ReadDir(s.RootPath)
 	if err != nil {
 		return err
 	}
@@ -124,7 +122,7 @@ func (s *TenantManager) SetConfig(tenant string, config interfaces.TenantConfig)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(cfnName, str, os.ModePerm)
+	err = os.WriteFile(cfnName, str, os.ModePerm)
 	return err
 }
 
@@ -134,7 +132,7 @@ func (s *TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 	if _, err := os.Stat(cfnName); os.IsNotExist(err) {
 		return nil, nil
 	}
-	data, err := ioutil.ReadFile(cfnName)
+	data, err := os.ReadFile(cfnName)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +210,7 @@ func (s *TenantManager) SubSize(tenant string, size int64) {
 }
 
 func (s *TenantManager) calculateAllStorageSizes() {
-	log.Root.Debug("calculating storage sizes of all tenants")
+	logger.Debug("calculating storage sizes of all tenants")
 	s.calcRunning = true
 	defer func() {
 		s.calcRunning = false
@@ -230,7 +228,7 @@ func (s *TenantManager) calculateAllStorageSizes() {
 		return true
 	})
 	if err != nil {
-		log.Root.Errorf("calculating all storage sizes error: %v", err)
+		logger.Errorf("calculating all storage sizes error: %v", err)
 	}
 }
 
@@ -252,7 +250,7 @@ func (s *TenantManager) calculateStorageSize(tenant string) int64 {
 		return nil
 	})
 	if err != nil {
-		log.Root.Errorf("sftm: error %v", err)
+		logger.Errorf("sftm: error %v", err)
 		return 0
 	}
 	return dirSize

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -125,7 +124,7 @@ func (s *BlobStorage) writeJSONFileV1(b *model.BlobDescription) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, js, os.ModePerm)
+	err = os.WriteFile(jsonFile, js, os.ModePerm)
 	if err != nil {
 		_ = os.Remove(jsonFile)
 		return err

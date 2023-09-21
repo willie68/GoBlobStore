@@ -6,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/internal/services/volume"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -194,7 +193,7 @@ func (s *MultiVolumeStorage) Close() error {
 	for _, srv := range s.srvs {
 		err := srv.Close()
 		if err != nil {
-			log.Root.Errorf("error closing volume service: %v", err)
+			logger.Errorf("error closing volume service: %v", err)
 		}
 	}
 	s.srvs = make([]BlobStorage, 0)

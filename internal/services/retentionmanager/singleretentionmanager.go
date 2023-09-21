@@ -4,7 +4,6 @@ import (
 	"sort"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -33,7 +32,7 @@ func (s *SingleRetentionManager) Init(stgf interfaces.StorageFactory) error {
 	s.retentionList = make([]model.RetentionEntry, 0)
 	err := s.refereshRetention()
 	if err != nil {
-		log.Root.Errorf("RetMgr: error on refresh: %v", err)
+		logger.Errorf("RetMgr: error on refresh: %v", err)
 		return err
 	}
 	s.background = time.NewTicker(60 * time.Second)
@@ -44,11 +43,11 @@ func (s *SingleRetentionManager) Init(stgf interfaces.StorageFactory) error {
 			case <-s.background.C:
 				err := s.processRetention()
 				if err != nil {
-					log.Root.Errorf("RetMgr: error on process: %v", err)
+					logger.Errorf("RetMgr: error on process: %v", err)
 				}
 				err = s.refereshRetention()
 				if err != nil {
-					log.Root.Errorf("RetMgr: error on refresh: %v", err)
+					logger.Errorf("RetMgr: error on refresh: %v", err)
 				}
 			case <-s.quit:
 				s.background.Stop()
@@ -68,12 +67,12 @@ func (s *SingleRetentionManager) processRetention() error {
 			rmvList = append(rmvList, v.BlobID)
 			stg, err := s.stgf.GetStorage(v.TenantID)
 			if err != nil {
-				log.Root.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
+				logger.Errorf("RetMgr: error getting tenant store: %s", v.TenantID)
 				continue
 			}
 			err = stg.DeleteBlob(v.BlobID)
 			if err != nil {
-				log.Root.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
+				logger.Errorf("RetMgr: error removing blob, t:%s, name: %s, id:%s", v.TenantID, v.Filename, v.BlobID)
 				continue
 			}
 		}
@@ -103,7 +102,7 @@ func (s *SingleRetentionManager) removeEntry(id string) {
 
 func (s *SingleRetentionManager) refereshRetention() error {
 	err := s.TntSrv.GetTenants(func(t string) bool {
-		log.Root.Debugf("RetMgr: found tenant: %s", t)
+		logger.Debugf("RetMgr: found tenant: %s", t)
 		stg, err := s.stgf.GetStorage(t)
 		if err != nil {
 			return true

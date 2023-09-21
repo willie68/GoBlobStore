@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -115,7 +115,7 @@ func (s *TenantManager) readStorelist() error {
 		return err
 	}
 	var storeEntries []StoreEntry
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err == nil && data != nil {
 		err = json.Unmarshal(data, &storeEntries)
 	}
@@ -240,7 +240,7 @@ func (s *TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	var cfn interfaces.TenantConfig
 	if err == nil && data != nil {
 		err = json.Unmarshal(data, &cfn)

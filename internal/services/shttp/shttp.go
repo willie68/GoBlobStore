@@ -21,13 +21,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/logging"
 )
 
 const (
 	// DoSHTTP naming constant for dependency injection
 	DoSHTTP = "shttp"
 )
+
+var logger = logging.New().WithName("shttp")
 
 // SHttp service for running an http and https server
 type SHttp struct {
@@ -75,11 +77,11 @@ func (s *SHttp) ShutdownServers() {
 	defer cancel()
 
 	if err := s.srv.Shutdown(ctx); err != nil {
-		log.Root.Errorf("shutdown http server error: %v", err)
+		logger.Errorf("shutdown http server error: %v", err)
 	}
 	if s.useSSL {
 		if err := s.sslsrv.Shutdown(ctx); err != nil {
-			log.Root.Errorf("shutdown https server error: %v", err)
+			logger.Errorf("shutdown https server error: %v", err)
 		}
 	}
 	s.Started = false
@@ -96,7 +98,7 @@ func (s *SHttp) startHTTPSServer(router *chi.Mux) {
 	}
 	tlsConfig, err := gc.GenerateTLSConfig()
 	if err != nil {
-		log.Root.Alertf("could not create tls config. %s", err.Error())
+		logger.Alertf("could not create tls config. %s", err.Error())
 	}
 	s.sslsrv = &http.Server{
 		Addr:         "0.0.0.0:" + strconv.Itoa(s.cfn.Sslport),
@@ -107,9 +109,9 @@ func (s *SHttp) startHTTPSServer(router *chi.Mux) {
 		TLSConfig:    tlsConfig,
 	}
 	go func() {
-		log.Root.Infof("starting https server on address: %s", s.sslsrv.Addr)
+		logger.Infof("starting https server on address: %s", s.sslsrv.Addr)
 		if err := s.sslsrv.ListenAndServeTLS("", ""); err != nil {
-			log.Root.Alertf("error starting server: %s", err.Error())
+			logger.Alertf("error starting server: %s", err.Error())
 		}
 	}()
 }
@@ -124,9 +126,9 @@ func (s *SHttp) startHTTPServer(router *chi.Mux) {
 		Handler:      router,
 	}
 	go func() {
-		log.Root.Infof("starting http server on address: %s", s.srv.Addr)
+		logger.Infof("starting http server on address: %s", s.srv.Addr)
 		if err := s.srv.ListenAndServe(); err != nil {
-			log.Root.Alertf("error starting server: %s", err.Error())
+			logger.Alertf("error starting server: %s", err.Error())
 		}
 	}()
 }
@@ -176,11 +178,11 @@ func (gc *generateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 	case "P521":
 		priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	default:
-		log.Root.Fatalf("Unrecognized elliptic curve: %q", gc.EcdsaCurve)
+		logger.Fatalf("Unrecognized elliptic curve: %q", gc.EcdsaCurve)
 		return nil, err
 	}
 	if err != nil {
-		log.Root.Fatalf("Failed to generate private key: %v", err)
+		logger.Fatalf("Failed to generate private key: %v", err)
 		return nil, err
 	}
 
@@ -190,7 +192,7 @@ func (gc *generateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 	} else {
 		notBefore, err = time.Parse("Jan 2 15:04:05 2006", gc.ValidFrom)
 		if err != nil {
-			log.Root.Fatalf("Failed to parse creation date: %v", err)
+			logger.Fatalf("Failed to parse creation date: %v", err)
 			return nil, err
 		}
 	}
@@ -200,7 +202,7 @@ func (gc *generateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		log.Root.Fatalf("Failed to generate serial number: %v", err)
+		logger.Fatalf("Failed to generate serial number: %v", err)
 		return nil, err
 	}
 
@@ -233,13 +235,13 @@ func (gc *generateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, gc.publicKey(priv), priv)
 	if err != nil {
-		log.Root.Fatalf("Failed to create certificate: %v", err)
+		logger.Fatalf("Failed to create certificate: %v", err)
 		return nil, err
 	}
 
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		log.Root.Fatalf("Unable to marshal private key: %v", err)
+		logger.Fatalf("Unable to marshal private key: %v", err)
 		return nil, err
 	}
 

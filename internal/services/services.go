@@ -2,8 +2,11 @@ package services
 
 import (
 	"github.com/willie68/GoBlobStore/internal/config"
+	"github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/shttp"
 )
+
+var logger = logging.New().WithName("services")
 
 // InitServices initialise the service system
 func InitServices(cfg config.Config) error {
