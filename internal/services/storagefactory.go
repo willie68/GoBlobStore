@@ -13,6 +13,7 @@ import (
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
 
+// all constant definitions for the different services
 const (
 	DoTntSrv = "tntsrv"
 	DoRtnMgr = "rtnmgr"
