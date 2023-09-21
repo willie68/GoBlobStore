@@ -140,16 +140,16 @@ func (f *FastCache) GetBlobs(callback func(id string) bool) error {
 func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, error) {
 	ok, err := f.HasBlob(b.BlobID)
 	if err != nil {
-		log.Logger.Errorf("cache: error checking file: %v", err)
+		log.Root.Errorf("cache: error checking file: %v", err)
 		return "", err
 	}
 	if ok {
-		log.Logger.Errorf("cache: file exists")
+		log.Root.Errorf("cache: file exists")
 		return b.BlobID, os.ErrExist
 	}
 	size, dat, err := f.writeBinFile(b.BlobID, r)
 	if err != nil {
-		log.Logger.Errorf("cache: writing file: %v", err)
+		log.Root.Errorf("cache: writing file: %v", err)
 		return "", err
 	}
 	atomic.AddInt64(&f.size, size)
@@ -165,7 +165,7 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 		}
 		err = f.DeleteBlob(id)
 		if err != nil {
-			log.Logger.Errorf("cache: can't delete blob %s: %v", id, err)
+			log.Root.Errorf("cache: can't delete blob %s: %v", id, err)
 		}
 	}
 	f.updateBloom(b.BlobID)
@@ -176,11 +176,11 @@ func (f *FastCache) StoreBlob(b *model.BlobDescription, r io.Reader) (string, er
 func (f *FastCache) UpdateBlobDescription(id string, b *model.BlobDescription) error {
 	ok, err := f.HasBlob(b.BlobID)
 	if err != nil {
-		log.Logger.Errorf("cache: error checking file: %v", err)
+		log.Root.Errorf("cache: error checking file: %v", err)
 		return err
 	}
 	if !ok {
-		log.Logger.Debugf("cache: file not exists: %s", id)
+		log.Root.Debugf("cache: file not exists: %s", id)
 		return nil
 	}
 	if f.inBloom(id) {
@@ -318,7 +318,7 @@ func (f *FastCache) DeleteBlob(id string) error {
 			if lid != "" {
 				err := f.deleteBlobFile(lid)
 				if err != nil {
-					log.Logger.Errorf("error deleting file: %v", err)
+					log.Root.Errorf("error deleting file: %v", err)
 					return err
 				}
 				f.bfDirty = true

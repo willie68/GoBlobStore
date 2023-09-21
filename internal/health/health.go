@@ -19,9 +19,9 @@ func check(_ opentracing.Tracer) (bool, string) {
 	myhealthy = true
 	message := ""
 	if myhealthy {
-		log.Logger.Debug("healthy")
+		log.Root.Debug("healthy")
 	} else {
-		log.Logger.Alert("not healthy")
+		log.Root.Alert("not healthy")
 		message = "ungesund"
 	}
 	return myhealthy, message
@@ -47,7 +47,7 @@ type Msg struct {
 // InitHealthSystem initialize the complete health system
 func InitHealthSystem(config CheckConfig, tracer opentracing.Tracer) {
 	period = config.Period
-	log.Logger.Infof("healthcheck starting with period: %d seconds", period)
+	log.Root.Infof("healthcheck starting with period: %d seconds", period)
 	message = "service starting"
 	readyz = false
 	doCheck(tracer)

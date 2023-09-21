@@ -129,21 +129,21 @@ func GetMigrationManagement() (*migration.Management, error) {
 func Close() {
 	err := stgf.Close()
 	if err != nil {
-		log.Logger.Errorf("error closing storage factory:\r\n%v,", err)
+		log.Root.Errorf("error closing storage factory:\r\n%v,", err)
 	}
 
 	err = rtnMgr.Close()
 	if err != nil {
-		log.Logger.Errorf("error closing retention manager:\r\n%v,", err)
+		log.Root.Errorf("error closing retention manager:\r\n%v,", err)
 	}
 
 	err = tntsrv.Close()
 	if err != nil {
-		log.Logger.Errorf("error closing tenant service:\r\n%v,", err)
+		log.Root.Errorf("error closing tenant service:\r\n%v,", err)
 	}
 
 	err = migMan.Close()
 	if err != nil {
-		log.Logger.Errorf("error closing check management:\r\n%v,", err)
+		log.Root.Errorf("error closing check management:\r\n%v,", err)
 	}
 }

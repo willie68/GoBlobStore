@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"dario.cat/mergo"
 	"github.com/drone/envsubst"
-	"github.com/imdario/mergo"
 	"github.com/pkg/errors"
 	"github.com/willie68/GoBlobStore/internal/api"
+	"github.com/willie68/GoBlobStore/internal/logging"
 	"gopkg.in/yaml.v3"
 )
 
@@ -33,7 +34,7 @@ type Config struct {
 
 	Apikey bool `yaml:"apikey"`
 
-	Logging LoggingConfig `yaml:"logging"`
+	Logging logging.LoggingConfig `yaml:"logging"`
 
 	HealthCheck HealthCheck `yaml:"healthcheck"`
 
@@ -84,15 +85,6 @@ type HealthCheck struct {
 	Period int `yaml:"period"`
 }
 
-// LoggingConfig configuration for the gelf logging
-type LoggingConfig struct {
-	Level    string `yaml:"level"`
-	Filename string `yaml:"filename"`
-
-	Gelfurl  string `yaml:"gelf-url"`
-	Gelfport int    `yaml:"gelf-port"`
-}
-
 // OpenTracing configuration
 type OpenTracing struct {
 	Host     string `yaml:"host"`
@@ -116,7 +108,7 @@ var DefaultConfig = Config{
 	HealthCheck: HealthCheck{
 		Period: 30,
 	},
-	Logging: LoggingConfig{
+	Logging: logging.LoggingConfig{
 		Level:    "INFO",
 		Filename: "${configdir}/logging.log",
 	},

@@ -82,7 +82,7 @@ func (m *MainTenant) RemoveTenant(tenant string) (string, error) {
 func (m *MainTenant) removeTnt(tenant string) {
 	_, err := m.TntSrv.RemoveTenant(tenant)
 	if err != nil {
-		log.Logger.Errorf("error removing tenant %s: %v", tenant, err)
+		log.Root.Errorf("error removing tenant %s: %v", tenant, err)
 	}
 	m.rmtSync.Lock()
 	m.rmTnt = slicesutils.RemoveString(m.rmTnt, tenant)
@@ -115,7 +115,7 @@ func (m *MainTenant) GetConfig(tenant string) (*interfaces.TenantConfig, error) 
 	if (cfn == nil) && (m.BckSrv != nil) {
 		cfn, err = m.BckSrv.GetConfig(tenant)
 		if err != nil {
-			log.Logger.Errorf("error reading config for tenant %s from backup. %v", tenant, err)
+			log.Root.Errorf("error reading config for tenant %s from backup. %v", tenant, err)
 		}
 	}
 	return cfn, nil
