@@ -592,7 +592,7 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 	}
 	query := string(b)
 	if query != "" {
-		log.Logger.Debugf("search for blobs with: %s", query)
+		log.Root.Debugf("search for blobs with: %s", query)
 	}
 	blobs := make([]string, 0)
 	index := 0
@@ -680,7 +680,7 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 	}
 	idStr := chi.URLParam(request, "id")
 
-	log.Logger.Infof("do check for tenant %s on blob %s", tenant, idStr)
+	log.Root.Infof("do check for tenant %s on blob %s", tenant, idStr)
 	storage, err := getTenantStore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))

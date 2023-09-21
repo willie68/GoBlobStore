@@ -38,7 +38,7 @@ const searchSubpath = "/search"
 // APIRoutes defining all api v1 routes
 func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 	APIKey = getApikey()
-	log.Logger.Infof("baseurl : %s", BaseURL)
+	log.Root.Infof("baseurl : %s", BaseURL)
 	router := chi.NewRouter()
 	setDefaultHandler(router, cfn, trc)
 
@@ -52,7 +52,7 @@ func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 		if err != nil {
 			return router, err
 		}
-		log.Logger.Infof("jwt config: %v", jwtConfig)
+		log.Root.Infof("jwt config: %v", jwtConfig)
 
 		auth.InitJWT(jwtConfig)
 
@@ -84,15 +84,15 @@ func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
-	log.Logger.Infof("%s api routes", config.Servicename)
+	log.Root.Infof("%s api routes", config.Servicename)
 
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Logger.Infof("api route: %s %s", method, route)
+		log.Root.Infof("api route: %s %s", method, route)
 		return nil
 	}
 
 	if err := chi.Walk(router, walkFunc); err != nil {
-		log.Logger.Alertf("could not walk api routes. %s", err.Error())
+		log.Root.Alertf("could not walk api routes. %s", err.Error())
 	}
 
 	return router, nil
@@ -175,13 +175,13 @@ func HealthRoutes(cfn config.Config) *chi.Mux {
 		}
 	})
 
-	log.Logger.Info("health api routes")
+	log.Root.Info("health api routes")
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Logger.Infof("health route: %s %s", method, route)
+		log.Root.Infof("health route: %s %s", method, route)
 		return nil
 	}
 	if err := chi.Walk(router, walkFunc); err != nil {
-		log.Logger.Alertf("could not walk health routes. %s", err.Error())
+		log.Root.Alertf("could not walk health routes. %s", err.Error())
 	}
 
 	return router

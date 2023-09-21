@@ -68,7 +68,7 @@ func (v *Manager) Init() error {
 		for range v.ticker.C {
 			err := v.Rescan()
 			if err != nil {
-				log.Logger.Errorf("volume manager: error rescan volumes: %v", err)
+				log.Root.Errorf("volume manager: error rescan volumes: %v", err)
 			}
 		}
 	}()

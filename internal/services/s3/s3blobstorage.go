@@ -293,7 +293,7 @@ func (s *BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) boo
 	})
 	for object := range objectCh {
 		if object.Err != nil {
-			log.Logger.Errorf("S3BlobStorage: unknown error on listfiles: %v", object.Err)
+			log.Root.Errorf("S3BlobStorage: unknown error on listfiles: %v", object.Err)
 			return object.Err
 		}
 		r, err := s.getRetentionByFile(object.Key)

@@ -71,12 +71,12 @@ var (
 func InitMongoDB(p map[string]any) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		log.Root.Errorf("%v", err)
 		return err
 	}
 	err = json.Unmarshal(jsonStr, &mcnfg)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		log.Root.Errorf("%v", err)
 		return err
 	}
 	if len(mcnfg.Hosts) == 0 {
@@ -97,7 +97,7 @@ func InitMongoDB(p map[string]any) error {
 	ctx = context.TODO()
 	client, err = driver.Connect(ctx, opts)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		log.Root.Errorf("%v", err)
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (m *Index) Init() error {
 		}
 	}
 	if !found {
-		log.Logger.Info("no index found, creating one")
+		log.Root.Info("no index found, creating one")
 		mod := driver.IndexModel{
 			Keys: bson.M{
 				"blobid": 1, // index in ascending order
@@ -244,7 +244,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 				return err
 			}
 			mid := res.InsertedID
-			log.Logger.Infof("insert: %v", mid)
+			log.Root.Infof("insert: %v", mid)
 			return nil
 		}
 		fmt.Printf("err: %v", err)
@@ -266,7 +266,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		return err
 	}
 	mid := res.ModifiedCount
-	log.Logger.Infof("mod count: %vd", mid)
+	log.Root.Infof("mod count: %vd", mid)
 	return nil
 }
 

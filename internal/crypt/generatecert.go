@@ -69,11 +69,11 @@ func (gc *GenerateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 	case "P521":
 		priv, err = ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
 	default:
-		log.Logger.Fatalf("Unrecognized elliptic curve: %q", gc.EcdsaCurve)
+		log.Root.Fatalf("Unrecognized elliptic curve: %q", gc.EcdsaCurve)
 		return nil, err
 	}
 	if err != nil {
-		log.Logger.Fatalf("Failed to generate private key: %v", err)
+		log.Root.Fatalf("Failed to generate private key: %v", err)
 		return nil, err
 	}
 
@@ -83,7 +83,7 @@ func (gc *GenerateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 	} else {
 		notBefore, err = time.Parse("Jan 2 15:04:05 2006", gc.ValidFrom)
 		if err != nil {
-			log.Logger.Fatalf("Failed to parse creation date: %v", err)
+			log.Root.Fatalf("Failed to parse creation date: %v", err)
 			return nil, err
 		}
 	}
@@ -93,7 +93,7 @@ func (gc *GenerateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
-		log.Logger.Fatalf("Failed to generate serial number: %v", err)
+		log.Root.Fatalf("Failed to generate serial number: %v", err)
 		return nil, err
 	}
 
@@ -126,13 +126,13 @@ func (gc *GenerateCertificate) GenerateTLSConfig() (*tls.Config, error) {
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, gc.publicKey(priv), priv)
 	if err != nil {
-		log.Logger.Fatalf("Failed to create certificate: %v", err)
+		log.Root.Fatalf("Failed to create certificate: %v", err)
 		return nil, err
 	}
 
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		log.Logger.Fatalf("Unable to marshal private key: %v", err)
+		log.Root.Fatalf("Unable to marshal private key: %v", err)
 		return nil, err
 	}
 

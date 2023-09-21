@@ -111,7 +111,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("create store for tenant %s", tenant)
+	log.Root.Infof("create store for tenant %s", tenant)
 	tntsrv, err := services.GetTenantSrv()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))

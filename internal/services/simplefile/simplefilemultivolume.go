@@ -194,7 +194,7 @@ func (s *MultiVolumeStorage) Close() error {
 	for _, srv := range s.srvs {
 		err := srv.Close()
 		if err != nil {
-			log.Logger.Errorf("error closing volume service: %v", err)
+			log.Root.Errorf("error closing volume service: %v", err)
 		}
 	}
 	s.srvs = make([]BlobStorage, 0)

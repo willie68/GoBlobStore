@@ -131,13 +131,13 @@ func (m *MainStorage) cacheFileByID(id string) {
 	if m.CchSrv != nil {
 		ok, err := m.CchSrv.HasBlob(id)
 		if err != nil {
-			log.Logger.Errorf("main: cacheFileByID: check blob: %s, %v", id, err)
+			log.Root.Errorf("main: cacheFileByID: check blob: %s, %v", id, err)
 			return
 		}
 		if !ok {
 			b, err := m.GetBlobDescription(id)
 			if err != nil {
-				log.Logger.Errorf("main: cacheFileByID: getDescription: %s, %v", id, err)
+				log.Root.Errorf("main: cacheFileByID: getDescription: %s, %v", id, err)
 				return
 			}
 			m.cacheFile(b)
@@ -149,7 +149,7 @@ func (m *MainStorage) cacheFile(b *model.BlobDescription) {
 	if m.CchSrv != nil {
 		ok, err := m.CchSrv.HasBlob(b.BlobID)
 		if err != nil {
-			log.Logger.Errorf("main: cacheFile: check blob: %s, %v", b.BlobID, err)
+			log.Root.Errorf("main: cacheFile: check blob: %s, %v", b.BlobID, err)
 			return
 		}
 		if !ok {
@@ -157,13 +157,13 @@ func (m *MainStorage) cacheFile(b *model.BlobDescription) {
 			go func() {
 				defer wr.Close()
 				if err := m.StgSrv.RetrieveBlob(b.BlobID, wr); err != nil {
-					log.Logger.Errorf("main: cacheFile: retrieve, error getting blob: %s, %v", b.BlobID, err)
+					log.Root.Errorf("main: cacheFile: retrieve, error getting blob: %s, %v", b.BlobID, err)
 				}
 				// close the writer, so the reader knows there's no more data
 			}()
 			defer rd.Close()
 			if _, err := m.CchSrv.StoreBlob(b, rd); err != nil {
-				log.Logger.Errorf("main: cacheFile: store, error getting blob: %s, %v", b.BlobID, err)
+				log.Root.Errorf("main: cacheFile: store, error getting blob: %s, %v", b.BlobID, err)
 			}
 		}
 	}
@@ -185,7 +185,7 @@ func (m *MainStorage) bckFile(srv interfaces.BlobStorage, b *model.BlobDescripti
 	if srv != nil {
 		ok, err := srv.HasBlob(b.BlobID)
 		if err != nil {
-			log.Logger.Errorf("main: backupFile: check blob: %s, %v", b.BlobID, err)
+			log.Root.Errorf("main: backupFile: check blob: %s, %v", b.BlobID, err)
 			return
 		}
 		if !ok {
@@ -194,12 +194,12 @@ func (m *MainStorage) bckFile(srv interfaces.BlobStorage, b *model.BlobDescripti
 				// close the writer, so the reader knows there's no more data
 				defer wr.Close()
 				if err := m.StgSrv.RetrieveBlob(id, wr); err != nil {
-					log.Logger.Errorf("main: backupFile: retrieve, error getting blob: %s, %v", id, err)
+					log.Root.Errorf("main: backupFile: retrieve, error getting blob: %s, %v", id, err)
 				}
 			}()
 			defer rd.Close()
 			if _, err := srv.StoreBlob(b, rd); err != nil {
-				log.Logger.Errorf("main: backupFile: store, error getting blob: %s, %v", id, err)
+				log.Root.Errorf("main: backupFile: store, error getting blob: %s, %v", id, err)
 			}
 		}
 	}
@@ -210,7 +210,7 @@ func (m *MainStorage) restoreFile(b *model.BlobDescription) {
 		id := b.BlobID
 		ok, err := m.BckSrv.HasBlob(id)
 		if err != nil {
-			log.Logger.Errorf("main: restoreFile: check blob: %s, %v", id, err)
+			log.Root.Errorf("main: restoreFile: check blob: %s, %v", id, err)
 			return
 		}
 		if ok {
@@ -219,12 +219,12 @@ func (m *MainStorage) restoreFile(b *model.BlobDescription) {
 				// close the writer, so the reader knows there's no more data
 				defer wr.Close()
 				if err := m.BckSrv.RetrieveBlob(id, wr); err != nil {
-					log.Logger.Errorf("main: restoreFile: retrieve, error getting blob: %s, %v", id, err)
+					log.Root.Errorf("main: restoreFile: retrieve, error getting blob: %s, %v", id, err)
 				}
 			}()
 			defer rd.Close()
 			if _, err := m.StgSrv.StoreBlob(b, rd); err != nil {
-				log.Logger.Errorf("main: restoreFile: store, error getting blob: %s, %v", id, err)
+				log.Root.Errorf("main: restoreFile: store, error getting blob: %s, %v", id, err)
 			}
 			go m.cacheFileByID(id)
 		}
@@ -235,7 +235,7 @@ func (m *MainStorage) restoreFile(b *model.BlobDescription) {
 func (m *MainStorage) addStorageSize(id string) {
 	bd, err := m.GetBlobDescription(id)
 	if err != nil {
-		log.Logger.Errorf("adjust: can't get blob description: %v", err)
+		log.Root.Errorf("adjust: can't get blob description: %v", err)
 		return
 	}
 	if m.TntMgr != nil {
@@ -350,7 +350,7 @@ func (m *MainStorage) DeleteBlob(id string) error {
 	go m.subStorageSize(bd)
 	if m.BckSrv != nil {
 		if err = m.BckSrv.DeleteBlob(id); err != nil {
-			log.Logger.Errorf("error deleting blob on backup: %v", err)
+			log.Root.Errorf("error deleting blob on backup: %v", err)
 		}
 	}
 	if m.RtnMng != nil {
@@ -358,7 +358,7 @@ func (m *MainStorage) DeleteBlob(id string) error {
 	}
 	if m.CchSrv != nil {
 		if err = m.CchSrv.DeleteBlob(id); err != nil {
-			log.Logger.Errorf("error deleting blob on cache: %v", err)
+			log.Root.Errorf("error deleting blob on cache: %v", err)
 		}
 	}
 	return nil
@@ -406,11 +406,11 @@ func (m *MainStorage) CheckBlob(id string) (*model.CheckInfo, error) {
 func (m *MainStorage) checkBck(id string, ri *model.Check, bd *model.BlobDescription) {
 	bckDI, err := m.BckSrv.CheckBlob(id)
 	if err != nil {
-		log.Logger.Errorf("error checking blob on backup: %v", err)
+		log.Root.Errorf("error checking blob on backup: %v", err)
 	}
 	bckBd, err := m.BckSrv.GetBlobDescription(id)
 	if err != nil {
-		log.Logger.Errorf("error getting blob description on backup: %v", err)
+		log.Root.Errorf("error getting blob description on backup: %v", err)
 	}
 	// merge stgCI and bckCI
 	ri.Backup = bckDI
@@ -446,7 +446,7 @@ func (m *MainStorage) AddRetention(r *model.RetentionEntry) error {
 	err := m.StgSrv.AddRetention(r)
 	if m.BckSrv != nil {
 		if err1 := m.BckSrv.AddRetention(r); err1 != nil {
-			log.Logger.Errorf("error adding retention on backup: %v", err1)
+			log.Root.Errorf("error adding retention on backup: %v", err1)
 		}
 	}
 	return err
@@ -462,7 +462,7 @@ func (m *MainStorage) DeleteRetention(id string) error {
 	err := m.StgSrv.DeleteRetention(id)
 	if m.BckSrv != nil {
 		if err1 := m.BckSrv.DeleteRetention(id); err1 != nil {
-			log.Logger.Errorf("error deleting retention on backup:%s, %v", id, err1)
+			log.Root.Errorf("error deleting retention on backup:%s, %v", id, err1)
 		}
 	}
 	return err
@@ -473,7 +473,7 @@ func (m *MainStorage) ResetRetention(id string) error {
 	err := m.StgSrv.ResetRetention(id)
 	if m.BckSrv != nil {
 		if err1 := m.BckSrv.ResetRetention(id); err1 != nil {
-			log.Logger.Errorf("error resetting retention on backup:%s, %v", id, err1)
+			log.Root.Errorf("error resetting retention on backup:%s, %v", id, err1)
 		}
 	}
 	return err
@@ -489,7 +489,7 @@ func (m *MainStorage) Close() error {
 	err := m.StgSrv.Close()
 	if m.BckSrv != nil {
 		if err1 := m.BckSrv.Close(); err1 != nil {
-			log.Logger.Errorf("error closing backup storage: %v", err1)
+			log.Root.Errorf("error closing backup storage: %v", err1)
 		}
 	}
 	return err

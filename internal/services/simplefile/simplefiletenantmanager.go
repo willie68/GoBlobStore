@@ -212,7 +212,7 @@ func (s *TenantManager) SubSize(tenant string, size int64) {
 }
 
 func (s *TenantManager) calculateAllStorageSizes() {
-	log.Logger.Debug("calculating storage sizes of all tenants")
+	log.Root.Debug("calculating storage sizes of all tenants")
 	s.calcRunning = true
 	defer func() {
 		s.calcRunning = false
@@ -230,7 +230,7 @@ func (s *TenantManager) calculateAllStorageSizes() {
 		return true
 	})
 	if err != nil {
-		log.Logger.Errorf("calculating all storage sizes error: %v", err)
+		log.Root.Errorf("calculating all storage sizes error: %v", err)
 	}
 }
 
@@ -252,7 +252,7 @@ func (s *TenantManager) calculateStorageSize(tenant string) int64 {
 		return nil
 	})
 	if err != nil {
-		log.Logger.Errorf("sftm: error %v", err)
+		log.Root.Errorf("sftm: error %v", err)
 		return 0
 	}
 	return dirSize

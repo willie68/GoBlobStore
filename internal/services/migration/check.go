@@ -59,7 +59,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	}
 	defer file.Close()
 	c.Filename = file.Name()
-	log.Logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
+	log.Root.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
 	_, _ = file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
 
 	// checking all blobs in cache
@@ -68,7 +68,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	}
 	// checking all blobs in main storage
 	count := 0
-	log.Logger.Debug("checking primary")
+	log.Root.Debug("checking primary")
 	_, _ = file.WriteString(",\r\n\"Primary\": [\r\n")
 	err = c.Primary.GetBlobs(func(id string) bool {
 		if count > 0 {
@@ -81,7 +81,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	_, _ = file.WriteString("]")
 	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
 	if err != nil {
-		log.Logger.Errorf("check: error checking primary. %v", err)
+		log.Root.Errorf("check: error checking primary. %v", err)
 	}
 	// checking all blobs in backup storage
 	if c.Backup != nil {
@@ -92,7 +92,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 }
 
 func (c *CheckContext) checkBackup(file *os.File) {
-	log.Logger.Debug("checking backup")
+	log.Root.Debug("checking backup")
 	count := 0
 	first := true
 	_, _ = file.WriteString(",\r\n\"Backup\": [\r\n")
@@ -109,7 +109,7 @@ func (c *CheckContext) checkBackup(file *os.File) {
 		return true
 	})
 	if err != nil {
-		log.Logger.Errorf("check: error checking backup. %v", err)
+		log.Root.Errorf("check: error checking backup. %v", err)
 	}
 	_, _ = file.WriteString("]")
 	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
@@ -117,7 +117,7 @@ func (c *CheckContext) checkBackup(file *os.File) {
 
 func (c *CheckContext) checkCache(file *os.File) {
 	count := 0
-	log.Logger.Debug("checking cache")
+	log.Root.Debug("checking cache")
 	_, _ = file.WriteString(",\r\n\"Cache\": [")
 	err := c.Cache.GetBlobs(func(id string) bool {
 		// checking if the blob belongs to the tenant
@@ -139,7 +139,7 @@ func (c *CheckContext) checkCache(file *os.File) {
 
 	_, _ = file.WriteString("]")
 	if err != nil {
-		log.Logger.Errorf("check: error checking cache. %v", err)
+		log.Root.Errorf("check: error checking cache. %v", err)
 	}
 	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
 }

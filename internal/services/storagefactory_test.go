@@ -92,7 +92,7 @@ func createBlobDescription(id string, tenant string) model.BlobDescription {
 }
 
 func TestManyTenants(t *testing.T) {
-	log.Logger.SetLevel(log.Info)
+	log.Root.SetLevel(log.Info)
 	clear(t)
 	initTest(t)
 	ast := assert.New(t)

@@ -57,7 +57,7 @@ var (
 func InitBluge(p map[string]any) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		log.Root.Errorf("%v", err)
 		return err
 	}
 	err = json.Unmarshal(jsonStr, &bcnfg)

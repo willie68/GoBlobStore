@@ -74,7 +74,7 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("do check for tenant %s", tenant)
+	log.Root.Infof("do check for tenant %s", tenant)
 	cMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
@@ -116,7 +116,7 @@ func PostRestore(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Logger.Infof("do restore for tenant %s", tenant)
+	log.Root.Infof("do restore for tenant %s", tenant)
 	rMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
