@@ -489,11 +489,16 @@ func getFilename(header http.Header) (string, error) {
 	if ok {
 		fn := header.Get(filenameHeader)
 		if fn != "" {
-			header, _, err := httpheader.DecodeExtValue(fn)
-			if err != nil {
-				return "", err
+			// check if there is an RFC 8187 coded value
+			if strings.ContainsAny(fn, "'") {
+				decodedValue, _, err := httpheader.DecodeExtValue(fn)
+				if err != nil {
+					return "", err
+				}
+				filename = decodedValue
+			} else {
+				filename = fn
 			}
-			filename = header
 		}
 	}
 	return filename, nil

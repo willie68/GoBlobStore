@@ -267,7 +267,7 @@ func (s *TenantManager) AddSize(_ string, _ int64) {
 }
 
 // SubSize subtract the blob size to the tenant size
-func (s *TenantManager) SubSize(tenant string, size int64) {
+func (s *TenantManager) SubSize(_ string, _ int64) {
 	// not implemented
 }
 
