@@ -15,7 +15,6 @@ import (
 	"github.com/vfaronov/httpheader"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	services "github.com/willie68/GoBlobStore/internal/services"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
@@ -592,7 +591,7 @@ func SearchBlobs(response http.ResponseWriter, request *http.Request) {
 	}
 	query := string(b)
 	if query != "" {
-		log.Root.Debugf("search for blobs with: %s", query)
+		logger.Debugf("search for blobs with: %s", query)
 	}
 	blobs := make([]string, 0)
 	index := 0
@@ -680,7 +679,7 @@ func PostBlobCheck(response http.ResponseWriter, request *http.Request) {
 	}
 	idStr := chi.URLParam(request, "id")
 
-	log.Root.Infof("do check for tenant %s on blob %s", tenant, idStr)
+	logger.Infof("do check for tenant %s on blob %s", tenant, idStr)
 	storage, err := getTenantStore(tenant)
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))

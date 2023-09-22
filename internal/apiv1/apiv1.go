@@ -16,8 +16,8 @@ import (
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/auth"
 	"github.com/willie68/GoBlobStore/internal/config"
-	"github.com/willie68/GoBlobStore/internal/health"
-	log "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/services/health"
 )
 
 // APIVersion the actual implemented api version
@@ -29,6 +29,8 @@ var BaseURL = fmt.Sprintf("/api/v%s", APIVersion)
 // APIKey the apikey of this service
 var APIKey string
 
+var logger = logging.New().WithName("apiv1")
+
 const adminSubpath = "/admin"
 const storesSubpath = "/stores"
 const configSubpath = "/config"
@@ -38,7 +40,7 @@ const searchSubpath = "/search"
 // APIRoutes defining all api v1 routes
 func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 	APIKey = getApikey()
-	log.Root.Infof("baseurl : %s", BaseURL)
+	logger.Infof("baseurl : %s", BaseURL)
 	router := chi.NewRouter()
 	setDefaultHandler(router, cfn, trc)
 
@@ -52,7 +54,7 @@ func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 		if err != nil {
 			return router, err
 		}
-		log.Root.Infof("jwt config: %v", jwtConfig)
+		logger.Infof("jwt config: %v", jwtConfig)
 
 		auth.InitJWT(jwtConfig)
 
@@ -79,20 +81,20 @@ func APIRoutes(cfn config.Config, trc opentracing.Tracer) (*chi.Mux, error) {
 		r.Mount(AdminRoutes())
 		r.Mount(StoresRoutes())
 		r.Mount(TenantStoresRoutes())
-		r.Mount("/", health.Routes())
+		r.Mount(health.NewHealthHandler().Routes())
 		if cfn.Metrics.Enable {
 			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
-	log.Root.Infof("%s api routes", config.Servicename)
+	logger.Infof("%s api routes", config.Servicename)
 
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Root.Infof("api route: %s %s", method, route)
+		logger.Infof("api route: %s %s", method, route)
 		return nil
 	}
 
 	if err := chi.Walk(router, walkFunc); err != nil {
-		log.Root.Alertf("could not walk api routes. %s", err.Error())
+		logger.Alertf("could not walk api routes. %s", err.Error())
 	}
 
 	return router, nil
@@ -141,6 +143,10 @@ func setDefaultHandler(router *chi.Mux, cfn config.Config, tracer opentracing.Tr
 			ServiceName:    config.Servicename,
 			ServiceVersion: "V" + APIVersion,
 			SampleRate:     1,
+			SkipFunc: func(r *http.Request) bool {
+				return false
+				//return r.URL.Path == "/livez"
+			},
 			Tags: map[string]any{
 				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
 				// "_dd1.sr.eausr": 1, // datadog, event sample rate
@@ -149,39 +155,61 @@ func setDefaultHandler(router *chi.Mux, cfn config.Config, tracer opentracing.Tr
 	}
 	if cfn.Metrics.Enable {
 		router.Use(
-			api.MetricsHandler(api.MetricsConfig{}),
+			api.MetricsHandler(api.MetricsConfig{
+				SkipFunc: func(r *http.Request) bool {
+					return false
+				},
+			}),
 		)
 	}
 }
 
 // HealthRoutes returning the health routes
-func HealthRoutes(cfn config.Config) *chi.Mux {
+func HealthRoutes(cfn config.Config, tracer opentracing.Tracer) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(
 		render.SetContentType(render.ContentTypeJSON),
 		middleware.Logger,
 		middleware.Recoverer,
 	)
+	if tracer != nil {
+		router.Use(httptracer.Tracer(tracer, httptracer.Config{
+			ServiceName:    config.Servicename,
+			ServiceVersion: "V" + APIVersion,
+			SampleRate:     1,
+			SkipFunc: func(r *http.Request) bool {
+				return false
+			},
+			Tags: map[string]any{
+				"_dd.measured": 1, // datadog, turn on metrics for http.request stats
+				// "_dd1.sr.eausr": 1, // datadog, event sample rate
+			},
+		}))
+	}
 	if cfn.Metrics.Enable {
 		router.Use(
-			api.MetricsHandler(api.MetricsConfig{}),
+			api.MetricsHandler(api.MetricsConfig{
+				SkipFunc: func(r *http.Request) bool {
+					return false
+				},
+			}),
 		)
 	}
 
 	router.Route("/", func(r chi.Router) {
-		r.Mount("/", health.Routes())
+		r.Mount(health.NewHealthHandler().Routes())
 		if cfn.Metrics.Enable {
 			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
 	})
 
-	log.Root.Info("health api routes")
+	logger.Info("health api routes")
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		log.Root.Infof("health route: %s %s", method, route)
+		logger.Infof("health route: %s %s", method, route)
 		return nil
 	}
 	if err := chi.Walk(router, walkFunc); err != nil {
-		log.Root.Alertf("could not walk health routes. %s", err.Error())
+		logger.Alertf("could not walk health routes. %s", err.Error())
 	}
 
 	return router
