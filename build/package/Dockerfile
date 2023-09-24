@@ -14,6 +14,7 @@ RUN set -eux; \
 
 COPY . /src
 WORKDIR /src
+
 ## Task: fetch project deps
 
 RUN go mod download

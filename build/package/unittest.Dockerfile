@@ -1,5 +1,6 @@
 ##### BUILDER #####
-FROM golang:1.18.3-alpine3.16 as builder
+
+FROM golang:1.20-alpine as builder
 
 ## Task: Install build deps
 
@@ -19,7 +20,7 @@ WORKDIR /src
 ## Task: fetch project deps
 
 RUN go mod download
-RUN go mod tidy -go=1.18
+RUN go mod tidy -go=1.20
 RUN go get github.com/jstemmer/go-junit-report
 
 ## Task: build project
