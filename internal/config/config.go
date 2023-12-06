@@ -43,6 +43,8 @@ type Config struct {
 	OpenTracing OpenTracing `yaml:"opentracing"`
 
 	Metrics Metrics `yaml:"metrics"`
+
+	Profiling Profiling `yaml:"profiling"`
 }
 
 // Service the configuration of services inside this ms
@@ -115,6 +117,11 @@ type OpenTracing struct {
 
 // Metrics configuration
 type Metrics struct {
+	Enable bool `yaml:"enable"`
+}
+
+// Metrics configuration
+type Profiling struct {
 	Enable bool `yaml:"enable"`
 }
 

@@ -39,6 +39,7 @@ type BlobStorage struct {
 	Password    string
 	minioClient minio.Client
 	usetls      bool
+	enc         encrypt.ServerSide
 }
 
 var _ interfaces.BlobStorage = &BlobStorage{}
@@ -194,7 +195,7 @@ func (s *BlobStorage) UpdateBlobDescription(_ string, b *model.BlobDescription) 
 func (s *BlobStorage) HasBlob(id string) (bool, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	_, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{ServerSideEncryption: s.getEncryption()})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -210,7 +211,7 @@ func (s *BlobStorage) HasBlob(id string) (bool, error) {
 func (s *BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, error) {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	stat, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{})
+	stat, err := s.minioClient.StatObject(ctx, s.Bucket, filename, minio.StatObjectOptions{ServerSideEncryption: s.getEncryption()})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -236,7 +237,7 @@ func (s *BlobStorage) GetBlobDescription(id string) (*model.BlobDescription, err
 func (s *BlobStorage) RetrieveBlob(id string, w io.Writer) error {
 	filename := s.id2f(id)
 	ctx := context.Background()
-	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{})
+	r, err := s.minioClient.GetObject(ctx, s.Bucket, filename, minio.GetObjectOptions{ServerSideEncryption: s.getEncryption()})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -399,11 +400,14 @@ func (s *BlobStorage) getRetentionByFile(filename string) (*model.RetentionEntry
 
 // getEncryption here you get the ServerSide encryption for the tenant
 func (s *BlobStorage) getEncryption() encrypt.ServerSide {
+	if s.enc != nil {
+		return s.enc
+	}
 	if !s.usetls || s.Insecure {
 		return nil
 	}
-	ss := encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket+s.Tenant))
-	return ss
+	s.enc = encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket+s.Tenant))
+	return s.enc
 }
 
 // id2f getting the blob file path and name to the payload

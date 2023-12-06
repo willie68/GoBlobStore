@@ -201,6 +201,10 @@ func HealthRoutes(cfn config.Config, tracer opentracing.Tracer) *chi.Mux {
 		if cfn.Metrics.Enable {
 			r.Mount(api.MetricsEndpoint, promhttp.Handler())
 		}
+		if cfn.Profiling.Enable {
+			// Define the routes for serving profiling data
+			r.Mount("/debug", middleware.Profiler())
+		}
 	})
 
 	logger.Info("health api routes")

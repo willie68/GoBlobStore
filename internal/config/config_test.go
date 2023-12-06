@@ -26,10 +26,10 @@ func TestLoadFromYaml(t *testing.T) {
 	ast.Equal(8000, Get().Service.HTTP.Port)
 	ast.Equal(8443, Get().Service.HTTP.Sslport)
 
-	ast.Equal(60, Get().Service.HealthSystem.Period)
+	ast.Equal(30, Get().Service.HealthSystem.Period)
 	ast.Equal(3, Get().Service.HealthSystem.StartDelay)
 	ast.Equal("", Get().SecretFile)
-	ast.Equal("https://127.0.0.1:8443", Get().Service.HTTP.ServiceURL)
+	ast.Equal("https://localhost:8443", Get().Service.HTTP.ServiceURL)
 	c.Provide()
 
 	cfg := do.MustInvokeNamed[Config](nil, DoServiceConfig)
