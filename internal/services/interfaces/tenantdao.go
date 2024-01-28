@@ -21,7 +21,8 @@ type TenantManager interface {
 	SetConfig(tenant string, cnfg TenantConfig) error // setting a new config object
 	GetConfig(tenant string) (*TenantConfig, error)   // getting the config object
 
-	GetSize(tenant string) int64 // getting the overall storage size for this tenant, if tenant not present -1 is returned
-
-	Close() error // closing the service
+	GetSize(tenant string) int64       // getting the overall storage size for this tenant, if tenant not present -1 is returned
+	AddSize(tenant string, size int64) // adding the blob size to the tenant storage
+	SubSize(tenant string, size int64) // adding the blob size to the tenant storage
+	Close() error                      // closing the service
 }

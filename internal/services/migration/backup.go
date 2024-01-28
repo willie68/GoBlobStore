@@ -6,7 +6,6 @@ import (
 	"io"
 	"sync"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/business"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
@@ -21,7 +20,7 @@ var wg sync.WaitGroup
 // MigrateBackup migrates all blobs in the main storage for all tenants into the backup storage, if not already present
 func MigrateBackup(tntsrv interfaces.TenantManager, stgf interfaces.StorageFactory) error {
 	err := tntsrv.GetTenants(func(t string) bool {
-		log.Logger.Debugf("BckMgr: found tenant: %s", t)
+		logger.Debugf("BckMgr: found tenant: %s", t)
 		stg, err := stgf.GetStorage(t)
 		if err != nil {
 			return true
@@ -29,7 +28,7 @@ func MigrateBackup(tntsrv interfaces.TenantManager, stgf interfaces.StorageFacto
 		mainstg, ok := stg.(*business.MainStorage)
 		if ok {
 			if mainstg.BckSrv == nil {
-				log.Logger.Debugf("no backstorage found for tenant %s", t)
+				logger.Debugf("no backstorage found for tenant %s", t)
 				return true
 			}
 			go migrateBckTnt(mainstg.StgSrv, mainstg.BckSrv)
@@ -44,14 +43,14 @@ func MigrateBackup(tntsrv interfaces.TenantManager, stgf interfaces.StorageFacto
 
 // migrateBckTnt migrates all files from the main storage of the tenant to the backup storage
 func migrateBckTnt(stg interfaces.BlobStorage, bck interfaces.BlobStorage) error {
-	log.Logger.Infof("starting backup migration for tenant: %s", stg.GetTenant())
+	logger.Infof("starting backup migration for tenant: %s", stg.GetTenant())
 	stg.GetBlobs(func(id string) bool {
 		found, err := bck.HasBlob(id)
 		if err != nil {
-			log.Logger.Errorf("error checking blob from backup storage %s: %s\r\n%v ", bck.GetTenant(), id, err)
+			logger.Errorf("error checking blob from backup storage %s: %s\r\n%v ", bck.GetTenant(), id, err)
 		}
 		if !found {
-			log.Logger.Infof("migrating file for tenant: %s, %s", stg.GetTenant(), id)
+			logger.Infof("migrating file for tenant: %s, %s", stg.GetTenant(), id)
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
@@ -67,13 +66,13 @@ func migrateBckTnt(stg interfaces.BlobStorage, bck interfaces.BlobStorage) error
 func backup(id string, stg interfaces.BlobStorage, bck interfaces.BlobStorage) error {
 	found, err := stg.HasBlob(id)
 	if err != nil {
-		log.Logger.Errorf("error checking blob: %s\n%v", id, err)
+		logger.Errorf("error checking blob: %s\n%v", id, err)
 		return err
 	}
 	if found {
 		b, err := stg.GetBlobDescription(id)
 		if err != nil {
-			log.Logger.Errorf("error checking blob: %s\n%v", id, err)
+			logger.Errorf("error checking blob: %s\n%v", id, err)
 			return err
 		}
 
@@ -85,18 +84,18 @@ func backup(id string, stg interfaces.BlobStorage, bck interfaces.BlobStorage) e
 
 			err := stg.RetrieveBlob(id, wr)
 			if err != nil {
-				log.Logger.Errorf("error getting blob: %s,%v", id, err)
+				logger.Errorf("error getting blob: %s,%v", id, err)
 			}
 		}()
 		_, err = bck.StoreBlob(b, rd)
 		if err != nil {
-			log.Logger.Errorf("error getting blob: %s,%v", id, err)
+			logger.Errorf("error getting blob: %s,%v", id, err)
 		}
 		defer rd.Close()
 		if b.Retention > 0 {
 			rt, err := stg.GetRetention(id)
 			if err != nil {
-				log.Logger.Errorf("error getting retention: %s,%v", id, err)
+				logger.Errorf("error getting retention: %s,%v", id, err)
 			} else {
 				bck.AddRetention(&rt)
 			}

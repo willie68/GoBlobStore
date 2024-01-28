@@ -31,9 +31,11 @@ var (
 	cchPath = filepath.Join(rootFilePrefix, "blbcch")
 	bckPath = filepath.Join(rootFilePrefix, "bckstg")
 	main    interfaces.BlobStorage
+	tntmgr  interfaces.TenantManager
 )
 
-func initTest(_ *testing.T) {
+func initTest(t *testing.T) {
+	ast := assert.New(t)
 	stgsrv := &simplefile.BlobStorage{
 		RootPath: blbPath,
 		Tenant:   tenant,
@@ -51,11 +53,21 @@ func initTest(_ *testing.T) {
 	}
 	bcksrv.Init()
 
+	tntmgr = &simplefile.TenantManager{
+		RootPath: blbPath,
+	}
+	err := tntmgr.Init()
+	ast.Nil(err)
+
+	err = tntmgr.AddTenant(tenant)
+	ast.Nil(err)
+
 	main = &MainStorage{
 		StgSrv: stgsrv,
 		CchSrv: cchsrv,
 		BckSrv: bcksrv,
 		Tenant: tenant,
+		TntMgr: tntmgr,
 	}
 
 	main.Init()
@@ -96,6 +108,32 @@ func TestTenant(t *testing.T) {
 	ast.NotNil(main)
 
 	ast.Equal(tenant, main.GetTenant())
+}
+
+func TestSingleFile(t *testing.T) {
+	clear(t)
+	initTest(t)
+	ast := assert.New(t)
+	ast.NotNil(main)
+
+	b, err := createBlob(ast, "01")
+	ast.Nil(err)
+	ast.NotNil(b)
+
+	bd, err := main.GetBlobDescription(b.BlobID)
+	ast.Nil(err)
+	ast.NotNil(bd)
+	time.Sleep(1 * time.Second)
+
+	size := tntmgr.GetSize(main.GetTenant())
+	ast.Equal(bd.ContentLength, size)
+
+	err = main.DeleteBlob(b.BlobID)
+	ast.Nil(err)
+	time.Sleep(1 * time.Second)
+
+	size = tntmgr.GetSize(main.GetTenant())
+	ast.Equal(int64(0), size)
 }
 
 func TestManyFiles(t *testing.T) {
@@ -211,6 +249,7 @@ func checkBlob(ast *assert.Assertions, b model.BlobDescription) {
 }
 
 func TestMaster(t *testing.T) {
+	t.SkipNow()
 	for i := 0; i < 100; i++ {
 		t.Logf("%d test iteration", i)
 		TestAutoRestoreByDescription(t)

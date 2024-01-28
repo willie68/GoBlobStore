@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	//rootFilePrefix = "R:/mainstg"
 	rootFilePrefix = "../../testdata/sf"
 	tntcount       = 100
 	blbcount       = tntcount * 10
@@ -93,7 +92,7 @@ func createBlobDescription(id string, tenant string) model.BlobDescription {
 }
 
 func TestManyTenants(t *testing.T) {
-	log.Logger.SetLevel(log.Info)
+	log.Root.SetLevel(log.Info)
 	clear(t)
 	initTest(t)
 	ast := assert.New(t)

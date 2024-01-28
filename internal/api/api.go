@@ -1,5 +1,7 @@
 package api
 
+import "github.com/go-chi/chi/v5"
+
 // TenantHeaderKey in this header the right tenant should be inserted
 const TenantHeaderKey = "tenant"
 
@@ -12,7 +14,7 @@ const RetentionHeaderKey = "retention"
 // FilenameKey key for the headermapping for the file name
 const FilenameKey = "filename"
 
-//BlobIDHeaderKey  is the header for defining a blob id
+// BlobIDHeaderKey  is the header for defining a blob id
 const BlobIDHeaderKey = "blobid"
 
 // HeaderPrefixKey all headers with this prefix will be saved, too
@@ -23,3 +25,9 @@ const URLParamTenantID = "tntid"
 
 // MetricsEndpoint endpoint subpath  for metrics
 const MetricsEndpoint = "/metrics"
+
+// Handler a http REST interface handler
+type Handler interface {
+	// Routes get the routes
+	Routes() (string, *chi.Mux)
+}

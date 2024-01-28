@@ -3,11 +3,9 @@ package migration
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/internal/utils"
 )
@@ -53,13 +51,13 @@ func (c *CheckContext) CheckStorage() (string, error) {
 		c.Running = false
 	}()
 	c.cancel = false
-	file, err := ioutil.TempFile("", "check.*.json")
+	file, err := os.CreateTemp("", "check.*.json")
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
 	c.Filename = file.Name()
-	log.Logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
+	logger.Debugf("start checking tenant \"%s\", results in file: %s", c.TenantID, file.Name())
 	_, _ = file.WriteString(fmt.Sprintf("{ \"Tenant\" : \"%s\"", c.TenantID))
 
 	// checking all blobs in cache
@@ -68,7 +66,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	}
 	// checking all blobs in main storage
 	count := 0
-	log.Logger.Debug("checking primary")
+	logger.Debug("checking primary")
 	_, _ = file.WriteString(",\r\n\"Primary\": [\r\n")
 	err = c.Primary.GetBlobs(func(id string) bool {
 		if count > 0 {
@@ -81,7 +79,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 	_, _ = file.WriteString("]")
 	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"PrimaryCount\": %d", count))
 	if err != nil {
-		log.Logger.Errorf("check: error checking primary. %v", err)
+		logger.Errorf("check: error checking primary. %v", err)
 	}
 	// checking all blobs in backup storage
 	if c.Backup != nil {
@@ -92,7 +90,7 @@ func (c *CheckContext) CheckStorage() (string, error) {
 }
 
 func (c *CheckContext) checkBackup(file *os.File) {
-	log.Logger.Debug("checking backup")
+	logger.Debug("checking backup")
 	count := 0
 	first := true
 	_, _ = file.WriteString(",\r\n\"Backup\": [\r\n")
@@ -109,7 +107,7 @@ func (c *CheckContext) checkBackup(file *os.File) {
 		return true
 	})
 	if err != nil {
-		log.Logger.Errorf("check: error checking backup. %v", err)
+		logger.Errorf("check: error checking backup. %v", err)
 	}
 	_, _ = file.WriteString("]")
 	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"BackupCount\": %d", count))
@@ -117,7 +115,7 @@ func (c *CheckContext) checkBackup(file *os.File) {
 
 func (c *CheckContext) checkCache(file *os.File) {
 	count := 0
-	log.Logger.Debug("checking cache")
+	logger.Debug("checking cache")
 	_, _ = file.WriteString(",\r\n\"Cache\": [")
 	err := c.Cache.GetBlobs(func(id string) bool {
 		// checking if the blob belongs to the tenant
@@ -139,7 +137,7 @@ func (c *CheckContext) checkCache(file *os.File) {
 
 	_, _ = file.WriteString("]")
 	if err != nil {
-		log.Logger.Errorf("check: error checking cache. %v", err)
+		logger.Errorf("check: error checking cache. %v", err)
 	}
 	_, _ = file.WriteString(fmt.Sprintf(",\r\n\"CacheCount\": %d", count))
 }

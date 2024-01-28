@@ -10,14 +10,16 @@ import (
 
 // TODO all tests are skipped
 func TestS3TenantManager(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	ast := assert.New(t)
 	srv := TenantManager{
-		Endpoint:  "http://127.0.0.1:9002",
-		Bucket:    "testbucket",
-		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
-		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
-		Insecure:  true, // only for self signed certificates
+		Endpoint:  s3_endpoint,
+		Bucket:    s3_bucket,
+		AccessKey: s3_accessKey,
+		SecretKey: s3_secretKey,
+		Insecure:  s3_insecure, // only for self signed certificates
 	}
 	err := srv.Init()
 	ast.Nil(err)
@@ -70,14 +72,16 @@ func TestS3TenantManager(t *testing.T) {
 }
 
 func TestSimplefileTenantManagerConfig(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	ast := assert.New(t)
 	srv := TenantManager{
-		Endpoint:  "https://127.0.0.1:9002",
-		Bucket:    "testbucket",
-		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
-		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
-		Insecure:  true, // only for self signed certificates
+		Endpoint:  s3_endpoint,
+		Bucket:    s3_bucket,
+		AccessKey: s3_accessKey,
+		SecretKey: s3_secretKey,
+		Insecure:  s3_insecure, // only for self signed certificates
 	}
 	err := srv.Init()
 	ast.Nil(err)

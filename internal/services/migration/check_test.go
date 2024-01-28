@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -182,7 +181,7 @@ func check(ast *assert.Assertions) JSONResult {
 	ast.Nil(err)
 	ast.NotNil(file)
 
-	byteValue, err := ioutil.ReadFile(file)
+	byteValue, err := os.ReadFile(file)
 	ast.Nil(err)
 	var res JSONResult
 	err = json.Unmarshal(byteValue, &res)

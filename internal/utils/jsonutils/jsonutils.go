@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"strings"
 )
 
@@ -22,7 +21,7 @@ func DecodeString(str string, v any) error {
 
 // DecodeJSON decode from reader interface
 func DecodeJSON(r io.Reader, v any) error {
-	defer io.Copy(ioutil.Discard, r)
+	defer io.Copy(io.Discard, r)
 	d := json.NewDecoder(r)
 	d.UseNumber()
 	return d.Decode(v)

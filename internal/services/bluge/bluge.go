@@ -16,7 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/pkg/model"
 	"github.com/willie68/GoBlobStore/pkg/model/query"
@@ -25,8 +25,11 @@ import (
 // BlugeIndex name of the index engine
 const BlugeIndex = "bluge"
 
-var _ interfaces.Index = &Index{}
-var _ interfaces.IndexBatch = &IndexBatch{}
+var (
+	_      interfaces.Index      = &Index{}
+	_      interfaces.IndexBatch = &IndexBatch{}
+	logger                       = logging.New().WithName("bluge")
+)
 
 // Index a tenant based single indexer
 type Index struct {
@@ -57,7 +60,7 @@ var (
 func InitBluge(p map[string]any) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		logger.Errorf("%v", err)
 		return err
 	}
 	err = json.Unmarshal(jsonStr, &bcnfg)
@@ -66,6 +69,7 @@ func InitBluge(p map[string]any) error {
 
 // CloseBluge just for the sake of completeness
 func CloseBluge() {
+	// nothing to close here
 }
 
 // Init initialise a index service for a tenant

@@ -1,6 +1,8 @@
 package query
 
-import log "github.com/willie68/GoBlobStore/internal/logging"
+import (
+	"github.com/willie68/GoBlobStore/internal/logging"
+)
 
 // NodeStack stack of query nodes with conditions
 type NodeStack struct {
@@ -11,6 +13,7 @@ type NodeStack struct {
 
 // N default nodestack
 var N NodeStack
+var logger = logging.New().WithName("query")
 
 func init() {
 	N.Init()
@@ -28,7 +31,7 @@ func (ns *NodeStack) Reset() {
 
 // Query generating a query from this nodestack
 func (ns *NodeStack) Query() Query {
-	log.Logger.Info("get query")
+	logger.Info("get query")
 	var c any
 	c = ns.currentNode
 	if ns.currentNode == nil {
@@ -45,7 +48,7 @@ func (ns *NodeStack) Query() Query {
 
 // NewNode creating a new node
 func (ns *NodeStack) NewNode() *Node {
-	log.Logger.Info("new node")
+	logger.Info("new node")
 	n := Node{
 		Operator:   NOOP,
 		Conditions: make([]any, 0),
@@ -74,7 +77,7 @@ func (ns *NodeStack) CurrentNode() *Node {
 
 // NewCondition create a new condition and add it to the actual nodestack
 func (ns *NodeStack) NewCondition() *Condition {
-	log.Logger.Info("new condition")
+	logger.Info("new condition")
 	if ns.currentCondition != nil {
 		if ns.currentNode != nil {
 			ns.currentNode.Conditions = append(ns.currentNode.Conditions, ns.currentCondition)

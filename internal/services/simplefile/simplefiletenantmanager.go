@@ -3,14 +3,12 @@ package simplefile
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
 
@@ -19,6 +17,7 @@ type TenantManager struct {
 	RootPath    string // this is the root path for the file system storage
 	TenantInfos sync.Map
 	calcRunning bool
+	sm          sync.Mutex // Mutex for adding blob size to a tenant size
 }
 
 // TenantInfo entry for tenant list
@@ -38,6 +37,7 @@ func (s *TenantManager) Init() error {
 		return err
 	}
 	s.calcRunning = false
+	s.sm = sync.Mutex{}
 	// background task for calculating the storage size of every tenant
 	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
@@ -52,7 +52,7 @@ func (s *TenantManager) Init() error {
 
 // GetTenants walk thru all tenants
 func (s *TenantManager) GetTenants(callback func(tenant string) bool) error {
-	infos, err := ioutil.ReadDir(s.RootPath)
+	infos, err := os.ReadDir(s.RootPath)
 	if err != nil {
 		return err
 	}
@@ -75,6 +75,13 @@ func (s *TenantManager) AddTenant(tenant string) error {
 	if err != nil {
 		return err
 	}
+	tinfo := TenantInfo{
+		ID:   tenant,
+		Size: -1,
+	}
+	s.sm.Lock()
+	defer s.sm.Unlock()
+	s.TenantInfos.Store(tenant, tinfo)
 
 	return nil
 }
@@ -115,7 +122,7 @@ func (s *TenantManager) SetConfig(tenant string, config interfaces.TenantConfig)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(cfnName, str, os.ModePerm)
+	err = os.WriteFile(cfnName, str, os.ModePerm)
 	return err
 }
 
@@ -125,7 +132,7 @@ func (s *TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 	if _, err := os.Stat(cfnName); os.IsNotExist(err) {
 		return nil, nil
 	}
-	data, err := ioutil.ReadFile(cfnName)
+	data, err := os.ReadFile(cfnName)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +165,52 @@ func (s *TenantManager) GetSize(tenant string) int64 {
 	return tinfo.Size
 }
 
+// AddSize adding the blob size to the tenant size
+func (s *TenantManager) AddSize(tenant string, size int64) {
+	if !s.HasTenant(tenant) {
+		return
+	}
+	s.sm.Lock()
+	defer s.sm.Unlock()
+	info, ok := s.TenantInfos.Load(tenant)
+	if !ok {
+		return
+	}
+	tinfo, ok := info.(TenantInfo)
+	if !ok {
+		return
+	}
+	if tinfo.Size < 0 {
+		tinfo.Size = 0
+	}
+	tinfo.Size += size
+	s.TenantInfos.Store(tenant, tinfo)
+}
+
+// SubSize subtract the blob size to the tenant size
+func (s *TenantManager) SubSize(tenant string, size int64) {
+	if !s.HasTenant(tenant) {
+		return
+	}
+	s.sm.Lock()
+	defer s.sm.Unlock()
+	info, ok := s.TenantInfos.Load(tenant)
+	if !ok {
+		return
+	}
+	tinfo, ok := info.(TenantInfo)
+	if !ok {
+		return
+	}
+	if tinfo.Size < 0 {
+		return
+	}
+	tinfo.Size -= size
+	s.TenantInfos.Store(tenant, tinfo)
+}
+
 func (s *TenantManager) calculateAllStorageSizes() {
-	log.Logger.Debug("calculating storage sizes of all tenants")
+	logger.Debug("calculating storage sizes of all tenants")
 	s.calcRunning = true
 	defer func() {
 		s.calcRunning = false
@@ -171,11 +222,13 @@ func (s *TenantManager) calculateAllStorageSizes() {
 			ID:   tenant,
 			Size: size,
 		}
+		s.sm.Lock()
+		defer s.sm.Unlock()
 		s.TenantInfos.Store(tenant, tinfo)
 		return true
 	})
 	if err != nil {
-		log.Logger.Errorf("calculating all storage sizes error: %v", err)
+		logger.Errorf("calculating all storage sizes error: %v", err)
 	}
 }
 
@@ -197,7 +250,7 @@ func (s *TenantManager) calculateStorageSize(tenant string) int64 {
 		return nil
 	})
 	if err != nil {
-		log.Logger.Errorf("sftm: error %v", err)
+		logger.Errorf("sftm: error %v", err)
 		return 0
 	}
 	return dirSize

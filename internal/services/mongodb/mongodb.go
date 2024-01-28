@@ -13,7 +13,7 @@ import (
 
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
+	"github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/pkg/model"
 	"github.com/willie68/GoBlobStore/pkg/model/query"
@@ -28,8 +28,11 @@ import (
 const MongoIndex = "mongodb"
 
 // checking interface compatibility
-var _ interfaces.Index = &Index{}
-var _ interfaces.IndexBatch = &IndexBatch{}
+var (
+	_      interfaces.Index      = &Index{}
+	_      interfaces.IndexBatch = &IndexBatch{}
+	logger                       = logging.New().WithName("mongodb")
+)
 
 // Index one index for a tenant
 type Index struct {
@@ -71,12 +74,12 @@ var (
 func InitMongoDB(p map[string]any) error {
 	jsonStr, err := json.Marshal(p)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		logger.Errorf("%v", err)
 		return err
 	}
 	err = json.Unmarshal(jsonStr, &mcnfg)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		logger.Errorf("%v", err)
 		return err
 	}
 	if len(mcnfg.Hosts) == 0 {
@@ -97,7 +100,7 @@ func InitMongoDB(p map[string]any) error {
 	ctx = context.TODO()
 	client, err = driver.Connect(ctx, opts)
 	if err != nil {
-		log.Logger.Errorf("%v", err)
+		logger.Errorf("%v", err)
 		return err
 	}
 
@@ -132,7 +135,7 @@ func (m *Index) Init() error {
 		}
 	}
 	if !found {
-		log.Logger.Info("no index found, creating one")
+		logger.Info("no index found, creating one")
 		mod := driver.IndexModel{
 			Keys: bson.M{
 				"blobid": 1, // index in ascending order
@@ -163,10 +166,10 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 			return err
 		}
 		defer cur.Close(context.TODO())
-		//Finding multiple documents returns a cursor
-		//Iterate through the cursor allows us to decode documents one at a time
+		// Finding multiple documents returns a cursor
+		// Iterate through the cursor allows us to decode documents one at a time
 		for cur.Next(context.TODO()) {
-			//Create a value into which the single document can be decoded
+			// Create a value into which the single document can be decoded
 			elem := struct {
 				BlobID string `bson:"blobid"`
 			}{}
@@ -180,12 +183,7 @@ func (m *Index) Search(qry string, callback func(id string) bool) error {
 			}
 		}
 
-		if err := cur.Err(); err != nil {
-			return err
-		}
-
-		//Close the cursor once finished
-		return nil
+		return cur.Err()
 	}
 	return errors.New("no filter defined")
 }
@@ -249,7 +247,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 				return err
 			}
 			mid := res.InsertedID
-			log.Logger.Infof("insert: %v", mid)
+			logger.Infof("insert: %v", mid)
 			return nil
 		}
 		fmt.Printf("err: %v", err)
@@ -271,7 +269,7 @@ func (m *Index) Index(id string, b model.BlobDescription) error {
 		return err
 	}
 	mid := res.ModifiedCount
-	log.Logger.Infof("mod count: %vd", mid)
+	logger.Infof("mod count: %vd", mid)
 	return nil
 }
 

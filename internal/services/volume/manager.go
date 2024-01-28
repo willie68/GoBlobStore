@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/disk"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"gopkg.in/yaml.v2"
 )
 
@@ -68,7 +67,7 @@ func (v *Manager) Init() error {
 		for range v.ticker.C {
 			err := v.Rescan()
 			if err != nil {
-				log.Logger.Errorf("volume manager: error rescan volumes: %v", err)
+				logger.Errorf("volume manager: error rescan volumes: %v", err)
 			}
 		}
 	}()
