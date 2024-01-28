@@ -63,10 +63,14 @@ func Init(cfg LoggingConfig) {
 }
 
 func New() *Logger {
+	var lo *golf.Logger
+	if Root.gelfActive {
+		lo = Root.l.Clone()
+	}
 	l := Logger{
 		gelfActive: Root.gelfActive,
 		c:          Root.c,
-		l:          Root.l.Clone(),
+		l:          lo,
 	}
 	return &l
 }

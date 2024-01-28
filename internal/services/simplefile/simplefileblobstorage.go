@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
@@ -41,9 +40,9 @@ func (s *BlobStorage) Init() error {
 		return err
 	}
 	s.filepath = fileppath
-	log.Root.Debugf("building file path for tenant: %s", s.filepath)
+	logger.Debugf("building file path for tenant: %s", s.filepath)
 	if _, err := os.Stat(s.filepath); os.IsNotExist(err) {
-		log.Root.Debugf("tenant not exists: %s", s.Tenant)
+		logger.Debugf("tenant not exists: %s", s.Tenant)
 	}
 	s.bdCch = make(map[string]model.BlobDescription)
 	return nil
@@ -141,13 +140,13 @@ func (s *BlobStorage) GetAllRetentions(callback func(r model.RetentionEntry) boo
 		if file != nil && !file.IsDir() {
 			dat, err := os.ReadFile(path)
 			if err != nil {
-				log.Root.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
+				logger.Errorf("GetAllRetention: error getting file data for: %s\r\n%v", file.Name(), err)
 				return nil
 			}
 			ety := model.RetentionEntry{}
 			err = json.Unmarshal(dat, &ety)
 			if err != nil {
-				log.Root.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
+				logger.Errorf("GetAllRetention: error deserialising: %s\r\n%v", file.Name(), err)
 				return nil
 			}
 			ok := callback(ety)

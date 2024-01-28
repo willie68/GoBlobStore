@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -34,6 +34,7 @@ type TenantManager struct {
 	minioClient minio.Client
 	usetls      bool
 	storelist   []StoreEntry
+	enc         encrypt.ServerSide
 }
 
 // Init initialize this tenant manager
@@ -99,7 +100,7 @@ func (s *TenantManager) GetTenants(callback func(tenant string) bool) error {
 
 func (s *TenantManager) readStorelist() error {
 	ctx := context.Background()
-	_, err := s.minioClient.StatObject(ctx, s.Bucket, fnStlst, minio.StatObjectOptions{})
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, fnStlst, minio.StatObjectOptions{ServerSideEncryption: s.getEncryption()})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -109,13 +110,13 @@ func (s *TenantManager) readStorelist() error {
 		return err
 	}
 	reader, err := s.minioClient.GetObject(ctx, s.Bucket, fnStlst, minio.GetObjectOptions{
-		ServerSideEncryption: nil,
+		ServerSideEncryption: s.getEncryption(),
 	})
 	if err != nil {
 		return err
 	}
 	var storeEntries []StoreEntry
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	if err == nil && data != nil {
 		err = json.Unmarshal(data, &storeEntries)
 	}
@@ -225,7 +226,7 @@ func (s *TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 	ctx := context.Background()
 	cfnName := s.getConfigName(tenant)
 
-	_, err := s.minioClient.StatObject(ctx, s.Bucket, cfnName, minio.StatObjectOptions{})
+	_, err := s.minioClient.StatObject(ctx, s.Bucket, cfnName, minio.StatObjectOptions{ServerSideEncryption: s.getEncryption()})
 	if err != nil {
 		if errResp, ok := err.(minio.ErrorResponse); ok {
 			if errResp.StatusCode == 404 {
@@ -235,12 +236,12 @@ func (s *TenantManager) GetConfig(tenant string) (*interfaces.TenantConfig, erro
 		return nil, err
 	}
 	reader, err := s.minioClient.GetObject(ctx, s.Bucket, cfnName, minio.GetObjectOptions{
-		ServerSideEncryption: nil,
+		ServerSideEncryption: s.getEncryption(),
 	})
 	if err != nil {
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 	var cfn interfaces.TenantConfig
 	if err == nil && data != nil {
 		err = json.Unmarshal(data, &cfn)
@@ -272,10 +273,14 @@ func (s *TenantManager) SubSize(_ string, _ int64) {
 }
 
 func (s *TenantManager) getEncryption() encrypt.ServerSide {
+	if s.enc != nil {
+		return s.enc
+	}
 	if !s.usetls || s.Insecure {
 		return nil
 	}
-	return encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket))
+	s.enc = encrypt.DefaultPBKDF([]byte(s.Password), []byte(s.Bucket))
+	return s.enc
 }
 
 // Close closing the manager

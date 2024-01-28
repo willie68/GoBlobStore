@@ -14,7 +14,6 @@ import (
 	jaegercfg "github.com/uber/jaeger-client-go/config"
 	"github.com/willie68/GoBlobStore/internal/apiv1"
 	"github.com/willie68/GoBlobStore/internal/config"
-	"github.com/willie68/GoBlobStore/internal/health"
 	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	services "github.com/willie68/GoBlobStore/internal/services"
@@ -85,12 +84,8 @@ func main() {
 	tracer, closer = initJaeger(config.Servicename, serviceConfig.OpenTracing)
 	defer closer.Close()
 
-	healthCheckConfig := health.CheckConfig(serviceConfig.HealthCheck)
-
-	health.InitHealthSystem(healthCheckConfig, tracer)
-
-	log.Root.Infof("ssl: %t", serviceConfig.Sslport > 0)
-	log.Root.Infof("serviceURL: %s", serviceConfig.ServiceURL)
+	log.Root.Infof("ssl: %t", serviceConfig.Service.HTTP.Sslport > 0)
+	log.Root.Infof("serviceURL: %s", serviceConfig.Service.HTTP.ServiceURL)
 	log.Root.Infof("apikey: %s", apiv1.APIKey)
 
 	if err := services.Init(serviceConfig.Engine); err != nil {
@@ -106,7 +101,7 @@ func main() {
 		panic(errstr)
 	}
 
-	healthRouter := apiv1.HealthRoutes(serviceConfig)
+	healthRouter := apiv1.HealthRoutes(serviceConfig, tracer)
 
 	sh := do.MustInvokeNamed[shttp.SHttp](nil, shttp.DoSHTTP)
 	sh.StartServers(router, healthRouter)
@@ -135,13 +130,13 @@ func initLogging() {
 // initConfig override the configuration from the service.yaml with the given commandline parameters
 func initConfig() {
 	if port > 0 {
-		serviceConfig.Port = port
+		serviceConfig.Service.HTTP.Port = port
 	}
 	if sslport > 0 {
-		serviceConfig.Sslport = sslport
+		serviceConfig.Service.HTTP.Sslport = sslport
 	}
 	if serviceURL != "" {
-		serviceConfig.ServiceURL = serviceURL
+		serviceConfig.Service.HTTP.ServiceURL = serviceURL
 	}
 
 	httputils.TenantClaim = "Tenant"
@@ -162,6 +157,7 @@ func initConfig() {
 			}
 		}
 	}
+	serviceConfig.Provide()
 }
 
 // initJaeger initialize the jaeger (opentracing) component

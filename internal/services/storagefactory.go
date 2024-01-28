@@ -8,7 +8,6 @@ import (
 	"github.com/willie68/GoBlobStore/internal/services/migration"
 
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/factory"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 )
@@ -129,21 +128,21 @@ func GetMigrationManagement() (*migration.Management, error) {
 func Close() {
 	err := stgf.Close()
 	if err != nil {
-		log.Root.Errorf("error closing storage factory:\r\n%v,", err)
+		logger.Errorf("error closing storage factory:\r\n%v,", err)
 	}
 
 	err = rtnMgr.Close()
 	if err != nil {
-		log.Root.Errorf("error closing retention manager:\r\n%v,", err)
+		logger.Errorf("error closing retention manager:\r\n%v,", err)
 	}
 
 	err = tntsrv.Close()
 	if err != nil {
-		log.Root.Errorf("error closing tenant service:\r\n%v,", err)
+		logger.Errorf("error closing tenant service:\r\n%v,", err)
 	}
 
 	err = migMan.Close()
 	if err != nil {
-		log.Root.Errorf("error closing check management:\r\n%v,", err)
+		logger.Errorf("error closing check management:\r\n%v,", err)
 	}
 }

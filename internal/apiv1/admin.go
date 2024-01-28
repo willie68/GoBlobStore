@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/willie68/GoBlobStore/internal/api"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	services "github.com/willie68/GoBlobStore/internal/services"
 
 	"github.com/go-chi/chi/v5"
@@ -74,7 +73,7 @@ func PostCheck(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Root.Infof("do check for tenant %s", tenant)
+	logger.Infof("do check for tenant %s", tenant)
 	cMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))
@@ -116,7 +115,7 @@ func PostRestore(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Root.Infof("do restore for tenant %s", tenant)
+	logger.Infof("do restore for tenant %s", tenant)
 	rMan, err := services.GetMigrationManagement()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))

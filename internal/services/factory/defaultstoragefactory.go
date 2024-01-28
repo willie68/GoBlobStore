@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/bluge"
 	"github.com/willie68/GoBlobStore/internal/services/business"
 	"github.com/willie68/GoBlobStore/internal/services/fastcache"
@@ -61,7 +60,7 @@ func (d *DefaultStorageFactory) GetStorage(tenant string) (interfaces.BlobStorag
 	if !ok {
 		stgsrv, err := d.createStorage(tenant)
 		if err != nil {
-			log.Root.Errorf("can't create storage for tenant: %s\n %v", tenant, err)
+			logger.Errorf("can't create storage for tenant: %s\n %v", tenant, err)
 			return nil, err
 		}
 		d.tenantStores.Store(tenant, &stgsrv)
@@ -82,7 +81,7 @@ func (d *DefaultStorageFactory) RemoveStorage(tenant string) error {
 		if ok {
 			err := (*stgsrv).Close()
 			if err != nil {
-				log.Root.Errorf("can't close storage for tenant: %s\n %v", tenant, err)
+				logger.Errorf("can't close storage for tenant: %s\n %v", tenant, err)
 				return err
 			}
 		}
@@ -198,7 +197,7 @@ func (d *DefaultStorageFactory) getTntBck(tenant string) (interfaces.BlobStorage
 		tntCfg.Backup.Properties["insecure"] = true
 		tntBckSrv, err = d.getImplStg(tntCfg.Backup, tenant)
 		if err != nil {
-			log.Root.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
+			logger.Errorf("Tnt: %s, error in tenant backup storage creation: %v", tenant, err)
 			lasterror = err
 		}
 	}
@@ -354,7 +353,7 @@ func (d *DefaultStorageFactory) Close() error {
 		if ok {
 			err := (*tSrv).Close()
 			if err != nil {
-				log.Root.Errorf("error closing tenant storage service: %s\r\n%v,", key, err)
+				logger.Errorf("error closing tenant storage service: %s\r\n%v,", key, err)
 			}
 		}
 		return true

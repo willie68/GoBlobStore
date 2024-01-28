@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -37,7 +37,7 @@ func main() {
 	fmt.Printf("storagepath: %s", stgPath)
 
 	fmt.Println("creating tenants")
-	dirs, err := ioutil.ReadDir(stgPath)
+	dirs, err := os.ReadDir(stgPath)
 	if err != nil {
 		fmt.Printf("error scanning dir: %s %v\r\n", stgPath, err)
 		panic(1)

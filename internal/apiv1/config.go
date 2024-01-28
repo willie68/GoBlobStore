@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/willie68/GoBlobStore/internal/api"
 	"github.com/willie68/GoBlobStore/internal/config"
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/serror"
 	services "github.com/willie68/GoBlobStore/internal/services"
 	"github.com/willie68/GoBlobStore/internal/services/factory"
@@ -111,7 +110,7 @@ func PostCreateTenant(response http.ResponseWriter, request *http.Request) {
 		httputils.Err(response, request, serror.BadRequest(nil, "missing-tenant", msg))
 		return
 	}
-	log.Root.Infof("create store for tenant %s", tenant)
+	logger.Infof("create store for tenant %s", tenant)
 	tntsrv, err := services.GetTenantSrv()
 	if err != nil {
 		httputils.Err(response, request, serror.InternalServerError(err))

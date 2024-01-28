@@ -4,7 +4,6 @@ import (
 	"errors"
 	"sync"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/services/interfaces"
 	"github.com/willie68/GoBlobStore/internal/utils/slicesutils"
 )
@@ -82,7 +81,7 @@ func (m *MainTenant) RemoveTenant(tenant string) (string, error) {
 func (m *MainTenant) removeTnt(tenant string) {
 	_, err := m.TntSrv.RemoveTenant(tenant)
 	if err != nil {
-		log.Root.Errorf("error removing tenant %s: %v", tenant, err)
+		logger.Errorf("error removing tenant %s: %v", tenant, err)
 	}
 	m.rmtSync.Lock()
 	m.rmTnt = slicesutils.RemoveString(m.rmTnt, tenant)
@@ -115,7 +114,7 @@ func (m *MainTenant) GetConfig(tenant string) (*interfaces.TenantConfig, error) 
 	if (cfn == nil) && (m.BckSrv != nil) {
 		cfn, err = m.BckSrv.GetConfig(tenant)
 		if err != nil {
-			log.Root.Errorf("error reading config for tenant %s from backup. %v", tenant, err)
+			logger.Errorf("error reading config for tenant %s from backup. %v", tenant, err)
 		}
 	}
 	return cfn, nil

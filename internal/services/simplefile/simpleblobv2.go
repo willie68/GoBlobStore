@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
-	log "github.com/willie68/GoBlobStore/internal/logging"
 	"github.com/willie68/GoBlobStore/internal/utils"
 	"github.com/willie68/GoBlobStore/pkg/model"
 )
@@ -92,21 +90,21 @@ func (s *BlobStorage) updateBlobDescriptionV2(_ string, b *model.BlobDescription
 func (s *BlobStorage) getBlobV2(id string, w io.Writer) error {
 	binFile, err := s.buildFilenameV2(id, BinaryExt)
 	if err != nil {
-		log.Root.Errorf("error building filename: %v", err)
+		logger.Errorf("error building filename: %v", err)
 		return err
 	}
 	if _, err := os.Stat(binFile); os.IsNotExist(err) {
-		log.Root.Errorf("error not exists: %v", err)
+		logger.Errorf("error not exists: %v", err)
 		return os.ErrNotExist
 	}
 	f, err := os.Open(binFile)
 	if err != nil {
-		log.Root.Errorf("error opening file: %v", err)
+		logger.Errorf("error opening file: %v", err)
 		return err
 	}
 	defer f.Close()
 	if _, err = io.Copy(w, f); err != nil {
-		log.Root.Errorf("error on copy: %v", err)
+		logger.Errorf("error on copy: %v", err)
 		return err
 	}
 	return nil
@@ -198,7 +196,7 @@ func (s *BlobStorage) writeJSONFileV2(b *model.BlobDescription) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, jsn, os.ModePerm)
+	err = os.WriteFile(jsonFile, jsn, os.ModePerm)
 	if err != nil {
 		_ = os.Remove(jsonFile)
 		return err
@@ -218,7 +216,7 @@ func (s *BlobStorage) writeRetentionFile(b *model.BlobDescription) error {
 		return err
 	}
 
-	err = ioutil.WriteFile(jsonFile, jsn, os.ModePerm)
+	err = os.WriteFile(jsonFile, jsn, os.ModePerm)
 	if err != nil {
 		_ = os.Remove(jsonFile)
 		return err
@@ -234,13 +232,13 @@ func (s *BlobStorage) getRetention(id string) (*model.RetentionEntry, error) {
 	}
 	dat, err := os.ReadFile(jsonFile)
 	if err != nil {
-		log.Root.Errorf("GetRetention: error getting file data for: %s\r\n%v", jsonFile, err)
+		logger.Errorf("GetRetention: error getting file data for: %s\r\n%v", jsonFile, err)
 		return nil, err
 	}
 	r := model.RetentionEntry{}
 	err = json.Unmarshal(dat, &r)
 	if err != nil {
-		log.Root.Errorf("GetRetention: deserialization error: %s\r\n%v", jsonFile, err)
+		logger.Errorf("GetRetention: deserialization error: %s\r\n%v", jsonFile, err)
 		return nil, err
 	}
 	return &r, nil

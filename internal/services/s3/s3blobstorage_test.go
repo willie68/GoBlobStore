@@ -14,6 +14,7 @@ import (
 
 var (
 	tntsrv TenantManager
+	skip   bool = false
 )
 
 const (
@@ -25,11 +26,11 @@ const (
 // TODO all tests are skipped
 func setup(t *testing.T) {
 	tntsrv = TenantManager{
-		Endpoint:  "http://127.0.0.1:9002",
-		Bucket:    "testbucket",
-		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
-		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
-		Insecure:  true, // only for self signed certificates
+		Endpoint:  s3_endpoint,
+		Bucket:    s3_bucket,
+		AccessKey: s3_accessKey,
+		SecretKey: s3_secretKey,
+		Insecure:  s3_insecure, // only for self signed certificates
 	}
 	err := tntsrv.Init()
 	assert.Nil(t, err)
@@ -48,11 +49,11 @@ func closeTest(t *testing.T) {
 
 func createSrv() (BlobStorage, error) {
 	srv := BlobStorage{
-		Endpoint:  "http://127.0.0.1:9002",
-		Bucket:    "testbucket",
-		AccessKey: "D9Q2D6JQGW1MVCC98LQL",
-		SecretKey: "LDX7QHY/IsNiA9DbdycGMuOP0M4khr0+06DKrFAr",
-		Insecure:  true, // only for self signed certificates
+		Endpoint:  s3_endpoint,
+		Bucket:    s3_bucket,
+		AccessKey: s3_accessKey,
+		SecretKey: s3_secretKey,
+		Insecure:  s3_insecure, // only for self signed certificates
 		Tenant:    tenant,
 	}
 	err := srv.Init()
@@ -60,7 +61,9 @@ func createSrv() (BlobStorage, error) {
 }
 
 func TestS3Init(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	setup(t)
 	ast := assert.New(t)
 	srv, err := createSrv()
@@ -72,7 +75,9 @@ func TestS3Init(t *testing.T) {
 }
 
 func TestCheckUnknownBlob(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	setup(t)
 	ast := assert.New(t)
 	srv, err := createSrv()
@@ -87,7 +92,9 @@ func TestCheckUnknownBlob(t *testing.T) {
 	closeTest(t)
 }
 func TestCheckEmptyTenant(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	setup(t)
 	ast := assert.New(t)
 	srv := BlobStorage{
@@ -105,7 +112,9 @@ func TestCheckEmptyTenant(t *testing.T) {
 }
 
 func TestCRUDBlob(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	setup(t)
 	ast := assert.New(t)
 	srv, err := createSrv()
@@ -190,7 +199,9 @@ func TestCRUDBlob(t *testing.T) {
 }
 
 func TestRetentionStorage(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	setup(t)
 
 	ast := assert.New(t)
@@ -244,7 +255,9 @@ func TestRetentionStorage(t *testing.T) {
 }
 
 func TestCRUDBlobWID(t *testing.T) {
-	t.SkipNow()
+	if skip {
+		t.SkipNow()
+	}
 	setup(t)
 	ast := assert.New(t)
 	uuid := utils.GenerateID()
